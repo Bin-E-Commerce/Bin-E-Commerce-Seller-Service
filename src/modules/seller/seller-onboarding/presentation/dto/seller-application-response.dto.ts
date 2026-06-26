@@ -1,6 +1,6 @@
-import { SellerApplicationStatus } from "../enums/seller-application-status.enum";
-import { SellerProfileType } from "../enums/seller-profile-type.enum";
-import { PayoutAccountType } from "../enums/payout-account-type.enum";
+import { PayoutAccountType } from "../../../../../database/enums/payout-account-type.enum";
+import { SellerApplicationStatus } from "../../../../../database/enums/seller-application-status.enum";
+import { SellerProfileType } from "../../../../../database/enums/seller-profile-type.enum";
 
 export interface SellerApplicationResponseDto {
   id: string;

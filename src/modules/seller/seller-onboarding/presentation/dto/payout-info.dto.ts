@@ -1,5 +1,12 @@
-import { IsEnum, IsOptional, IsString, Length, Matches, MaxLength } from "class-validator";
-import { PayoutAccountType } from "../enums/payout-account-type.enum";
+import {
+  IsEnum,
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
+  MaxLength,
+} from "class-validator";
+import { PayoutAccountType } from "../../../../../database/enums/payout-account-type.enum";
 
 export class PayoutInfoDto {
   @IsOptional()

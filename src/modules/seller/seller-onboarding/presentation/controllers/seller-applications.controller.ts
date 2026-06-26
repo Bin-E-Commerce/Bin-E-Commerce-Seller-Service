@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Headers, Patch, Post } from "@nestjs/common";
-import { SellerApplicationsService } from "../services/seller-applications.service";
+import { SellerApplicationsService } from "../../application/services/seller-applications.service";
 import { SaveSellerApplicationDto } from "../dto/save-seller-application.dto";
 
 @Controller("seller/applications")

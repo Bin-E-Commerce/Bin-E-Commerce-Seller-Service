@@ -6,9 +6,9 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
-import { SellerApplicationStatus } from "../../modules/seller-applications/enums/seller-application-status.enum";
-import { SellerProfileType } from "../../modules/seller-applications/enums/seller-profile-type.enum";
-import { PayoutAccountType } from "../../modules/seller-applications/enums/payout-account-type.enum";
+import { PayoutAccountType } from "../enums/payout-account-type.enum";
+import { SellerApplicationStatus } from "../enums/seller-application-status.enum";
+import { SellerProfileType } from "../enums/seller-profile-type.enum";
 
 @Entity("seller_applications")
 @Index(["userId"], { unique: true })
@@ -27,7 +27,7 @@ export class SellerApplication {
   @Column({ name: "user_email", type: "varchar", length: 255 })
   userEmail: string;
 
-  // Trạng thái hồ sơ; chỉ pending_review mới chờ admin duyệt, approved mới được cấp quyền seller.
+  // Trạng thái hồ sơ; pending_review chờ admin duyệt, approved mới được cấp quyền seller.
   @Column({
     type: "enum",
     enum: SellerApplicationStatus,
@@ -64,7 +64,7 @@ export class SellerApplication {
   @Column({ name: "shop_description", type: "text", nullable: true })
   shopDescription: string | null;
 
-  // Logo shop sau này có thể là CDN URL từ media-service; giai đoạn UI hiện tại cho phép null.
+  // Logo shop bắt buộc khi gửi duyệt; URL thường đến từ media-service/CDN.
   @Column({ name: "logo_url", type: "text", nullable: true })
   logoUrl: string | null;
 
@@ -108,15 +108,29 @@ export class SellerApplication {
   representativeRole: string | null;
 
   // Số điện thoại liên hệ chính của hồ sơ seller.
-  @Column({ name: "contact_phone", type: "varchar", length: 20, nullable: true })
+  @Column({
+    name: "contact_phone",
+    type: "varchar",
+    length: 20,
+    nullable: true,
+  })
   contactPhone: string | null;
 
   // Email liên hệ chính của hồ sơ seller, có thể khác email đăng nhập.
-  @Column({ name: "contact_email", type: "varchar", length: 255, nullable: true })
+  @Column({
+    name: "contact_email",
+    type: "varchar",
+    length: 255,
+    nullable: true,
+  })
   contactEmail: string | null;
 
-  // Danh sách giấy tờ upload từ media-service; giữ jsonb để linh hoạt loại giấy tờ theo profileType.
-  @Column({ name: "verification_documents", type: "jsonb", default: () => "'{}'::jsonb" })
+  // Danh sách giấy tờ upload từ media-service; jsonb giúp linh hoạt loại giấy tờ theo profileType.
+  @Column({
+    name: "verification_documents",
+    type: "jsonb",
+    default: () => "'{}'::jsonb",
+  })
   verificationDocuments: Record<string, unknown>;
 
   // Tên người phụ trách kho/lấy hàng.
@@ -152,7 +166,7 @@ export class SellerApplication {
   @Column({ name: "bank_name", type: "varchar", length: 120, nullable: true })
   bankName: string | null;
 
-  // Số tài khoản nhận thanh toán; không lưu thêm ký tự phân cách để tránh sai đối soát.
+  // Số tài khoản nhận thanh toán; không lưu ký tự phân cách để tránh sai đối soát.
   @Column({
     name: "bank_account_number",
     type: "varchar",

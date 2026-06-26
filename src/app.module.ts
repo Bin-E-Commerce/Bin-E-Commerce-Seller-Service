@@ -3,7 +3,7 @@ import { HttpModule } from "@nestjs/axios";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { HealthModule } from "./modules/health/health.module";
-import { SellerApplicationsModule } from "./modules/seller-applications/seller-applications.module";
+import { SellerModule } from "./modules/seller/seller.module";
 
 @Module({
   imports: [
@@ -31,7 +31,7 @@ import { SellerApplicationsModule } from "./modules/seller-applications/seller-a
       }),
     }),
     HealthModule,
-    SellerApplicationsModule,
+    SellerModule,
   ],
 })
 export class AppModule {}

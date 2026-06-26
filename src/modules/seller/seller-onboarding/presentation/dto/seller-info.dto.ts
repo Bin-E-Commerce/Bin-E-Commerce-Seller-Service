@@ -7,7 +7,7 @@ import {
   Matches,
   MaxLength,
 } from "class-validator";
-import { SellerProfileType } from "../enums/seller-profile-type.enum";
+import { SellerProfileType } from "../../../../../database/enums/seller-profile-type.enum";
 
 export class SellerInfoDto {
   @IsOptional()
