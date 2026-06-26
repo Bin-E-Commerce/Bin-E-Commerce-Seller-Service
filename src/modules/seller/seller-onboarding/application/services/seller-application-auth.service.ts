@@ -1,5 +1,5 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
-import { CurrentUserContext } from "../../domain/types/current-user-context.type";
+import { CurrentUserContext } from "../types/current-user-context.type";
 
 @Injectable()
 export class SellerApplicationAuthService {
