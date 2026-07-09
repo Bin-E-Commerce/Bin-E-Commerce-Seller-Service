@@ -5,6 +5,8 @@ import { SellerApplication } from "../../../../../database/entities/seller-appli
 import { PayoutAccountType } from "../../../../../database/enums/payout-account-type.enum";
 import { SellerApplicationStatus } from "../../../../../database/enums/seller-application-status.enum";
 import { SellerProfileType } from "../../../../../database/enums/seller-profile-type.enum";
+import { ListSellerApplicationsQueryDto } from "../../presentation/dto/list-seller-applications-query.dto";
+import { ListSellerApplicationsResponseDto } from "../../presentation/dto/list-seller-applications-response.dto";
 import { SaveSellerApplicationDto } from "../../presentation/dto/save-seller-application.dto";
 import { SellerApplicationResponseDto } from "../../presentation/dto/seller-application-response.dto";
 import { CurrentUserContext } from "../types/current-user-context.type";
@@ -34,6 +36,54 @@ export class SellerApplicationsService {
     });
 
     return application ? this.mapper.toResponse(application) : null;
+  }
+
+  // Lấy danh sách hồ sơ seller cho admin với phân trang, filter trạng thái và tìm kiếm nhẹ.
+  async listForAdmin(
+    currentUser: CurrentUserContext,
+    query: ListSellerApplicationsQueryDto,
+  ): Promise<ListSellerApplicationsResponseDto> {
+    this.auth.ensureStaffUser(currentUser);
+
+    const page = query.page;
+    const pageSize = query.pageSize;
+    const builder = this.applicationRepository
+      .createQueryBuilder("application")
+      .orderBy("application.updatedAt", "DESC")
+      .skip((page - 1) * pageSize)
+      .take(pageSize);
+
+    if (query.status) {
+      builder.andWhere("application.status = :status", {
+        status: query.status,
+      });
+    }
+
+    // Gom search vào một cụm OR để admin có thể tìm cùng lúc theo shop, slug, email hoặc tên pháp lý.
+    const search = query.search?.trim();
+    if (search) {
+      builder.andWhere(
+        `(
+          application.shopName ILIKE :search
+          OR application.shopSlug ILIKE :search
+          OR application.userEmail ILIKE :search
+          OR application.legalName ILIKE :search
+        )`,
+        { search: `%${search}%` },
+      );
+    }
+
+    const [items, totalItems] = await builder.getManyAndCount();
+
+    return {
+      items: items.map((application) => this.mapper.toResponse(application)),
+      meta: {
+        page,
+        pageSize,
+        totalItems,
+        totalPages: Math.max(1, Math.ceil(totalItems / pageSize)),
+      },
+    };
   }
 
   // Lưu nháp từng bước đăng ký; nhánh này chưa yêu cầu đủ toàn bộ hồ sơ để user có thể quay lại hoàn thiện sau.

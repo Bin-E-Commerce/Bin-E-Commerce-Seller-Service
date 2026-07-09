@@ -4,6 +4,8 @@ import { SellerProfileType } from "../../../../../database/enums/seller-profile-
 
 export interface SellerApplicationResponseDto {
   id: string;
+  userId: string;
+  userEmail: string;
   status: SellerApplicationStatus;
   submittedAt: Date | null;
   reviewedAt: Date | null;

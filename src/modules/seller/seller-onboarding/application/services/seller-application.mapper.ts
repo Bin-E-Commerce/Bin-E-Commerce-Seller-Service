@@ -72,6 +72,8 @@ export class SellerApplicationMapper {
   toResponse(application: SellerApplication): SellerApplicationResponseDto {
     return {
       id: application.id,
+      userId: application.userId,
+      userEmail: application.userEmail,
       status: application.status,
       submittedAt: application.submittedAt,
       reviewedAt: application.reviewedAt,
