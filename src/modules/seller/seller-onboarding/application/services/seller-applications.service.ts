@@ -1,6 +1,11 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
+import type { QueryDeepPartialEntity } from "typeorm/query-builder/QueryPartialEntity";
 import { SellerApplication } from "../../../../../database/entities/seller-application.entity";
 import { PayoutAccountType } from "../../../../../database/enums/payout-account-type.enum";
 import { SellerApplicationStatus } from "../../../../../database/enums/seller-application-status.enum";
@@ -169,6 +174,97 @@ export class SellerApplicationsService {
     // Kafka event gửi sau khi DB save thành công để email không thông báo một hồ sơ chưa tồn tại hoặc chưa đúng trạng thái.
     await this.events.publishSubmittedEmail(saved);
 
+    return this.mapper.toResponse(saved);
+  }
+
+  // Thay thế dữ liệu của hồ sơ đang pending chỉ khi người dùng hoàn tất form và bấm gửi lại; thao tác chỉnh sửa tạm không chạm DB.
+  async resubmit(
+    currentUser: CurrentUserContext,
+    dto: SaveSellerApplicationDto,
+  ): Promise<SellerApplicationResponseDto> {
+    const user = this.auth.ensureAuthenticatedUser(currentUser);
+    const application = await this.applicationRepository.findOne({
+      where: { userId: user.userId },
+    });
+
+    if (!application) {
+      throw new NotFoundException("Không tìm thấy hồ sơ người bán.");
+    }
+
+    if (application.status !== SellerApplicationStatus.PENDING_REVIEW) {
+      throw new ConflictException(
+        "Chỉ hồ sơ đang chờ duyệt mới có thể chỉnh sửa và gửi lại.",
+      );
+    }
+
+    await this.validator.assertShopSlugAvailable(
+      dto.shop?.slug,
+      application.id,
+    );
+    this.mapper.applyDto(application, dto);
+    await this.validator.assertApplicationReady(
+      application,
+      dto.acceptedTerms === true,
+    );
+
+    // Conditional UPDATE là hàng rào cuối: nếu admin vừa duyệt trong lúc user điền form, dữ liệu đã duyệt không bị ghi đè.
+    const result = await this.applicationRepository.update(
+      {
+        id: application.id,
+        status: SellerApplicationStatus.PENDING_REVIEW,
+      },
+      {
+        shopName: application.shopName,
+        shopSlug: application.shopSlug,
+        mainCategoryId: application.mainCategoryId,
+        businessModel: application.businessModel,
+        shopDescription: application.shopDescription,
+        logoUrl: application.logoUrl,
+        profileType: application.profileType,
+        legalName: application.legalName,
+        citizenId: application.citizenId,
+        taxCode: application.taxCode,
+        representativeName: application.representativeName,
+        representativeRole: application.representativeRole,
+        contactPhone: application.contactPhone,
+        contactEmail: application.contactEmail,
+        // TypeORM yêu cầu deep-partial cho JSONB dù mapper đã tạo đúng Record; cast chỉ thu hẹp tại biên persistence, không bỏ kiểm tra kiểu toàn payload.
+        verificationDocuments:
+          application.verificationDocuments as QueryDeepPartialEntity<
+            Record<string, unknown>
+          >,
+        pickupContactName: application.pickupContactName,
+        pickupPhone: application.pickupPhone,
+        pickupProvinceId: application.pickupProvinceId,
+        pickupWardId: application.pickupWardId,
+        pickupAddressLine: application.pickupAddressLine,
+        bankCode: application.bankCode,
+        bankName: application.bankName,
+        bankAccountNumber: application.bankAccountNumber,
+        bankAccountHolderName: application.bankAccountHolderName,
+        bankAccountType: application.bankAccountType,
+        bankBranch: application.bankBranch,
+        submittedAt: new Date(),
+        reviewedAt: null,
+        reviewNote: null,
+      },
+    );
+
+    if (result.affected !== 1) {
+      throw new ConflictException(
+        "Hồ sơ vừa được xử lý. Vui lòng tải lại trang để xem trạng thái mới nhất.",
+      );
+    }
+
+    const saved = await this.applicationRepository.findOne({
+      where: { id: application.id },
+    });
+
+    if (!saved) {
+      throw new NotFoundException("Không tìm thấy hồ sơ người bán.");
+    }
+
+    await this.events.publishSubmittedEmail(saved);
     return this.mapper.toResponse(saved);
   }
 

@@ -71,4 +71,15 @@ export class SellerApplicationsController {
       this.sellerApplicationsService.buildCurrentUserFromHeaders(headers);
     return this.sellerApplicationsService.submit(currentUser, dto);
   }
+
+  // Gửi lại phiên bản đã chỉnh sửa của hồ sơ pending; dữ liệu cũ vẫn giữ nguyên cho đến khi request này thành công.
+  @Post("resubmit")
+  resubmit(
+    @Headers() headers: Record<string, unknown>,
+    @Body() dto: SaveSellerApplicationDto,
+  ) {
+    const currentUser =
+      this.sellerApplicationsService.buildCurrentUserFromHeaders(headers);
+    return this.sellerApplicationsService.resubmit(currentUser, dto);
+  }
 }
