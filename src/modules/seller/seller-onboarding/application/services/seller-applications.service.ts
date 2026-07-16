@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { SellerApplication } from "../../../../../database/entities/seller-application.entity";
@@ -17,6 +17,7 @@ import { SellerApplicationValidatorService } from "./seller-application-validato
 
 @Injectable()
 export class SellerApplicationsService {
+  // Service này điều phối use case; auth, validation, mapping và event được tách provider để mỗi rule có một nơi chịu trách nhiệm.
   constructor(
     @InjectRepository(SellerApplication)
     private readonly applicationRepository: Repository<SellerApplication>,
@@ -26,7 +27,7 @@ export class SellerApplicationsService {
     private readonly events: SellerApplicationEventsService,
   ) {}
 
-  // Lấy hồ sơ seller hiện tại của user đăng nhập; trả null để FE biết user chưa từng bắt đầu onboarding.
+  // Lấy hồ sơ theo userId từ context tin cậy; trả null để FE phân biệt "chưa bắt đầu" với một bản DRAFT rỗng.
   async getMyApplication(
     currentUser: CurrentUserContext,
   ): Promise<SellerApplicationResponseDto | null> {
@@ -38,7 +39,7 @@ export class SellerApplicationsService {
     return application ? this.mapper.toResponse(application) : null;
   }
 
-  // Lấy danh sách hồ sơ seller cho admin với phân trang, filter trạng thái và tìm kiếm nhẹ.
+  // Lấy danh sách review theo permission, phân trang ở DB và chỉ hỗ trợ các bộ lọc cần cho màn hình admin hiện tại.
   async listForAdmin(
     currentUser: CurrentUserContext,
     query: ListSellerApplicationsQueryDto,
@@ -47,6 +48,7 @@ export class SellerApplicationsService {
 
     const page = query.page;
     const pageSize = query.pageSize;
+    // Áp dụng phân trang ngay trong SQL để không nạp toàn bộ hồ sơ chứa dữ liệu nhạy cảm vào bộ nhớ service.
     const builder = this.applicationRepository
       .createQueryBuilder("application")
       .orderBy("application.updatedAt", "DESC")
@@ -73,6 +75,7 @@ export class SellerApplicationsService {
       );
     }
 
+    // TypeORM trả dữ liệu trang hiện tại và tổng số bản ghi cùng điều kiện để FE tính phân trang chính xác.
     const [items, totalItems] = await builder.getManyAndCount();
 
     return {
@@ -86,7 +89,25 @@ export class SellerApplicationsService {
     };
   }
 
-  // Lưu nháp từng bước đăng ký; nhánh này chưa yêu cầu đủ toàn bộ hồ sơ để user có thể quay lại hoàn thiện sau.
+  // Lấy chi tiết cho admin và kiểm tra permission lần hai ở service, phòng trường hợp route nội bộ bị gọi ngoài gateway.
+  async getForAdmin(
+    currentUser: CurrentUserContext,
+    applicationId: string,
+  ): Promise<SellerApplicationResponseDto> {
+    this.auth.ensureStaffUser(currentUser);
+
+    const application = await this.applicationRepository.findOne({
+      where: { id: applicationId },
+    });
+
+    if (!application) {
+      throw new NotFoundException("Không tìm thấy hồ sơ người bán.");
+    }
+
+    return this.mapper.toResponse(application);
+  }
+
+  // Lưu snapshot của các bước được gửi lên mà chưa chạy rule đầy đủ; user có thể thoát và tiếp tục onboarding sau.
   async saveDraft(
     currentUser: CurrentUserContext,
     dto: SaveSellerApplicationDto,
@@ -107,11 +128,12 @@ export class SellerApplicationsService {
     this.mapper.applyDto(application, dto);
     application.status = SellerApplicationStatus.DRAFT;
 
+    // save() vừa INSERT bản nháp mới vừa UPDATE hồ sơ cũ; unique index DB vẫn là lớp bảo vệ cuối cho userId/slug.
     const saved = await this.applicationRepository.save(application);
     return this.mapper.toResponse(saved);
   }
 
-  // Gửi hồ sơ duyệt; khác saveDraft ở chỗ bắt buộc validate đủ dữ liệu và phát event thông báo sau khi lưu thành công.
+  // Hoàn tất onboarding theo chuỗi: xác thực -> khóa trạng thái -> map DTO -> validate -> lưu pending -> phát event.
   async submit(
     currentUser: CurrentUserContext,
     dto: SaveSellerApplicationDto,
@@ -157,7 +179,7 @@ export class SellerApplicationsService {
     return this.auth.buildCurrentUserFromHeaders(headers);
   }
 
-  // Tìm hồ sơ hiện tại hoặc tạo bản nháp mặc định cho user lần đầu mở form đăng ký seller.
+  // Tìm hồ sơ theo unique userId; nếu chưa có chỉ tạo entity trong bộ nhớ, DB chỉ INSERT khi saveDraft/submit thành công.
   private async getOrCreateDraft(
     user: CurrentUserContext,
   ): Promise<SellerApplication> {
@@ -165,6 +187,7 @@ export class SellerApplicationsService {
       where: { userId: user.userId },
     });
 
+    // Luôn trả hồ sơ bất kể trạng thái; assertEditable phía use case quyết định có được thay đổi hay không.
     if (existing) return existing;
 
     // Giá trị mặc định giúp form bước đầu có loại hồ sơ và loại tài khoản thanh toán ổn định ngay cả khi FE chưa gửi.

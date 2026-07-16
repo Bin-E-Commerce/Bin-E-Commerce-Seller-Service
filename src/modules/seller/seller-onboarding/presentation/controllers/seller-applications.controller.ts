@@ -1,10 +1,21 @@
-import { Body, Controller, Get, Headers, Patch, Post, Query } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+} from "@nestjs/common";
 import { SellerApplicationsService } from "../../application/services/seller-applications.service";
 import { ListSellerApplicationsQueryDto } from "../dto/list-seller-applications-query.dto";
 import { SaveSellerApplicationDto } from "../dto/save-seller-application.dto";
 
 @Controller("seller/applications")
 export class SellerApplicationsController {
+  // Controller chỉ chuyển HTTP input thành application call; toàn bộ auth và business rule nằm trong provider bên dưới.
   constructor(
     private readonly sellerApplicationsService: SellerApplicationsService,
   ) {}
@@ -17,7 +28,7 @@ export class SellerApplicationsController {
     return this.sellerApplicationsService.getMyApplication(currentUser);
   }
 
-  // Trả danh sách hồ sơ cho admin backoffice; service sẽ kiểm tra role từ header do API Gateway inject.
+  // Trả danh sách hồ sơ cho Admin Center; service kiểm tra permission từ header do API Gateway inject.
   @Get("admin")
   listForAdmin(
     @Headers() headers: Record<string, unknown>,
@@ -28,7 +39,18 @@ export class SellerApplicationsController {
     return this.sellerApplicationsService.listForAdmin(currentUser, query);
   }
 
-  // Lưu nháp từng bước; route này vẫn cần JWT qua API Gateway nên anonymous user không đi tới đây.
+  // Lấy đầy đủ một hồ sơ theo id để trang chi tiết admin không phải suy luận từ dữ liệu bảng phân trang.
+  @Get("admin/:id")
+  getForAdmin(
+    @Headers() headers: Record<string, unknown>,
+    @Param("id", new ParseUUIDPipe({ version: "4" })) id: string,
+  ) {
+    const currentUser =
+      this.sellerApplicationsService.buildCurrentUserFromHeaders(headers);
+    return this.sellerApplicationsService.getForAdmin(currentUser, id);
+  }
+
+  // Lưu nháp từng bước; danh tính luôn lấy từ header gateway, không nhận userId do trình duyệt gửi trong body.
   @Patch("me")
   saveDraft(
     @Headers() headers: Record<string, unknown>,
