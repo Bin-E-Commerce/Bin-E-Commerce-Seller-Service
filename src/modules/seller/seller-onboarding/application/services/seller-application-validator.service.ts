@@ -11,16 +11,18 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { AxiosError } from "axios";
 import { firstValueFrom } from "rxjs";
 import { Not, Repository } from "typeorm";
+import { SellerApplication } from "../../../../../database/entities/seller-application.entity";
 import { SellerApplicationStatus } from "../../../../../database/enums/seller-application-status.enum";
 import { SellerProfileType } from "../../../../../database/enums/seller-profile-type.enum";
-import { SellerApplication } from "../../../../../database/entities/seller-application.entity";
 import { toNullableString } from "../utils/seller-application-string.util";
 
+// Contract tối thiểu seller-service cần từ catalog-service; không kéo toàn bộ model category sang bounded context này.
 interface ExternalCategoryResponse {
   id: string;
   isActive: boolean;
 }
 
+// Contract tối thiểu dùng để kiểm tra loại địa giới, trạng thái và quan hệ cha-con.
 interface ExternalLocationResponse {
   id: string;
   parentId: string | null;
@@ -33,7 +35,7 @@ export class SellerApplicationValidatorService {
   private readonly catalogBaseUrl: string;
   private readonly locationBaseUrl: string;
 
-  // Đọc URL service phụ thuộc một lần để các request validate không phải tự xử lý config.
+  // Đọc URL service phụ thuộc một lần; các hàm validate chỉ ghép thêm prefix API/version đúng chuẩn từng service.
   constructor(
     @InjectRepository(SellerApplication)
     private readonly applicationRepository: Repository<SellerApplication>,
@@ -42,7 +44,7 @@ export class SellerApplicationValidatorService {
   ) {
     this.catalogBaseUrl = config.get<string>(
       "CATALOG_SERVICE_URL",
-      "http://localhost:3005",
+      "http://localhost:3003",
     );
     this.locationBaseUrl = config.get<string>(
       "LOCATION_SERVICE_URL",
@@ -50,7 +52,7 @@ export class SellerApplicationValidatorService {
     );
   }
 
-  // Chỉ draft/rejected được chỉnh; pending/approved cần admin xử lý để tránh đổi hồ sơ sau khi gửi duyệt.
+  // Chỉ DRAFT/REJECTED được chỉnh; khóa PENDING_REVIEW để dữ liệu admin đang đối chiếu không thay đổi giữa chừng.
   assertEditable(application: SellerApplication): void {
     if (
       application.status === SellerApplicationStatus.PENDING_REVIEW ||
@@ -63,6 +65,7 @@ export class SellerApplicationValidatorService {
   }
 
   // Kiểm tra slug shop trùng trước khi save để trả lỗi nghiệp vụ rõ hơn lỗi unique index.
+  // applicationId bị loại khỏi truy vấn để một hồ sơ được phép lưu lại chính slug hiện tại của nó.
   async assertShopSlugAvailable(
     slug: string | null | undefined,
     applicationId?: string,
@@ -82,7 +85,8 @@ export class SellerApplicationValidatorService {
     }
   }
 
-  // Kiểm tra toàn bộ hồ sơ trước khi submit, bao gồm trường bắt buộc và master data thật.
+  // Chạy validation theo thứ tự rẻ trước, đắt sau: điều khoản và field local phải hợp lệ rồi mới gọi service bên ngoài.
+  // Cách này giảm request thừa tới catalog/location khi hồ sơ còn thiếu dữ liệu ngay trong seller-service.
   async assertApplicationReady(
     application: SellerApplication,
     acceptedTerms: boolean,
@@ -99,6 +103,7 @@ export class SellerApplicationValidatorService {
       });
     }
 
+    // Các ép kiểu dưới đây an toàn sau getMissingRequiredFields vì ID null/rỗng đã bị chặn trước khi gọi network.
     await this.assertCategoryExists(application.mainCategoryId as string);
     await this.assertLocationPairExists(
       application.pickupProvinceId as string,
@@ -106,7 +111,8 @@ export class SellerApplicationValidatorService {
     );
   }
 
-  // Tập trung rule bắt buộc theo profileType để cá nhân và doanh nghiệp không dùng nhầm giấy tờ.
+  // Gom rule submit vào một danh sách field-path để backend trả đúng vị trí lỗi cho form nhiều bước của FE.
+  // Giấy tờ bắt buộc thay đổi theo profileType, tránh yêu cầu CCCD đối với doanh nghiệp và ngược lại.
   private getMissingRequiredFields(application: SellerApplication): string[] {
     const requiredFields: Array<[string, unknown]> = [
       ["shop.name", application.shopName],
@@ -129,23 +135,56 @@ export class SellerApplicationValidatorService {
       ["payout.accountHolderName", application.bankAccountHolderName],
     ];
 
+    // Hồ sơ doanh nghiệp dùng giấy phép kinh doanh và giấy tờ người đại diện để admin đối chiếu pháp nhân.
     if (application.profileType === SellerProfileType.BUSINESS) {
       requiredFields.push(["seller.taxCode", application.taxCode]);
+      requiredFields.push([
+        "seller.documents.businessLicense",
+        this.getDocumentUrl(application, "businessLicense"),
+      ]);
+      requiredFields.push([
+        "seller.documents.representativeDocument",
+        this.getDocumentUrl(application, "representativeDocument"),
+      ]);
     } else {
+      // Hồ sơ cá nhân/hộ kinh doanh phải có đủ hai mặt CCCD để kiểm tra số và nhận diện người đăng ký.
       requiredFields.push(["seller.citizenId", application.citizenId]);
+      requiredFields.push([
+        "seller.documents.citizenIdFront",
+        this.getDocumentUrl(application, "citizenIdFront"),
+      ]);
+      requiredFields.push([
+        "seller.documents.citizenIdBack",
+        this.getDocumentUrl(application, "citizenIdBack"),
+      ]);
     }
 
+    // Dùng cùng quy tắc chuẩn hóa chuỗi với mapper để khoảng trắng cũng được xem là chưa nhập.
     return requiredFields
       .filter(([, value]) => !toNullableString(value as string | null))
       .map(([field]) => field);
   }
 
-  // Gọi catalog-service để đảm bảo category FE gửi lên vẫn tồn tại và còn active.
+  // Chỉ đọc thuộc tính url từ object giấy tờ; giá trị khác shape không được xem là tài liệu hợp lệ.
+  private getDocumentUrl(
+    application: SellerApplication,
+    key: string,
+  ): string | null {
+    const document = application.verificationDocuments?.[key];
+
+    if (!document || typeof document !== "object") return null;
+
+    const url = (document as Record<string, unknown>).url;
+    return typeof url === "string" ? url : null;
+  }
+
+  // Gọi trực tiếp catalog-service để xác nhận category còn active tại đúng thời điểm submit.
+  // 404 là dữ liệu người dùng không hợp lệ, còn lỗi timeout/5xx được chuyển thành 502 vì phụ thuộc đang gián đoạn.
   private async assertCategoryExists(categoryId: string): Promise<void> {
     try {
       const response = await firstValueFrom(
         this.http.get<ExternalCategoryResponse>(
-          `${this.catalogBaseUrl}/catalog/categories/${categoryId}`,
+          this.buildServiceUrl(this.catalogBaseUrl, `/categories/${categoryId}`),
         ),
       );
 
@@ -164,21 +203,22 @@ export class SellerApplicationValidatorService {
     }
   }
 
-  // Gọi location-service để đảm bảo phường/xã thuộc đúng tỉnh/thành đã chọn.
+  // Đọc tỉnh và phường song song vì hai tài nguyên độc lập, sau đó kiểm tra type, trạng thái và quan hệ cha-con.
   private async assertLocationPairExists(
     provinceId: string,
     wardId: string,
   ): Promise<void> {
     try {
+      // Promise.all giảm một vòng chờ network nhưng vẫn fail toàn bộ nếu một trong hai địa giới không đọc được.
       const [provinceResponse, wardResponse] = await Promise.all([
         firstValueFrom(
           this.http.get<ExternalLocationResponse>(
-            `${this.locationBaseUrl}/locations/${provinceId}`,
+            this.buildServiceUrl(this.locationBaseUrl, `/locations/${provinceId}`),
           ),
         ),
         firstValueFrom(
           this.http.get<ExternalLocationResponse>(
-            `${this.locationBaseUrl}/locations/${wardId}`,
+            this.buildServiceUrl(this.locationBaseUrl, `/locations/${wardId}`),
           ),
         ),
       ]);
@@ -186,6 +226,7 @@ export class SellerApplicationValidatorService {
       const province = provinceResponse.data;
       const ward = wardResponse.data;
 
+      // Không chỉ kiểm tra tồn tại: ID của district hoặc địa giới đã tắt cũng không được dùng làm địa chỉ lấy hàng.
       if (
         !province.isActive ||
         !ward.isActive ||
@@ -195,6 +236,7 @@ export class SellerApplicationValidatorService {
         throw new BadRequestException("Địa chỉ lấy hàng không hợp lệ.");
       }
 
+      // Dataset hiện tại tổ chức province -> ward trực tiếp; rule này phải đổi nếu sau này thêm cấp district bắt buộc.
       if (ward.parentId !== province.id) {
         throw new BadRequestException(
           "Phường/xã không thuộc tỉnh/thành đã chọn.",
@@ -210,7 +252,12 @@ export class SellerApplicationValidatorService {
     }
   }
 
-  // Nhận diện lỗi HTTP từ các service master data để chuyển thành lỗi nghiệp vụ dễ hiểu.
+  // Chuẩn hóa dấu gạch cuối base URL rồi ghép prefix nội bộ /api/v1 để tránh sinh URL có hai dấu //.
+  private buildServiceUrl(baseUrl: string, path: string): string {
+    return `${baseUrl.replace(/\/$/, "")}/api/v1${path}`;
+  }
+
+  // Chỉ bóc status từ AxiosError; lỗi code nội bộ không bị hiểu nhầm thành phản hồi HTTP của downstream service.
   private isAxiosStatus(err: unknown, status: number): boolean {
     return err instanceof AxiosError && err.response?.status === status;
   }

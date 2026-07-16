@@ -6,6 +6,7 @@ import {
   Length,
   Matches,
   MaxLength,
+  ValidateIf,
 } from "class-validator";
 import { SellerProfileType } from "../../../../../database/enums/seller-profile-type.enum";
 
@@ -19,17 +20,27 @@ export class SellerInfoDto {
   @Length(2, 180)
   legalName?: string;
 
-  @IsOptional()
+  // Draft chỉ validate CCCD khi FE đang gửi hồ sơ cá nhân và có giá trị; tính bắt buộc được kiểm tra lúc submit.
+  @ValidateIf(
+    (dto: SellerInfoDto) =>
+      dto.profileType === SellerProfileType.INDIVIDUAL &&
+      dto.citizenId !== undefined,
+  )
   @IsString()
   @Matches(/^(\d{9}|\d{12})$/, {
-    message: "citizenId must contain 9 or 12 digits",
+    message: "Số CCCD cần gồm 9 hoặc 12 số",
   })
   citizenId?: string;
 
-  @IsOptional()
+  // Draft chỉ validate mã số thuế khi FE đang gửi hồ sơ doanh nghiệp và có giá trị; submit mới bắt buộc field này.
+  @ValidateIf(
+    (dto: SellerInfoDto) =>
+      dto.profileType === SellerProfileType.BUSINESS &&
+      dto.taxCode !== undefined,
+  )
   @IsString()
   @Matches(/^(\d{10}|\d{13})$/, {
-    message: "taxCode must contain 10 or 13 digits",
+    message: "Mã số thuế cần gồm 10 hoặc 13 số",
   })
   taxCode?: string;
 
@@ -54,6 +65,7 @@ export class SellerInfoDto {
   @IsEmail()
   email?: string;
 
+  // Shape tài liệu còn linh hoạt theo profileType; validator application sẽ kiểm tra đúng key/url bắt buộc khi submit.
   @IsOptional()
   documents?: Record<string, unknown>;
 }

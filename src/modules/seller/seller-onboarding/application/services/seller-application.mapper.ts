@@ -8,11 +8,13 @@ import { toNullableString } from "../utils/seller-application-string.util";
 
 @Injectable()
 export class SellerApplicationMapper {
-  // Áp dữ liệu DTO vào entity theo từng nhóm để tránh body từ FE ghi thẳng vào field nhạy cảm.
+  // Áp từng section DTO vào whitelist field của entity; status, review và audit field không bao giờ được nhận từ FE.
+  // Mỗi section có mặt được xem là snapshot mới của bước đó, còn section không gửi lên được giữ nguyên.
   applyDto(
     application: SellerApplication,
     dto: SaveSellerApplicationDto,
   ): void {
+    // Thông tin nhận diện shop được lưu riêng với dữ liệu pháp lý để các bước onboarding có thể lưu độc lập.
     if (dto.shop) {
       application.shopName = toNullableString(dto.shop.name);
       application.shopSlug = toNullableString(dto.shop.slug);
@@ -22,12 +24,19 @@ export class SellerApplicationMapper {
       application.logoUrl = toNullableString(dto.shop.logoUrl);
     }
 
+    // Khi user đổi loại hồ sơ, xóa mã định danh của loại cũ để không lưu đồng thời CCCD và mã số thuế trái nghiệp vụ.
     if (dto.seller) {
-      application.profileType =
-        dto.seller.profileType ?? SellerProfileType.INDIVIDUAL;
+      const profileType = dto.seller.profileType ?? SellerProfileType.INDIVIDUAL;
+      application.profileType = profileType;
       application.legalName = toNullableString(dto.seller.legalName);
-      application.citizenId = toNullableString(dto.seller.citizenId);
-      application.taxCode = toNullableString(dto.seller.taxCode);
+      application.citizenId =
+        profileType === SellerProfileType.INDIVIDUAL
+          ? toNullableString(dto.seller.citizenId)
+          : null;
+      application.taxCode =
+        profileType === SellerProfileType.BUSINESS
+          ? toNullableString(dto.seller.taxCode)
+          : null;
       application.representativeName = toNullableString(
         dto.seller.representativeName,
       );
@@ -39,6 +48,7 @@ export class SellerApplicationMapper {
       application.verificationDocuments = dto.seller.documents ?? {};
     }
 
+    // Chỉ lưu ID master data; tên tỉnh/phường được location-service quản lý và tra cứu khi cần hiển thị.
     if (dto.pickupAddress) {
       application.pickupContactName = toNullableString(
         dto.pickupAddress.contactName,
@@ -53,6 +63,7 @@ export class SellerApplicationMapper {
       );
     }
 
+    // Payout mới là dữ liệu khai báo chờ đối soát, chưa phải tài khoản thanh toán đã được xác minh.
     if (dto.payout) {
       application.bankCode = toNullableString(dto.payout.bankCode);
       application.bankName = toNullableString(dto.payout.bankName);
@@ -68,7 +79,7 @@ export class SellerApplicationMapper {
     }
   }
 
-  // Chuyển entity sang response contract để FE không phụ thuộc cấu trúc bảng.
+  // Chuyển entity sang response contract theo đúng các section của form để FE khôi phục nháp mà không phụ thuộc tên cột DB.
   toResponse(application: SellerApplication): SellerApplicationResponseDto {
     return {
       id: application.id,

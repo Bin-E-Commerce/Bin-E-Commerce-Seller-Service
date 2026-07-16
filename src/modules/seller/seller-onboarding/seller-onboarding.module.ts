@@ -13,7 +13,8 @@ import { SellerApplicationsController } from "./presentation/controllers/seller-
 @Module({
   imports: [
     TypeOrmModule.forFeature([SellerApplication]),
-    HttpModule,
+    // Cấu hình HTTP ngay tại feature sở hữu integration để mọi request catalog/location đều có timeout và không theo redirect lạ.
+    HttpModule.register({ timeout: 5000, maxRedirects: 0 }),
     KafkaModule,
   ],
   controllers: [SellerApplicationsController],
