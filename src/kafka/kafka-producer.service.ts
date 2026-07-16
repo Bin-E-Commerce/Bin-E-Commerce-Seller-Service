@@ -12,6 +12,7 @@ export class KafkaProducerService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(KafkaProducerService.name);
   private readonly producer: Producer;
 
+  // Khởi tạo một producer dùng chung cho vòng đời process; broker list được chuẩn hóa từ biến môi trường phân cách bằng dấu phẩy.
   constructor(private readonly config: ConfigService) {
     const brokers = this.config
       .get<string>("KAFKA_BROKERS", "localhost:29092")
@@ -19,6 +20,7 @@ export class KafkaProducerService implements OnModuleInit, OnModuleDestroy {
       .map((broker) => broker.trim())
       .filter(Boolean);
 
+    // Retry ở client xử lý lỗi mạng ngắn hạn; lỗi sau cùng vẫn được publish() ghi log để request chính không bị crash.
     const kafka = new Kafka({
       clientId: this.config.get<string>("KAFKA_CLIENT_ID", "seller-service"),
       brokers,
@@ -28,7 +30,7 @@ export class KafkaProducerService implements OnModuleInit, OnModuleDestroy {
     this.producer = kafka.producer();
   }
 
-  // Kết nối Kafka khi service khởi động; lỗi Kafka không được chặn luồng đăng ký seller chính.
+  // Kết nối Kafka khi service khởi động; lỗi Kafka không chặn HTTP server để môi trường local vẫn lưu được hồ sơ.
   async onModuleInit(): Promise<void> {
     try {
       await this.producer.connect();
@@ -45,7 +47,8 @@ export class KafkaProducerService implements OnModuleInit, OnModuleDestroy {
     await this.producer.disconnect().catch(() => void 0);
   }
 
-  // Publish event dạng JSON để các service khác có thể consume mà không cần biết entity nội bộ.
+  // Publish JSON contract thay vì entity để consumer không phụ thuộc schema bảng của seller-service.
+  // Hàm hiện dùng chiến lược best-effort: lỗi được log nhưng không rollback nghiệp vụ đã lưu trong DB.
   async publish(topic: string, payload: unknown): Promise<void> {
     try {
       await this.producer.send({

@@ -8,7 +8,8 @@ import { CurrentUserContext } from "../types/current-user-context.type";
 
 @Injectable()
 export class SellerApplicationAuthService {
-  // Tạo context user từ headers do API Gateway inject; service không tin dữ liệu truyền từ body.
+  // Tạo context xác thực duy nhất từ header nội bộ do API Gateway inject; tuyệt đối không lấy userId/email từ request body.
+  // Ranh giới tin cậy này chỉ an toàn khi seller-service không được public trực tiếp ra Internet.
   buildCurrentUserFromHeaders(
     headers: Record<string, unknown>,
   ): CurrentUserContext {
@@ -18,6 +19,7 @@ export class SellerApplicationAuthService {
     const permissionsHeader =
       this.getHeaderValue(headers, "x-user-permissions") ?? "";
 
+    // Header role và permission là chuỗi phân cách bằng dấu phẩy để gateway truyền qua HTTP mà không làm mất nhiều giá trị.
     return {
       userId: userId ?? "",
       email: email ?? "",
@@ -26,7 +28,7 @@ export class SellerApplicationAuthService {
     };
   }
 
-  // Đảm bảo downstream chỉ xử lý người dùng đã đăng nhập và đã có email trong token.
+  // Chặn request thiếu danh tính trước khi truy vấn DB; email cũng bắt buộc vì được dùng làm địa chỉ nhận thông báo hồ sơ.
   ensureAuthenticatedUser(
     currentUser: CurrentUserContext,
   ): CurrentUserContext {
@@ -39,7 +41,7 @@ export class SellerApplicationAuthService {
     return currentUser;
   }
 
-  // Chỉ tài khoản có quyền đọc hồ sơ seller mới được xem danh sách trong Admin Center.
+  // Kiểm tra permission cụ thể thay vì tên role để ADMIN và SUPPORT_AGENT có thể dùng chung nghiệp vụ review theo RBAC.
   ensureStaffUser(currentUser: CurrentUserContext): CurrentUserContext {
     const user = this.ensureAuthenticatedUser(currentUser);
     const hasReviewPermission = user.permissions.includes(
@@ -55,7 +57,7 @@ export class SellerApplicationAuthService {
     return user;
   }
 
-  // Đọc header dạng lowercase vì Node/Nest chuẩn hóa header request thành lowercase.
+  // Đọc an toàn cả header đơn và header lặp; Node/Nest chuẩn hóa tên header request thành lowercase.
   private getHeaderValue(
     headers: Record<string, unknown>,
     key: string,
@@ -65,7 +67,7 @@ export class SellerApplicationAuthService {
     return typeof value === "string" ? value : undefined;
   }
 
-  // Tách chuỗi header phân cách bằng dấu phẩy thành mảng ổn định để dùng cho role/permission.
+  // Loại khoảng trắng và phần tử rỗng để phép includes() phía sau không bị sai vì định dạng header.
   private parseHeaderList(value: string): string[] {
     return value
       .split(",")
