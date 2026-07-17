@@ -9,6 +9,7 @@ import {
 import { PayoutAccountType } from "../enums/payout-account-type.enum";
 import { SellerApplicationStatus } from "../enums/seller-application-status.enum";
 import { SellerProfileType } from "../enums/seller-profile-type.enum";
+import { SellerApplicationCorrectionTarget } from "../enums/seller-application-correction-target.enum";
 
 @Entity("seller_applications")
 @Index(["userId"], { unique: true })
@@ -208,6 +209,28 @@ export class SellerApplication {
   // Ghi chú admin khi từ chối hoặc yêu cầu bổ sung.
   @Column({ name: "review_note", type: "text", nullable: true })
   reviewNote: string | null;
+
+  // Các nhóm dữ liệu admin yêu cầu sửa; seller phải thay đổi từng nhóm trước khi backend nhận lần gửi kế tiếp.
+  @Column({
+    name: "correction_targets",
+    type: "jsonb",
+    default: () => "'[]'::jsonb",
+  })
+  correctionTargets: SellerApplicationCorrectionTarget[];
+
+  // Chỉ lưu SHA-256 của snapshot theo nhóm để so sánh thay đổi mà không nhân bản thêm dữ liệu CCCD, ngân hàng hay giấy tờ nhạy cảm.
+  @Column({
+    name: "correction_snapshot_hashes",
+    type: "jsonb",
+    default: () => "'{}'::jsonb",
+  })
+  correctionSnapshotHashes: Partial<
+    Record<SellerApplicationCorrectionTarget, string>
+  >;
+
+  // Tăng sau mỗi lần gửi thành công để admin phân biệt các phiên bản hồ sơ qua nhiều vòng bổ sung.
+  @Column({ name: "submission_revision", type: "int", default: 0 })
+  submissionRevision: number;
 
   // Metadata mở rộng cho các tích hợp tương lai như OCR, bank verification hoặc fraud score.
   @Column({ type: "jsonb", default: () => "'{}'::jsonb" })

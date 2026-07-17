@@ -89,6 +89,8 @@ export class SellerApplicationMapper {
       submittedAt: application.submittedAt,
       reviewedAt: application.reviewedAt,
       reviewNote: application.reviewNote,
+      correctionTargets: application.correctionTargets ?? [],
+      submissionRevision: application.submissionRevision ?? 0,
       shop: {
         name: application.shopName,
         slug: application.shopSlug,

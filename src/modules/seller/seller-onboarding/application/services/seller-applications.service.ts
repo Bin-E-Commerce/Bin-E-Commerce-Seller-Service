@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -12,6 +13,7 @@ import { SellerApplicationStatus } from "../../../../../database/enums/seller-ap
 import { SellerProfileType } from "../../../../../database/enums/seller-profile-type.enum";
 import { ListSellerApplicationsQueryDto } from "../../presentation/dto/list-seller-applications-query.dto";
 import { ListSellerApplicationsResponseDto } from "../../presentation/dto/list-seller-applications-response.dto";
+import { RejectSellerApplicationDto } from "../../presentation/dto/reject-seller-application.dto";
 import { SaveSellerApplicationDto } from "../../presentation/dto/save-seller-application.dto";
 import { SellerApplicationResponseDto } from "../../presentation/dto/seller-application-response.dto";
 import { CurrentUserContext } from "../types/current-user-context.type";
@@ -19,6 +21,7 @@ import { SellerApplicationAuthService } from "./seller-application-auth.service"
 import { SellerApplicationEventsService } from "./seller-application-events.service";
 import { SellerApplicationMapper } from "./seller-application.mapper";
 import { SellerApplicationValidatorService } from "./seller-application-validator.service";
+import { SellerApplicationCorrectionService } from "./seller-application-correction.service";
 
 @Injectable()
 export class SellerApplicationsService {
@@ -30,6 +33,7 @@ export class SellerApplicationsService {
     private readonly validator: SellerApplicationValidatorService,
     private readonly mapper: SellerApplicationMapper,
     private readonly events: SellerApplicationEventsService,
+    private readonly corrections: SellerApplicationCorrectionService,
   ) {}
 
   // Lấy hồ sơ theo userId từ context tin cậy; trả null để FE phân biệt "chưa bắt đầu" với một bản DRAFT rỗng.
@@ -112,6 +116,57 @@ export class SellerApplicationsService {
     return this.mapper.toResponse(application);
   }
 
+  // Từ chối một hồ sơ đang chờ duyệt, lưu lý do cho seller và phát sự kiện email sau khi trạng thái đã được ghi thành công.
+  async rejectForAdmin(
+    currentUser: CurrentUserContext,
+    applicationId: string,
+    dto: RejectSellerApplicationDto,
+  ): Promise<SellerApplicationResponseDto> {
+    this.auth.ensureCanRejectApplication(currentUser);
+
+    const reviewNote = dto.reason.trim();
+    const reviewedAt = new Date();
+
+    // Khóa hàng trong transaction để snapshot luôn được chụp từ đúng phiên bản mà admin vừa từ chối.
+    // Nếu seller hoặc admin khác đang cập nhật cùng lúc, request đến sau phải chờ và đọc lại trạng thái mới nhất.
+    const rejected = await this.applicationRepository.manager.transaction(
+      async (manager) => {
+        const repository = manager.getRepository(SellerApplication);
+        const application = await repository.findOne({
+          where: { id: applicationId },
+          lock: { mode: "pessimistic_write" },
+        });
+
+        if (!application) {
+          throw new NotFoundException("Không tìm thấy hồ sơ người bán.");
+        }
+
+        if (application.status !== SellerApplicationStatus.PENDING_REVIEW) {
+          throw new ConflictException(
+            "Hồ sơ đã được xử lý hoặc không còn ở trạng thái chờ duyệt.",
+          );
+        }
+
+        // Snapshot chỉ chứa hash của từng nhóm được chọn, đủ kiểm chứng thay đổi mà không nhân bản CCCD hoặc tài khoản ngân hàng.
+        application.correctionSnapshotHashes =
+          this.corrections.captureSnapshotHashes(
+            application,
+            dto.correctionTargets,
+          );
+        application.correctionTargets = dto.correctionTargets;
+        application.status = SellerApplicationStatus.REJECTED;
+        application.reviewNote = reviewNote;
+        application.reviewedAt = reviewedAt;
+
+        return repository.save(application);
+      },
+    );
+
+    // Publish sau khi update thành công để email không báo từ chối khi DB vẫn còn pending_review.
+    await this.events.publishRejectedEmail(rejected);
+    return this.mapper.toResponse(rejected);
+  }
+
   // Lưu snapshot của các bước được gửi lên mà chưa chạy rule đầy đủ; user có thể thoát và tiếp tục onboarding sau.
   async saveDraft(
     currentUser: CurrentUserContext,
@@ -120,8 +175,8 @@ export class SellerApplicationsService {
     const user = this.auth.ensureAuthenticatedUser(currentUser);
     const application = await this.getOrCreateDraft(user);
 
-    // Hồ sơ đã gửi duyệt hoặc đã được duyệt không được sửa bằng luồng nháp để tránh thay đổi dữ liệu admin đang xử lý.
-    this.validator.assertEditable(application);
+    // Hồ sơ bị từ chối không được chuyển ngược thành draft; seller phải sửa trong form và gửi lại thành một revision mới.
+    this.validator.assertDraftSaveAllowed(application);
 
     // Slug shop là định danh public, nên kiểm tra trùng trước khi map DTO để tránh tự so với chính bản ghi hiện tại.
     await this.validator.assertShopSlugAvailable(
@@ -131,6 +186,7 @@ export class SellerApplicationsService {
 
     // Mapper chịu trách nhiệm chuẩn hóa input rỗng thành null và chỉ copy các field được phép từ DTO vào entity.
     this.mapper.applyDto(application, dto);
+
     application.status = SellerApplicationStatus.DRAFT;
 
     // save() vừa INSERT bản nháp mới vừa UPDATE hồ sơ cũ; unique index DB vẫn là lớp bảo vệ cuối cho userId/slug.
@@ -147,7 +203,7 @@ export class SellerApplicationsService {
     const application = await this.getOrCreateDraft(user);
 
     // Submit chỉ hợp lệ với hồ sơ còn có thể chỉnh sửa, tránh user gửi lại hồ sơ đang pending hoặc đã approved.
-    this.validator.assertEditable(application);
+    this.validator.assertSubmissionAllowed(application);
 
     // Kiểm tra slug trước khi đổi dữ liệu entity để lỗi trả về đúng ngữ cảnh field user vừa nhập.
     await this.validator.assertShopSlugAvailable(
@@ -156,6 +212,17 @@ export class SellerApplicationsService {
     );
 
     this.mapper.applyDto(application, dto);
+
+    // Chỉ chặn ở thời điểm gửi duyệt; lưu nháp vẫn được phép để seller sửa từng nhóm qua nhiều lần làm việc.
+    const unchangedCorrectionTargets =
+      this.corrections.getUnchangedTargets(application);
+    if (unchangedCorrectionTargets.length > 0) {
+      throw new BadRequestException({
+        message:
+          "Hồ sơ chưa cập nhật đầy đủ các nội dung được yêu cầu chỉnh sửa.",
+        unchangedCorrectionTargets,
+      });
+    }
 
     // Rule submit nằm ở backend để FE không thể bypass các field bắt buộc, category/location thật và điều khoản.
     await this.validator.assertApplicationReady(
@@ -168,6 +235,10 @@ export class SellerApplicationsService {
     application.submittedAt = new Date();
     application.reviewNote = null;
     application.reviewedAt = null;
+    application.correctionTargets = [];
+    application.correctionSnapshotHashes = {};
+    application.submissionRevision =
+      (application.submissionRevision ?? 0) + 1;
 
     const saved = await this.applicationRepository.save(application);
 
@@ -247,6 +318,7 @@ export class SellerApplicationsService {
         submittedAt: new Date(),
         reviewedAt: null,
         reviewNote: null,
+        submissionRevision: (application.submissionRevision ?? 0) + 1,
       },
     );
 
@@ -283,7 +355,7 @@ export class SellerApplicationsService {
       where: { userId: user.userId },
     });
 
-    // Luôn trả hồ sơ bất kể trạng thái; assertEditable phía use case quyết định có được thay đổi hay không.
+    // Luôn trả hồ sơ bất kể trạng thái; validator của từng use case quyết định thao tác nào được phép.
     if (existing) return existing;
 
     // Giá trị mặc định giúp form bước đầu có loại hồ sơ và loại tài khoản thanh toán ổn định ngay cả khi FE chưa gửi.

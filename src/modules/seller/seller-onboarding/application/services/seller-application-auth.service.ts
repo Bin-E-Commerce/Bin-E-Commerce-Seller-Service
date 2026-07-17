@@ -57,6 +57,21 @@ export class SellerApplicationAuthService {
     return user;
   }
 
+  // Bảo vệ riêng thao tác từ chối vì quyền đọc hồ sơ không đồng nghĩa với quyền thay đổi trạng thái hồ sơ.
+  ensureCanRejectApplication(
+    currentUser: CurrentUserContext,
+  ): CurrentUserContext {
+    const user = this.ensureAuthenticatedUser(currentUser);
+
+    if (!user.permissions.includes(Permission.SELLER_APPLICATION_REJECT)) {
+      throw new ForbiddenException(
+        "Bạn không có quyền từ chối hồ sơ đăng ký người bán.",
+      );
+    }
+
+    return user;
+  }
+
   // Đọc an toàn cả header đơn và header lặp; Node/Nest chuẩn hóa tên header request thành lowercase.
   private getHeaderValue(
     headers: Record<string, unknown>,

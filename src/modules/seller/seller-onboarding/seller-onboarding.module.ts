@@ -8,6 +8,7 @@ import { SellerApplicationEventsService } from "./application/services/seller-ap
 import { SellerApplicationMapper } from "./application/services/seller-application.mapper";
 import { SellerApplicationsService } from "./application/services/seller-applications.service";
 import { SellerApplicationValidatorService } from "./application/services/seller-application-validator.service";
+import { SellerApplicationCorrectionService } from "./application/services/seller-application-correction.service";
 import { SellerApplicationsController } from "./presentation/controllers/seller-applications.controller";
 
 @Module({
@@ -24,6 +25,7 @@ import { SellerApplicationsController } from "./presentation/controllers/seller-
     SellerApplicationEventsService,
     SellerApplicationMapper,
     SellerApplicationValidatorService,
+    SellerApplicationCorrectionService,
   ],
 })
 export class SellerOnboardingModule {}

@@ -1,6 +1,7 @@
 import { PayoutAccountType } from "../../../../../database/enums/payout-account-type.enum";
 import { SellerApplicationStatus } from "../../../../../database/enums/seller-application-status.enum";
 import { SellerProfileType } from "../../../../../database/enums/seller-profile-type.enum";
+import { SellerApplicationCorrectionTarget } from "../../../../../database/enums/seller-application-correction-target.enum";
 
 export interface SellerApplicationResponseDto {
   id: string;
@@ -10,6 +11,8 @@ export interface SellerApplicationResponseDto {
   submittedAt: Date | null;
   reviewedAt: Date | null;
   reviewNote: string | null;
+  correctionTargets: SellerApplicationCorrectionTarget[];
+  submissionRevision: number;
   shop: {
     name: string | null;
     slug: string | null;

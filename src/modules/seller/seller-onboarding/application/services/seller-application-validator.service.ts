@@ -52,8 +52,17 @@ export class SellerApplicationValidatorService {
     );
   }
 
-  // Chỉ DRAFT/REJECTED được chỉnh; khóa PENDING_REVIEW để dữ liệu admin đang đối chiếu không thay đổi giữa chừng.
-  assertEditable(application: SellerApplication): void {
+  // Lưu nháp chỉ dành cho hồ sơ chưa từng gửi; hồ sơ bị trả lại phải giữ nguyên mốc review cho đến khi seller gửi lại thành công.
+  assertDraftSaveAllowed(application: SellerApplication): void {
+    if (application.status !== SellerApplicationStatus.DRAFT) {
+      throw new ForbiddenException(
+        "Chỉ hồ sơ đang ở trạng thái nháp mới có thể lưu nháp.",
+      );
+    }
+  }
+
+  // Chỉ DRAFT/REJECTED được gửi duyệt; khóa PENDING_REVIEW để dữ liệu admin đang đối chiếu không thay đổi giữa chừng.
+  assertSubmissionAllowed(application: SellerApplication): void {
     if (
       application.status === SellerApplicationStatus.PENDING_REVIEW ||
       application.status === SellerApplicationStatus.APPROVED

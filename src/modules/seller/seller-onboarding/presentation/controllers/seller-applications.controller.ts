@@ -11,6 +11,7 @@ import {
 } from "@nestjs/common";
 import { SellerApplicationsService } from "../../application/services/seller-applications.service";
 import { ListSellerApplicationsQueryDto } from "../dto/list-seller-applications-query.dto";
+import { RejectSellerApplicationDto } from "../dto/reject-seller-application.dto";
 import { SaveSellerApplicationDto } from "../dto/save-seller-application.dto";
 
 @Controller("seller/applications")
@@ -48,6 +49,22 @@ export class SellerApplicationsController {
     const currentUser =
       this.sellerApplicationsService.buildCurrentUserFromHeaders(headers);
     return this.sellerApplicationsService.getForAdmin(currentUser, id);
+  }
+
+  // Nhận lệnh từ chối từ Admin Center; service kiểm tra lại permission và trạng thái để bảo vệ cả khi bị gọi ngoài gateway.
+  @Post("admin/:id/reject")
+  rejectForAdmin(
+    @Headers() headers: Record<string, unknown>,
+    @Param("id", new ParseUUIDPipe({ version: "4" })) id: string,
+    @Body() dto: RejectSellerApplicationDto,
+  ) {
+    const currentUser =
+      this.sellerApplicationsService.buildCurrentUserFromHeaders(headers);
+    return this.sellerApplicationsService.rejectForAdmin(
+      currentUser,
+      id,
+      dto,
+    );
   }
 
   // Lưu nháp từng bước; danh tính luôn lấy từ header gateway, không nhận userId do trình duyệt gửi trong body.
