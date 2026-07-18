@@ -163,7 +163,7 @@ export class SellerApplicationsService {
     );
 
     // Publish sau khi update thành công để email không báo từ chối khi DB vẫn còn pending_review.
-    await this.events.publishRejectedEmail(rejected);
+    await this.events.publishRejected(rejected);
     return this.mapper.toResponse(rejected);
   }
 
@@ -243,7 +243,7 @@ export class SellerApplicationsService {
     const saved = await this.applicationRepository.save(application);
 
     // Kafka event gửi sau khi DB save thành công để email không thông báo một hồ sơ chưa tồn tại hoặc chưa đúng trạng thái.
-    await this.events.publishSubmittedEmail(saved);
+    await this.events.publishSubmitted(saved);
 
     return this.mapper.toResponse(saved);
   }
@@ -336,7 +336,7 @@ export class SellerApplicationsService {
       throw new NotFoundException("Không tìm thấy hồ sơ người bán.");
     }
 
-    await this.events.publishSubmittedEmail(saved);
+    await this.events.publishSubmitted(saved);
     return this.mapper.toResponse(saved);
   }
 

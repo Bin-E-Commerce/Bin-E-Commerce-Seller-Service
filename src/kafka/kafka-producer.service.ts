@@ -49,11 +49,21 @@ export class KafkaProducerService implements OnModuleInit, OnModuleDestroy {
 
   // Publish JSON contract thay vì entity để consumer không phụ thuộc schema bảng của seller-service.
   // Hàm hiện dùng chiến lược best-effort: lỗi được log nhưng không rollback nghiệp vụ đã lưu trong DB.
-  async publish(topic: string, payload: unknown): Promise<void> {
+  async publish(
+    topic: string,
+    payload: unknown,
+    aggregateKey?: string,
+  ): Promise<void> {
     try {
       await this.producer.send({
         topic,
-        messages: [{ value: JSON.stringify(payload) }],
+        // Kafka giữ thứ tự trong cùng partition; aggregate key đảm bảo các lần submit/review của một hồ sơ đi cùng partition.
+        messages: [
+          {
+            key: aggregateKey,
+            value: JSON.stringify(payload),
+          },
+        ],
       });
     } catch (err) {
       this.logger.error(
