@@ -70,4 +70,34 @@ export class SellerApplicationEventsService {
       application.id,
     );
   }
+
+  // Phát fact hồ sơ đã được duyệt để Auth Service cấp role SELLER và Notification Service thông báo cho người dùng.
+  async publishApproved(application: SellerApplication): Promise<void> {
+    const occurredAt =
+      application.reviewedAt?.toISOString() ?? new Date().toISOString();
+    const event: SellerApplicationReviewedEvent = {
+      eventId: randomUUID(),
+      eventName: SellerEvents.APPLICATION_APPROVED,
+      eventVersion: 1,
+      source: "seller-service",
+      occurredAt,
+      aggregateId: application.id,
+      data: {
+        applicationId: application.id,
+        userId: application.userId,
+        email: application.userEmail,
+        shopName: application.shopName ?? "Shop của bạn",
+        reviewedAt: occurredAt,
+        reviewNote: application.reviewNote,
+        correctionTargets: [],
+        submissionRevision: application.submissionRevision ?? 1,
+      },
+    };
+
+    await this.kafkaProducer.publish(
+      SellerEvents.APPLICATION_APPROVED,
+      event,
+      application.id,
+    );
+  }
 }

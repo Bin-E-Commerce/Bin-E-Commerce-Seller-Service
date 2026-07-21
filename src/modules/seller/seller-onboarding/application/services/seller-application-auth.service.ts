@@ -29,9 +29,7 @@ export class SellerApplicationAuthService {
   }
 
   // Chặn request thiếu danh tính trước khi truy vấn DB; email cũng bắt buộc vì được dùng làm địa chỉ nhận thông báo hồ sơ.
-  ensureAuthenticatedUser(
-    currentUser: CurrentUserContext,
-  ): CurrentUserContext {
+  ensureAuthenticatedUser(currentUser: CurrentUserContext): CurrentUserContext {
     if (!currentUser.userId || !currentUser.email) {
       throw new UnauthorizedException(
         "Bạn cần đăng nhập để đăng ký người bán.",
@@ -66,6 +64,21 @@ export class SellerApplicationAuthService {
     if (!user.permissions.includes(Permission.SELLER_APPLICATION_REJECT)) {
       throw new ForbiddenException(
         "Bạn không có quyền từ chối hồ sơ đăng ký người bán.",
+      );
+    }
+
+    return user;
+  }
+
+  // Bảo vệ riêng thao tác duyệt vì quyền xem hồ sơ không đồng nghĩa với quyền kích hoạt người bán.
+  ensureCanApproveApplication(
+    currentUser: CurrentUserContext,
+  ): CurrentUserContext {
+    const user = this.ensureAuthenticatedUser(currentUser);
+
+    if (!user.permissions.includes(Permission.SELLER_APPLICATION_APPROVE)) {
+      throw new ForbiddenException(
+        "Bạn không có quyền chấp thuận hồ sơ đăng ký người bán.",
       );
     }
 

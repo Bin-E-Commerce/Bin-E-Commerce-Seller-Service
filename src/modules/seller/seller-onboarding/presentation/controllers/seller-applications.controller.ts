@@ -60,11 +60,18 @@ export class SellerApplicationsController {
   ) {
     const currentUser =
       this.sellerApplicationsService.buildCurrentUserFromHeaders(headers);
-    return this.sellerApplicationsService.rejectForAdmin(
-      currentUser,
-      id,
-      dto,
-    );
+    return this.sellerApplicationsService.rejectForAdmin(currentUser, id, dto);
+  }
+
+  // Nhận lệnh chấp thuận từ Admin Center; service tiếp tục kiểm tra permission và khóa trạng thái để chống xử lý trùng.
+  @Post("admin/:id/approve")
+  approveForAdmin(
+    @Headers() headers: Record<string, unknown>,
+    @Param("id", new ParseUUIDPipe({ version: "4" })) id: string,
+  ) {
+    const currentUser =
+      this.sellerApplicationsService.buildCurrentUserFromHeaders(headers);
+    return this.sellerApplicationsService.approveForAdmin(currentUser, id);
   }
 
   // Lưu nháp từng bước; danh tính luôn lấy từ header gateway, không nhận userId do trình duyệt gửi trong body.

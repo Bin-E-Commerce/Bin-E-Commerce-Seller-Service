@@ -167,6 +167,48 @@ export class SellerApplicationsService {
     return this.mapper.toResponse(rejected);
   }
 
+  // Chấp thuận hồ sơ đang chờ duyệt và chỉ phát sự kiện cấp quyền sau khi transaction đã ghi nhận trạng thái thành công.
+  async approveForAdmin(
+    currentUser: CurrentUserContext,
+    applicationId: string,
+  ): Promise<SellerApplicationResponseDto> {
+    this.auth.ensureCanApproveApplication(currentUser);
+
+    // Khóa bản ghi để hai admin không thể duyệt hoặc từ chối cùng một hồ sơ tại cùng thời điểm.
+    const approved = await this.applicationRepository.manager.transaction(
+      async (manager) => {
+        const repository = manager.getRepository(SellerApplication);
+        const application = await repository.findOne({
+          where: { id: applicationId },
+          lock: { mode: "pessimistic_write" },
+        });
+
+        if (!application) {
+          throw new NotFoundException("Không tìm thấy hồ sơ người bán.");
+        }
+
+        if (application.status !== SellerApplicationStatus.PENDING_REVIEW) {
+          throw new ConflictException(
+            "Hồ sơ đã được xử lý hoặc không còn ở trạng thái chờ duyệt.",
+          );
+        }
+
+        // Xóa toàn bộ yêu cầu sửa cũ vì phiên bản hiện tại đã được admin xác nhận hợp lệ.
+        application.status = SellerApplicationStatus.APPROVED;
+        application.reviewedAt = new Date();
+        application.reviewNote = null;
+        application.correctionTargets = [];
+        application.correctionSnapshotHashes = {};
+
+        return repository.save(application);
+      },
+    );
+
+    // Kafka event được phát sau commit để consumer không cấp role SELLER cho một transaction đã rollback.
+    await this.events.publishApproved(approved);
+    return this.mapper.toResponse(approved);
+  }
+
   // Lưu snapshot của các bước được gửi lên mà chưa chạy rule đầy đủ; user có thể thoát và tiếp tục onboarding sau.
   async saveDraft(
     currentUser: CurrentUserContext,
@@ -237,8 +279,7 @@ export class SellerApplicationsService {
     application.reviewedAt = null;
     application.correctionTargets = [];
     application.correctionSnapshotHashes = {};
-    application.submissionRevision =
-      (application.submissionRevision ?? 0) + 1;
+    application.submissionRevision = (application.submissionRevision ?? 0) + 1;
 
     const saved = await this.applicationRepository.save(application);
 
