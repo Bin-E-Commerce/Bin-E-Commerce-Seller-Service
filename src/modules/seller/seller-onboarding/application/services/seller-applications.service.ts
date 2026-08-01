@@ -8,6 +8,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import type { QueryDeepPartialEntity } from "typeorm/query-builder/QueryPartialEntity";
 import { SellerApplication } from "../../../../../database/entities/seller-application.entity";
+import { Shop } from "../../../../../database/entities/shop.entity";
 import { PayoutAccountType } from "../../../../../database/enums/payout-account-type.enum";
 import { SellerApplicationStatus } from "../../../../../database/enums/seller-application-status.enum";
 import { SellerProfileType } from "../../../../../database/enums/seller-profile-type.enum";
@@ -22,6 +23,7 @@ import { SellerApplicationEventsService } from "./seller-application-events.serv
 import { SellerApplicationMapper } from "./seller-application.mapper";
 import { SellerApplicationValidatorService } from "./seller-application-validator.service";
 import { SellerApplicationCorrectionService } from "./seller-application-correction.service";
+import { mapApprovedApplicationToShop } from "../../../shop-profile/application/utils/shop-provisioning.util";
 
 @Injectable()
 export class SellerApplicationsService {
@@ -178,6 +180,7 @@ export class SellerApplicationsService {
     const approved = await this.applicationRepository.manager.transaction(
       async (manager) => {
         const repository = manager.getRepository(SellerApplication);
+        const shopRepository = manager.getRepository(Shop);
         const application = await repository.findOne({
           where: { id: applicationId },
           lock: { mode: "pessimistic_write" },
@@ -200,7 +203,20 @@ export class SellerApplicationsService {
         application.correctionTargets = [];
         application.correctionSnapshotHashes = {};
 
-        return repository.save(application);
+        const savedApplication = await repository.save(application);
+        const existingShop = await shopRepository.findOne({
+          where: { ownerUserId: savedApplication.userId },
+        });
+
+        // Tạo shop trong cùng transaction với quyết định duyệt để không bao giờ cấp role SELLER cho hồ sơ chưa có shop vận hành.
+        if (!existingShop) {
+          const shop = shopRepository.create(
+            mapApprovedApplicationToShop(savedApplication),
+          );
+          await shopRepository.save(shop);
+        }
+
+        return savedApplication;
       },
     );
 

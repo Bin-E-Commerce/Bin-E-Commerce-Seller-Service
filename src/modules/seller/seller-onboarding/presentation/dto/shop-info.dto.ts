@@ -36,6 +36,10 @@ export class ShopInfoDto {
   @IsOptional()
   @IsString()
   @MaxLength(1000)
+  @Matches(/^[^\uFFFD]*$/u, {
+    message:
+      "Mô tả shop chứa ký tự lỗi. Vui lòng nhập lại nội dung bằng Unicode UTF-8.",
+  })
   description?: string;
 
   @IsOptional()
