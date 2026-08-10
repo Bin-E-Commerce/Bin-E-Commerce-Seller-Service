@@ -1,11 +1,14 @@
 import { PayoutAccountType } from "../../../../../database/enums/payout-account-type.enum";
 import { SellerProfileType } from "../../../../../database/enums/seller-profile-type.enum";
 import { ShopStatus } from "../../../../../database/enums/shop-status.enum";
+import { ShopProfileChangeRequestResponseDto } from "./shop-profile-change-request-response.dto";
 
 export interface ShopProfileResponseDto {
   capabilities: {
     canUpdatePublicProfile: boolean;
+    canRequestSensitiveChange: boolean;
   };
+  pendingChangeRequest: ShopProfileChangeRequestResponseDto | null;
   shop: {
     id: string;
     name: string;
@@ -26,10 +29,12 @@ export interface ShopProfileResponseDto {
     legalName: string | null;
     taxCodeMasked: string | null;
     invoiceEmail: string | null;
+    payoutBankCode: string | null;
     payoutBankName: string | null;
     payoutAccountHolder: string | null;
     payoutAccountNumberMasked: string | null;
     payoutAccountType: PayoutAccountType;
+    payoutBranch: string | null;
   };
   identity: {
     verificationStatus: "verified";

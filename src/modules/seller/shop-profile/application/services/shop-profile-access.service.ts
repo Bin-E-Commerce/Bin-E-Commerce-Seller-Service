@@ -39,10 +39,53 @@ export class ShopProfileAccessService {
     );
   }
 
+  // Yêu cầu đổi dữ liệu nhạy cảm dùng permission riêng, không dùng chung quyền cập nhật thông tin công khai.
+  ensureCanCreateChangeRequest(currentUser: ShopUserContext): ShopUserContext {
+    return this.ensurePermission(
+      currentUser,
+      Permission.SELLER_SHOP_PROFILE_CHANGE_REQUEST_CREATE,
+      "Bạn không có quyền gửi yêu cầu thay đổi hồ sơ shop.",
+    );
+  }
+
+  // Nhân sự admin chỉ được đọc yêu cầu khi có quyền review chuyên biệt.
+  ensureCanReadChangeRequests(currentUser: ShopUserContext): ShopUserContext {
+    return this.ensurePermission(
+      currentUser,
+      Permission.ADMIN_SHOP_PROFILE_CHANGE_REQUEST_READ,
+      "Bạn không có quyền xem yêu cầu thay đổi hồ sơ shop.",
+    );
+  }
+
+  // Tách quyền approve để tài khoản chỉ đọc không thể áp dụng dữ liệu nhạy cảm vào hồ sơ có hiệu lực.
+  ensureCanApproveChangeRequest(currentUser: ShopUserContext): ShopUserContext {
+    return this.ensurePermission(
+      currentUser,
+      Permission.ADMIN_SHOP_PROFILE_CHANGE_REQUEST_APPROVE,
+      "Bạn không có quyền duyệt yêu cầu thay đổi hồ sơ shop.",
+    );
+  }
+
+  // Tách quyền reject để quyết định từ chối luôn có chủ thể được cấp quyền rõ ràng trong audit.
+  ensureCanRejectChangeRequest(currentUser: ShopUserContext): ShopUserContext {
+    return this.ensurePermission(
+      currentUser,
+      Permission.ADMIN_SHOP_PROFILE_CHANGE_REQUEST_REJECT,
+      "Bạn không có quyền từ chối yêu cầu thay đổi hồ sơ shop.",
+    );
+  }
+
   // Trả capability cho giao diện mà không ném lỗi, giúp FE ẩn thao tác cập nhật thay vì phải tự sao chép mã permission.
   canUpdate(currentUser: ShopUserContext): boolean {
     return currentUser.permissions.includes(
       Permission.SELLER_SHOP_PROFILE_UPDATE,
+    );
+  }
+
+  // Capability giúp Seller Center bật form nhạy cảm từ access profile backend mà không hard-code role.
+  canCreateChangeRequest(currentUser: ShopUserContext): boolean {
+    return currentUser.permissions.includes(
+      Permission.SELLER_SHOP_PROFILE_CHANGE_REQUEST_CREATE,
     );
   }
 

@@ -8,6 +8,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import type { QueryDeepPartialEntity } from "typeorm/query-builder/QueryPartialEntity";
 import { SellerApplication } from "../../../../../database/entities/seller-application.entity";
+import { ShopComplianceProfile } from "../../../../../database/entities/shop-compliance-profile.entity";
 import { Shop } from "../../../../../database/entities/shop.entity";
 import { PayoutAccountType } from "../../../../../database/enums/payout-account-type.enum";
 import { SellerApplicationStatus } from "../../../../../database/enums/seller-application-status.enum";
@@ -23,7 +24,10 @@ import { SellerApplicationEventsService } from "./seller-application-events.serv
 import { SellerApplicationMapper } from "./seller-application.mapper";
 import { SellerApplicationValidatorService } from "./seller-application-validator.service";
 import { SellerApplicationCorrectionService } from "./seller-application-correction.service";
-import { mapApprovedApplicationToShop } from "../../../shop-profile/application/utils/shop-provisioning.util";
+import {
+  mapApprovedApplicationToComplianceProfile,
+  mapApprovedApplicationToShop,
+} from "../../../shop-profile/application/utils/shop-provisioning.util";
 
 @Injectable()
 export class SellerApplicationsService {
@@ -181,6 +185,9 @@ export class SellerApplicationsService {
       async (manager) => {
         const repository = manager.getRepository(SellerApplication);
         const shopRepository = manager.getRepository(Shop);
+        const complianceRepository = manager.getRepository(
+          ShopComplianceProfile,
+        );
         const application = await repository.findOne({
           where: { id: applicationId },
           lock: { mode: "pessimistic_write" },
@@ -208,12 +215,36 @@ export class SellerApplicationsService {
           where: { ownerUserId: savedApplication.userId },
         });
 
-        // Tạo shop trong cùng transaction với quyết định duyệt để không bao giờ cấp role SELLER cho hồ sơ chưa có shop vận hành.
+        // Provision cả shop và hồ sơ compliance trong cùng transaction; role SELLER chỉ được cấp sau khi hai bản ghi đều tồn tại.
         if (!existingShop) {
-          const shop = shopRepository.create(
+          const shop = await shopRepository.save(
+            shopRepository.create(
             mapApprovedApplicationToShop(savedApplication),
+            ),
           );
-          await shopRepository.save(shop);
+          await complianceRepository.save(
+            complianceRepository.create(
+              mapApprovedApplicationToComplianceProfile(
+                savedApplication,
+                shop,
+              ),
+            ),
+          );
+        } else {
+          // Hồ sơ cũ có shop nhưng thiếu compliance phải được backfill riêng, không âm thầm sửa dữ liệu trong thao tác duyệt lại.
+          const existingCompliance = await complianceRepository.findOne({
+            where: { shopId: existingShop.id },
+          });
+          if (!existingCompliance) {
+            await complianceRepository.save(
+              complianceRepository.create(
+                mapApprovedApplicationToComplianceProfile(
+                  savedApplication,
+                  existingShop,
+                ),
+              ),
+            );
+          }
         }
 
         return savedApplication;

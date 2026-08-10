@@ -3,6 +3,8 @@ import { HttpModule } from "@nestjs/axios";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { KafkaModule } from "../../../kafka/kafka.module";
 import { SellerApplication } from "../../../database/entities/seller-application.entity";
+import { ShopComplianceProfile } from "../../../database/entities/shop-compliance-profile.entity";
+import { Shop } from "../../../database/entities/shop.entity";
 import { SellerApplicationAuthService } from "./application/services/seller-application-auth.service";
 import { SellerApplicationEventsService } from "./application/services/seller-application-events.service";
 import { SellerApplicationMapper } from "./application/services/seller-application.mapper";
@@ -13,7 +15,7 @@ import { SellerApplicationsController } from "./presentation/controllers/seller-
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([SellerApplication]),
+    TypeOrmModule.forFeature([SellerApplication, Shop, ShopComplianceProfile]),
     // Cấu hình HTTP ngay tại feature sở hữu integration để mọi request catalog/location đều có timeout và không theo redirect lạ.
     HttpModule.register({ timeout: 5000, maxRedirects: 0 }),
     KafkaModule,
