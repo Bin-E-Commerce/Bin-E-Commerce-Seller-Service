@@ -277,6 +277,14 @@ npm run lint         # ESLint over src
 npm run test         # Jest
 ```
 
+Shop cũ đã được duyệt trước khi tách hồ sơ compliance cần chạy backfill một lần sau khi schema mới được tạo:
+
+```powershell
+Get-Content scripts/database/backfill-shop-compliance-profiles.sql | docker exec -i bin_postgres psql -U bin_ecommerce -d bin_ecommerce_seller
+```
+
+Script chỉ nhập hồ sơ đầy đủ và in danh sách shop còn thiếu dữ liệu để kiểm tra thủ công; nó không tạo giá trị ngân hàng hoặc định danh giả.
+
 ---
 
 ## Environment
@@ -284,4 +292,3 @@ npm run test         # Jest
 See [.env.example](./.env.example).
 
 Production should inject these variables per service through Secret Manager, Kubernetes Secret, ECS Task Definition, or CI/CD secrets. Do not reuse the root local Docker `.env` as a production secret source.
-
