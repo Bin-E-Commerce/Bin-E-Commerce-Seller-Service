@@ -147,13 +147,25 @@ export class SellerApplication {
   @Column({ name: "pickup_phone", type: "varchar", length: 20, nullable: true })
   pickupPhone: string | null;
 
-  // Tỉnh/thành lấy từ location-service để tính vận chuyển.
-  @Column({ name: "pickup_province_id", type: "uuid", nullable: true })
-  pickupProvinceId: string | null;
+  // Tỉnh/thành GHN dùng để tính vận chuyển.
+  @Column({ name: "pickup_ghn_province_id", type: "int", nullable: true })
+  pickupGhnProvinceId: number | null;
 
-  // Phường/xã lấy từ location-service theo tỉnh/thành đã chọn.
-  @Column({ name: "pickup_ward_id", type: "uuid", nullable: true })
-  pickupWardId: string | null;
+  // Tên tỉnh/thành được lưu cùng mã GHN để snapshot và hiển thị ổn định.
+  @Column({ name: "pickup_ghn_province_name", type: "varchar", length: 160, nullable: true })
+  pickupGhnProvinceName: string | null;
+
+  @Column({ name: "pickup_ghn_district_id", type: "int", nullable: true })
+  pickupGhnDistrictId: number | null;
+
+  @Column({ name: "pickup_ghn_district_name", type: "varchar", length: 160, nullable: true })
+  pickupGhnDistrictName: string | null;
+
+  @Column({ name: "pickup_ghn_ward_code", type: "varchar", length: 30, nullable: true })
+  pickupGhnWardCode: string | null;
+
+  @Column({ name: "pickup_ghn_ward_name", type: "varchar", length: 160, nullable: true })
+  pickupGhnWardName: string | null;
 
   // Địa chỉ chi tiết như số nhà, đường, ghi chú lấy hàng.
   @Column({ name: "pickup_address_line", type: "text", nullable: true })
