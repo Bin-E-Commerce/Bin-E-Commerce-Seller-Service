@@ -1,4 +1,5 @@
-import { IsOptional, IsString, IsUUID, Length, Matches, MaxLength } from "class-validator";
+import { IsInt, IsOptional, IsString, Length, Matches, MaxLength, Min } from "class-validator";
+import { Type } from "class-transformer";
 
 export class PickupAddressDto {
   @IsOptional()
@@ -14,12 +15,36 @@ export class PickupAddressDto {
   phone?: string;
 
   @IsOptional()
-  @IsUUID()
-  provinceId?: string;
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  provinceId?: number;
 
   @IsOptional()
-  @IsUUID()
-  wardId?: string;
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  districtId?: number;
+
+  @IsOptional()
+  @IsString()
+  @Length(1, 30)
+  wardCode?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(1, 160)
+  provinceName?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(1, 160)
+  districtName?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(1, 160)
+  wardName?: string;
 
   @IsOptional()
   @IsString()

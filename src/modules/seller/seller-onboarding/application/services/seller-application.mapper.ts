@@ -48,16 +48,26 @@ export class SellerApplicationMapper {
       application.verificationDocuments = dto.seller.documents ?? {};
     }
 
-    // Chỉ lưu ID master data; tên tỉnh/phường được location-service quản lý và tra cứu khi cần hiển thị.
+    // Lưu cả mã và tên GHN để không phụ thuộc một dịch vụ địa chỉ khác khi hiển thị.
     if (dto.pickupAddress) {
       application.pickupContactName = toNullableString(
         dto.pickupAddress.contactName,
       );
       application.pickupPhone = toNullableString(dto.pickupAddress.phone);
-      application.pickupProvinceId = toNullableString(
-        dto.pickupAddress.provinceId,
+      application.pickupGhnProvinceId = dto.pickupAddress.provinceId ?? null;
+      application.pickupGhnProvinceName = toNullableString(
+        dto.pickupAddress.provinceName,
       );
-      application.pickupWardId = toNullableString(dto.pickupAddress.wardId);
+      application.pickupGhnDistrictId = dto.pickupAddress.districtId ?? null;
+      application.pickupGhnDistrictName = toNullableString(
+        dto.pickupAddress.districtName,
+      );
+      application.pickupGhnWardCode = toNullableString(
+        dto.pickupAddress.wardCode,
+      );
+      application.pickupGhnWardName = toNullableString(
+        dto.pickupAddress.wardName,
+      );
       application.pickupAddressLine = toNullableString(
         dto.pickupAddress.addressLine,
       );
@@ -113,8 +123,12 @@ export class SellerApplicationMapper {
       pickupAddress: {
         contactName: application.pickupContactName,
         phone: application.pickupPhone,
-        provinceId: application.pickupProvinceId,
-        wardId: application.pickupWardId,
+        provinceId: application.pickupGhnProvinceId,
+        provinceName: application.pickupGhnProvinceName,
+        districtId: application.pickupGhnDistrictId,
+        districtName: application.pickupGhnDistrictName,
+        wardCode: application.pickupGhnWardCode,
+        wardName: application.pickupGhnWardName,
         addressLine: application.pickupAddressLine,
       },
       payout: {

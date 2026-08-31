@@ -66,8 +66,12 @@ export class SellerApplicationCorrectionService {
         return {
           contactName: application.pickupContactName,
           phone: application.pickupPhone,
-          provinceId: application.pickupProvinceId,
-          wardId: application.pickupWardId,
+          provinceId: application.pickupGhnProvinceId,
+          provinceName: application.pickupGhnProvinceName,
+          districtId: application.pickupGhnDistrictId,
+          districtName: application.pickupGhnDistrictName,
+          wardCode: application.pickupGhnWardCode,
+          wardName: application.pickupGhnWardName,
           addressLine: application.pickupAddressLine,
         };
       case SellerApplicationCorrectionTarget.PAYOUT_INFORMATION:

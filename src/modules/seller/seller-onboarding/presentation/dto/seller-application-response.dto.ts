@@ -35,8 +35,12 @@ export interface SellerApplicationResponseDto {
   pickupAddress: {
     contactName: string | null;
     phone: string | null;
-    provinceId: string | null;
-    wardId: string | null;
+    provinceId: number | null;
+    provinceName: string | null;
+    districtId: number | null;
+    districtName: string | null;
+    wardCode: string | null;
+    wardName: string | null;
     addressLine: string | null;
   };
   payout: {
