@@ -14,7 +14,7 @@ NestJS 11 · TypeScript · PostgreSQL · TypeORM · Kafka · Axios · Swagger ·
 
 Turning a buyer account into a seller account is not a single form submit. A real marketplace needs draft saving, identity information, pickup address validation, payout data, category checks, duplicate shop slug protection, and a review state before seller privileges are granted.
 
-Seller Service owns that workflow and keeps the seller application lifecycle separate from Auth, Catalog, Location, and future Shop/Product services.
+Seller Service owns that workflow and keeps the seller application lifecycle separate from Auth, Catalog, and future Shop/Product services.
 
 ---
 
@@ -79,7 +79,7 @@ Required local infrastructure:
 PostgreSQL database: bin_ecommerce_seller
 Kafka broker:        localhost:29092
 Catalog Service:     http://localhost:3003
-Location Service:    http://localhost:3006
+Shipping Service:    http://localhost:3012
 Default port:        3007
 API prefix:          /api/v1
 ```
@@ -91,10 +91,10 @@ API prefix:          /api/v1
 | Concern | How this service handles it |
 | --- | --- |
 | Authentication | The service trusts `x-user-id`, `x-user-email`, and role headers injected by API Gateway. It does not accept user identity from request body. |
-| Network calls | Submit validation calls Catalog Service and Location Service. Kafka is used to publish notification events. |
+| Network calls | Submit validation calls Catalog Service. Address master data is selected through the Shipping Service contract. Kafka is used to publish notification events. |
 | Database writes | Saves seller application drafts and status transitions in `seller_applications`. |
 | Sensitive data | Stores identity and payout application data. Do not expose this service directly to browsers in production. |
-| Failure behavior | Kafka publish failures are logged and do not crash the submit flow. Catalog/location validation failures return business-friendly errors. |
+| Failure behavior | Kafka publish failures are logged and do not crash the submit flow. Catalog and Shipping/GHN validation failures return business-friendly errors. |
 | Reversibility | A local application can be reset by deleting rows from `seller_applications` or resetting the seller database. |
 
 ---
@@ -178,8 +178,9 @@ Pickup address:
 | --- | --- |
 | `contactName` | 2-160 characters. |
 | `phone` | Vietnamese phone number. |
-| `provinceId` | UUID and must exist in Location Service as `province`. |
-| `wardId` | UUID and must exist in Location Service as `ward` under selected province. |
+| `provinceId` | Positive GHN province ID. |
+| `districtId` | Positive GHN district ID belonging to the selected province. |
+| `wardCode` | GHN ward code belonging to the selected district. |
 | `addressLine` | Required, max 500 characters. |
 
 Payout:
@@ -204,7 +205,7 @@ Frontend Seller Register
   -> API Gateway validates JWT
   -> API Gateway injects x-user-* headers
   -> Seller Service saves draft
-  -> Seller Service validates Catalog and Location on submit
+  -> Seller Service validates Catalog and the complete GHN pickup codes on submit
   -> Seller Service writes pending_review
   -> Seller Service publishes Kafka event
   -> Notification Service sends email: application submitted
@@ -262,7 +263,7 @@ Important groups:
 - Helmet is configured through `common/config/helmet.config.ts`.
 - CORS is disabled at the service level because browser traffic should enter through API Gateway.
 - Kafka producer connection failure is non-fatal so local seller registration can still be developed without blocking on Kafka availability.
-- Downstream Catalog and Location calls run only when submitting, not on every draft save.
+- Downstream Catalog and Shipping/GHN calls run only when submitting, not on every draft save.
 
 ---
 
