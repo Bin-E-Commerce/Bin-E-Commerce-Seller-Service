@@ -22,7 +22,8 @@ import { SellerModule } from "./modules/seller/seller.module";
         entities: [__dirname + "/**/*.entity{.ts,.js}"],
         migrations: [__dirname + "/database/migrations/*{.ts,.js}"],
         migrationsRun: true,
-        synchronize: config.get<string>("NODE_ENV") !== "production",
+        // Không tự đồng bộ entity khi chạy local; migration là nguồn schema duy nhất của Seller Service.
+        synchronize: false,
         ssl:
           config.get<string>("NODE_ENV") === "production"
             ? { rejectUnauthorized: false }
