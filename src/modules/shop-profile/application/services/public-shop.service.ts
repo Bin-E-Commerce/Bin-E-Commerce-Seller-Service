@@ -8,12 +8,14 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import { InjectDataSource, InjectRepository } from "@nestjs/typeorm";
-import { DataSource, Repository } from "typeorm";
+import { DataSource, In, Repository } from "typeorm";
 import { Shop } from "../../../../database/shop-profile/entities/shop.entity";
 import { ShopFollow } from "../../../../database/shop-profile/entities/shop-follow.entity";
 import { ShopPickupAddress } from "../../../../database/shop-profile/entities/shop-pickup-address.entity";
 import { ShopStatus } from "../../../../database/shop-profile/enums/shop-status.enum";
 import type { PublicShopResponseDto } from "../../presentation/dto/public-shop-response.dto";
+import type { ListPublicShopsQueryDto } from "../../presentation/dto/list-public-shops-query.dto";
+import type { PublicShopListResponseDto } from "../../presentation/dto/public-shop-list-response.dto";
 import { AuthUserClient } from "../clients/auth-user.client";
 
 const ONLINE_WINDOW_MS = 5 * 60 * 1000;
@@ -30,6 +32,92 @@ export class PublicShopService {
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly authUserClient: AuthUserClient,
   ) {}
+
+  // Đọc danh sách shop active theo một query phân trang và một query pickup address batch.
+  // Không gọi auth-service theo từng shop vì màn hình khám phá không cần trạng thái online chính xác; điều này giữ endpoint nhẹ khi số shop tăng.
+  async listPublicShops(
+    query: ListPublicShopsQueryDto,
+  ): Promise<PublicShopListResponseDto> {
+    const builder = this.shopRepository
+      .createQueryBuilder("shop")
+      .leftJoin(
+        ShopPickupAddress,
+        "pickupAddress",
+        "pickupAddress.shopId = shop.id AND pickupAddress.isDefault = :isDefault",
+        { isDefault: true },
+      )
+      .where("shop.status = :status", { status: ShopStatus.ACTIVE });
+    const search = query.search?.trim();
+
+    // Một từ khóa được dò trên các trường public có ý nghĩa với customer: tên, slug, mô tả và khu vực nhận hàng mặc định.
+    // Join chỉ dùng cho bước lọc; response vẫn lấy pickup address theo batch query bên dưới để giữ shape và tránh N+1.
+    if (search) {
+      builder.andWhere(
+        `(
+          shop.name ILIKE :search
+          OR shop.slug ILIKE :search
+          OR shop.description ILIKE :search
+          OR pickupAddress.ghnProvinceName ILIKE :search
+          OR pickupAddress.ghnDistrictName ILIKE :search
+        )`,
+        { search: `%${search}%` },
+      );
+    }
+
+    const [shops, total] = await builder
+      .orderBy("shop.createdAt", "DESC")
+      .addOrderBy("shop.id", "ASC")
+      .skip((query.page - 1) * query.pageSize)
+      .take(query.pageSize)
+      .getManyAndCount();
+
+    if (shops.length === 0) {
+      return {
+        items: [],
+        total,
+        page: query.page,
+        pageSize: query.pageSize,
+        totalPages: Math.ceil(total / query.pageSize),
+      };
+    }
+
+    const pickupAddresses = await this.pickupRepository.find({
+      where: { shopId: In(shops.map((shop) => shop.id)), isDefault: true },
+    });
+    const pickupByShopId = new Map(
+      pickupAddresses.map((address) => [address.shopId, address]),
+    );
+
+    return {
+      items: shops.map((shop) => {
+        const pickupAddress = pickupByShopId.get(shop.id);
+        return {
+          shop: {
+            id: shop.id,
+            slug: shop.slug,
+            name: shop.name,
+            logoUrl: shop.logoUrl,
+            description: shop.description,
+            mainCategoryId: shop.mainCategoryId,
+            status: shop.status,
+            createdAt: shop.createdAt,
+            location: {
+              province: pickupAddress?.ghnProvinceName ?? null,
+              district: pickupAddress?.ghnDistrictName ?? null,
+            },
+          },
+          stats: {
+            followerCount: shop.followerCount,
+            followingCount: shop.followingCount,
+          },
+        };
+      }),
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+      totalPages: Math.ceil(total / query.pageSize),
+    };
+  }
 
   // Đọc shop theo slug ưu tiên cho URL SEO, đồng thời hỗ trợ UUID để các màn hình nội bộ có thể mở đúng resource.
   async getPublicShop(
@@ -94,12 +182,10 @@ export class PublicShopService {
         .sort();
       const lockedShops = new Map<string, Shop>();
       for (const lockId of lockIds) {
-        const locked = await manager
-          .getRepository(Shop)
-          .findOne({
-            where: { id: lockId },
-            lock: { mode: "pessimistic_write" },
-          });
+        const locked = await manager.getRepository(Shop).findOne({
+          where: { id: lockId },
+          lock: { mode: "pessimistic_write" },
+        });
         if (locked) lockedShops.set(locked.id, locked);
       }
       const lockedShop = lockedShops.get(shop.id);
@@ -108,11 +194,9 @@ export class PublicShopService {
         throw new ConflictException("Shop hiện không nhận người theo dõi mới.");
       }
 
-      const existing = await manager
-        .getRepository(ShopFollow)
-        .findOne({
-          where: { shopId: lockedShop.id, followerUserId: viewerId },
-        });
+      const existing = await manager.getRepository(ShopFollow).findOne({
+        where: { shopId: lockedShop.id, followerUserId: viewerId },
+      });
       if (existing) return;
 
       await manager
@@ -152,21 +236,17 @@ export class PublicShopService {
         .sort();
       const lockedShops = new Map<string, Shop>();
       for (const lockId of lockIds) {
-        const locked = await manager
-          .getRepository(Shop)
-          .findOne({
-            where: { id: lockId },
-            lock: { mode: "pessimistic_write" },
-          });
+        const locked = await manager.getRepository(Shop).findOne({
+          where: { id: lockId },
+          lock: { mode: "pessimistic_write" },
+        });
         if (locked) lockedShops.set(locked.id, locked);
       }
       const lockedShop = lockedShops.get(shop.id);
       if (!lockedShop) throw new NotFoundException("Không tìm thấy shop.");
-      const existing = await manager
-        .getRepository(ShopFollow)
-        .findOne({
-          where: { shopId: lockedShop.id, followerUserId: viewerId },
-        });
+      const existing = await manager.getRepository(ShopFollow).findOne({
+        where: { shopId: lockedShop.id, followerUserId: viewerId },
+      });
       if (!existing) return;
 
       await manager.getRepository(ShopFollow).remove(existing);
