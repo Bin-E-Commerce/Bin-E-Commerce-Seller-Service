@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="../../web/public/images/logo/logo_background_white.png" alt="Bin E-Commerce" width="220" />
+  <img src="https://raw.githubusercontent.com/Bin-E-Commerce/Bin-E-Commerce-UI-Web/main/public/images/logo/logo_background_white.png" alt="Bin E-Commerce" width="220" />
 
   # Seller Service
 
