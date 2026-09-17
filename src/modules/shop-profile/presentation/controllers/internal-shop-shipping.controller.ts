@@ -29,7 +29,7 @@ export class InternalShopShippingController {
 
   // Gom kiểm tra shared secret vào một chỗ để mọi internal route có cùng hành vi bảo mật.
   private assertInternalToken(token: string): void {
-    const expected = this.config.get<string>("INTERNAL_SERVICE_TOKEN", "dev-media-auth-internal-secret");
+    const expected = this.config.get<string>("INTERNAL_SERVICE_TOKEN", "");
     if (!expected || token !== expected) throw new UnauthorizedException("Invalid internal service token.");
   }
 }

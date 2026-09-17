@@ -22,7 +22,7 @@ export class ProductCatalogClient {
     );
     this.internalServiceToken = config.get<string>(
       "INTERNAL_SERVICE_TOKEN",
-      "dev-media-auth-internal-secret",
+      "",
     );
   }
 

@@ -1,0 +1,29 @@
+# Chỉ gửi các file cần thiết của Seller Service vào Docker build context.
+*
+!package.json
+!package-lock.json
+!tsconfig.base.json
+!packages/
+!packages/common/
+!packages/common/**
+!services/
+!services/seller-service/
+!services/seller-service/package.json
+!services/seller-service/tsconfig.json
+!services/seller-service/tsconfig.build.json
+!services/seller-service/nest-cli.json
+!services/seller-service/src/
+!services/seller-service/src/**
+
+# Không đưa artifact local, test output, Git metadata hoặc secret vào context.
+**/node_modules
+**/dist
+**/coverage
+**/*.spec.ts
+**/*.e2e-spec.ts
+**/.env
+**/.env.*
+**/.git
+**/.gitignore
+**/.vscode
+**/*.log

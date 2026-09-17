@@ -69,7 +69,7 @@ Seller Service owns these boundaries. It manages seller applications, approval s
 | ORM | TypeORM |
 | Event integration | Kafka producer |
 | HTTP security | Helmet |
-| Health endpoint | GET /api/health |
+| Health endpoint | GET /api/v1/health |
 | API documentation | GET /docs outside production |
 | Schema policy | Migrations only; synchronize is disabled |
 | Main downstream services | Auth, Catalog, Location, Product, Shipping |
@@ -192,7 +192,7 @@ npm run dev
 ### Check health
 
 ~~~powershell
-curl http://localhost:3007/api/health
+curl http://localhost:3007/api/v1/health
 ~~~
 
 Expected response shape:
@@ -733,7 +733,7 @@ All routes are served below /api/v1 when URI versioning is enabled.
 
 | Method | Route | Purpose |
 | --- | --- | --- |
-| GET | /health | Report service liveness |
+| GET | /api/v1/health | Report service liveness |
 | GET | /docs | Swagger UI outside production |
 
 Seller and admin routes derive scope from trusted headers. Internal routes require x-internal-service-token. Public routes intentionally have a smaller response shape.
@@ -806,7 +806,6 @@ Use [.env.example](./.env.example) as the canonical local template.
 | POSTGRES_PASSWORD | Yes | PostgreSQL password |
 | POSTGRES_DB | Yes | Seller database name |
 | CATALOG_SERVICE_URL | Yes | Category and catalog validation |
-| LOCATION_SERVICE_URL | Yes | Address and GHN master-data validation |
 | KAFKA_BROKERS | Yes for events | Kafka broker list |
 | KAFKA_CLIENT_ID | No | Kafka producer client ID |
 | INTERNAL_SERVICE_TOKEN | Yes for internal calls | Shared service-to-service secret |
@@ -971,7 +970,7 @@ npm run build
 
 ### Health
 
-GET /api/health reports the service name, status, application version, and timestamp. It is a lightweight process check; dependency-specific monitoring should also cover PostgreSQL and Kafka.
+GET /api/v1/health reports the service name, status, application version, and timestamp. It is a lightweight process check; dependency-specific monitoring should also cover PostgreSQL and Kafka.
 
 ### Metrics to monitor
 
