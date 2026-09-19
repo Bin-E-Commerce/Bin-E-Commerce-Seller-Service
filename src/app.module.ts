@@ -25,7 +25,7 @@ import { SellerModule } from "./modules/seller.module";
         // Không tự đồng bộ entity khi chạy local; migration là nguồn schema duy nhất của Seller Service.
         synchronize: false,
         ssl:
-          config.get<string>("NODE_ENV") === "production"
+          config.get<string>("POSTGRES_SSL", "false") === "true"
             ? { rejectUnauthorized: false }
             : false,
         logging: config.get<string>("TYPEORM_LOGGING", "false") === "true",
