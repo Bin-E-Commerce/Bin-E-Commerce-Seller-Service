@@ -18,7 +18,9 @@ COPY services/seller-service/package.json \
   ./services/seller-service/
 
 # npm ci bảo đảm dependency đúng với lockfile của monorepo; devDependency chỉ dùng ở builder.
-RUN npm ci --workspace=services/seller-service --include=dev --ignore-scripts
+ENV NODE_ENV=development
+RUN npm ci --workspace=services/seller-service --include=dev --bin-links=true --ignore-scripts \
+  && test -x node_modules/.bin/nest
 
 # Chỉ đưa source Seller vào image sau khi dependency đã được cache.
 COPY services/seller-service/src ./services/seller-service/src
