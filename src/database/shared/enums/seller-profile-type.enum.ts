@@ -1,4 +1,4 @@
 export enum SellerProfileType {
-  INDIVIDUAL = "individual",
-  BUSINESS = "business",
+    INDIVIDUAL = 'individual',
+    BUSINESS = 'business',
 }

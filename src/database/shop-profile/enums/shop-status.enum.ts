@@ -1,5 +1,5 @@
 export enum ShopStatus {
-  ACTIVE = "active",
-  SUSPENDED = "suspended",
-  CLOSED = "closed",
+    ACTIVE = 'active',
+    SUSPENDED = 'suspended',
+    CLOSED = 'closed',
 }

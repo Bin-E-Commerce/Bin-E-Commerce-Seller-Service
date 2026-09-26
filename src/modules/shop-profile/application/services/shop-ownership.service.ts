@@ -1,27 +1,34 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
-import { Shop } from "../../../../database/shop-profile/entities/shop.entity";
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Shop } from '@/database/shop-profile/entities/shop.entity';
 
 @Injectable()
 export class ShopOwnershipService {
-  // Resolver ownership dùng chung để mọi use case đều truy vấn shop bằng userId tin cậy thay vì shopId từ client.
-  constructor(
-    @InjectRepository(Shop)
-    private readonly shopRepository: Repository<Shop>,
-  ) {}
+    // Resolver ownership dùng chung để mọi use case truy vấn shop bằng userId tin cậy.
+    constructor(
+        @InjectRepository(Shop)
+        private readonly shopRepository: Repository<Shop>,
+    ) {}
 
-  // Tìm shop theo userId tin cậy; thao tác đọc không tự tạo shop để lỗi provisioning không bị che khuất.
-  async findOwnedShopOrThrow(ownerUserId: string): Promise<Shop> {
-    const shop = await this.shopRepository.findOne({
-      where: { ownerUserId },
-    });
-    if (!shop) {
-      throw new NotFoundException(
-        "Shop chưa được kích hoạt hoặc hồ sơ người bán chưa được duyệt.",
-      );
+    // Giữ null khi shop chưa tồn tại để Auth Service chỉ lấy logo không làm lỗi login.
+    async findOwnedShop(ownerUserId: string): Promise<Shop | null> {
+        return this.shopRepository.findOne({
+            where: { ownerUserId },
+        });
     }
 
-    return shop;
-  }
+    // Ném lỗi cho các nghiệp vụ bắt buộc user phải có shop đã được kích hoạt.
+    async findOwnedShopOrThrow(ownerUserId: string): Promise<Shop> {
+        const shop = await this.shopRepository.findOne({
+            where: { ownerUserId },
+        });
+        if (!shop) {
+            throw new NotFoundException(
+                'Shop chưa được kích hoạt hoặc hồ sơ người bán chưa được duyệt.',
+            );
+        }
+
+        return shop;
+    }
 }

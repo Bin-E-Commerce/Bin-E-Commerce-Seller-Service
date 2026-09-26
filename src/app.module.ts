@@ -1,49 +1,53 @@
-import { Module } from "@nestjs/common";
-import { ConfigModule, ConfigService } from "@nestjs/config";
-import { TypeOrmModule } from "@nestjs/typeorm";
-import { HealthModule } from "./modules/health/health.module";
-import { SellerModule } from "./modules/seller.module";
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { HealthModule } from '@/modules/health/health.module';
+import { SellerModule } from '@/modules/seller.module';
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: [".env.local", ".env"],
-    }),
-    TypeOrmModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type: "postgres",
-        host: config.get<string>("POSTGRES_HOST", "localhost"),
-        port: config.get<number>("POSTGRES_PORT", 5432),
-        username: config.get<string>("POSTGRES_USER"),
-        password: config.get<string>("POSTGRES_PASSWORD"),
-        database: config.get<string>("POSTGRES_DB"),
-        entities: [__dirname + "/**/*.entity{.ts,.js}"],
-        migrations: [__dirname + "/database/migrations/*{.ts,.js}"],
-        migrationsRun: true,
-        // Không tự đồng bộ entity khi chạy local; migration là nguồn schema duy nhất của Seller Service.
-        synchronize: false,
-        ssl:
-          config.get<string>("POSTGRES_SSL", "false") === "true"
-            ? { rejectUnauthorized: false }
-            : false,
-        // Giữ tối thiểu một kết nối ấm và giới hạn pool để giảm độ trễ khi dùng PostgreSQL cloud.
-        extra: {
-          min: Number(config.get<string>("POSTGRES_POOL_MIN", "1")),
-          max: Number(config.get<string>("POSTGRES_POOL_MAX", "5")),
-          idleTimeoutMillis: Number(
-            config.get<string>("POSTGRES_IDLE_TIMEOUT_MS", "30000"),
-          ),
-          connectionTimeoutMillis: Number(
-            config.get<string>("POSTGRES_CONNECTION_TIMEOUT_MS", "10000"),
-          ),
-        },
-        logging: config.get<string>("TYPEORM_LOGGING", "false") === "true",
-      }),
-    }),
-    HealthModule,
-    SellerModule,
-  ],
+    imports: [
+        ConfigModule.forRoot({
+            isGlobal: true,
+            envFilePath: ['.env.local', '.env'],
+        }),
+        TypeOrmModule.forRootAsync({
+            inject: [ConfigService],
+            useFactory: (config: ConfigService) => ({
+                type: 'postgres',
+                host: config.get<string>('POSTGRES_HOST', 'localhost'),
+                port: config.get<number>('POSTGRES_PORT', 5432),
+                username: config.get<string>('POSTGRES_USER'),
+                password: config.get<string>('POSTGRES_PASSWORD'),
+                database: config.get<string>('POSTGRES_DB'),
+                entities: [__dirname + '/**/*.entity{.ts,.js}'],
+                migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
+                migrationsRun: true,
+                // Không tự đồng bộ entity khi chạy local; migration là nguồn schema duy nhất của Seller Service.
+                synchronize: false,
+                ssl:
+                    config.get<string>('POSTGRES_SSL', 'false') === 'true'
+                        ? { rejectUnauthorized: false }
+                        : false,
+                // Giữ tối thiểu một kết nối ấm và giới hạn pool để giảm độ trễ khi dùng PostgreSQL cloud.
+                extra: {
+                    min: Number(config.get<string>('POSTGRES_POOL_MIN', '1')),
+                    max: Number(config.get<string>('POSTGRES_POOL_MAX', '5')),
+                    idleTimeoutMillis: Number(
+                        config.get<string>('POSTGRES_IDLE_TIMEOUT_MS', '30000'),
+                    ),
+                    connectionTimeoutMillis: Number(
+                        config.get<string>(
+                            'POSTGRES_CONNECTION_TIMEOUT_MS',
+                            '10000',
+                        ),
+                    ),
+                },
+                logging:
+                    config.get<string>('TYPEORM_LOGGING', 'false') === 'true',
+            }),
+        }),
+        HealthModule,
+        SellerModule,
+    ],
 })
 export class AppModule {}

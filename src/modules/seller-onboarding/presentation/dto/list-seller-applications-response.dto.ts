@@ -1,11 +1,11 @@
-import { SellerApplicationResponseDto } from "./seller-application-response.dto";
+import { SellerApplicationResponseDto } from '@/modules/seller-onboarding/presentation/dto/seller-application-response.dto';
 
 export interface ListSellerApplicationsResponseDto {
-  items: SellerApplicationResponseDto[];
-  meta: {
-    page: number;
-    pageSize: number;
-    totalItems: number;
-    totalPages: number;
-  };
+    items: SellerApplicationResponseDto[];
+    meta: {
+        page: number;
+        pageSize: number;
+        totalItems: number;
+        totalPages: number;
+    };
 }
