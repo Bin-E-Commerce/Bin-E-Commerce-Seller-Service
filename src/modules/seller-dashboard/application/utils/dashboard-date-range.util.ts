@@ -12,6 +12,29 @@ const RANGE_DAYS: Record<SellerDashboardRange, number> = {
     '90d': 90,
 };
 
+const VIETNAM_DATE_FORMATTER = new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+});
+
+// Hiển thị ngày theo múi giờ nghiệp vụ của seller thay vì đẩy chuỗi ISO nội bộ ra UI.
+// Ngày lỗi được giữ nguyên để không biến dữ liệu bất thường thành một ngày giả.
+export function formatSellerDashboardDate(value: string): string {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+        ? value
+        : VIETNAM_DATE_FORMATTER.format(date);
+}
+
+// Format khoảng thời gian thành câu ngắn, dễ đọc trong answer và citation popup.
+export function formatSellerDashboardDateRange(
+    range: Pick<SellerDashboardDateRange, 'from' | 'to'>,
+): string {
+    return `${formatSellerDashboardDate(range.from)} đến ${formatSellerDashboardDate(range.to)}`;
+}
+
 // Đổi instant UTC về khóa ngày theo múi giờ Việt Nam để chart dùng đúng ngày nghiệp vụ.
 // Không dùng trực tiếp toISOString().slice(0, 10) vì 00:00 Việt Nam là 17:00 UTC của ngày trước.
 function toVietnamDateKey(date: Date): string {

@@ -15,5 +15,10 @@ import { SellerDashboardController } from '@/modules/seller-dashboard/presentati
         ProductDashboardClient,
         SellerDashboardService,
     ],
+    exports: [
+        OrderDashboardClient,
+        ProductDashboardClient,
+        SellerDashboardService,
+    ],
 })
 export class SellerDashboardModule {}

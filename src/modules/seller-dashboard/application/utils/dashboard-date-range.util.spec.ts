@@ -4,6 +4,8 @@
 import {
     createDashboardDateRange,
     fillDashboardTrend,
+    formatSellerDashboardDate,
+    formatSellerDashboardDateRange,
     normalizeDashboardRange,
 } from '@/modules/seller-dashboard/application/utils/dashboard-date-range.util';
 
@@ -13,6 +15,19 @@ describe('dashboard-date-range.util', () => {
         expect(normalizeDashboardRange('unknown')).toBe('30d');
         expect(normalizeDashboardRange('7d')).toBe('7d');
         expect(normalizeDashboardRange('90d')).toBe('90d');
+    });
+
+    // Answer không được hiển thị timestamp ISO; ngày phải theo múi giờ và cách đọc của seller Việt Nam.
+    it('formats dashboard dates for seller-facing output', () => {
+        expect(formatSellerDashboardDate('2026-08-31T17:00:00.000Z')).toBe(
+            '01/09/2026',
+        );
+        expect(
+            formatSellerDashboardDateRange({
+                from: '2026-08-31T17:00:00.000Z',
+                to: '2026-09-30T11:44:09.642Z',
+            }),
+        ).toBe('01/09/2026 đến 30/09/2026');
     });
 
     // Mốc ngày phải bắt đầu từ nửa đêm Việt Nam dù test chạy trên timezone máy khác.
