@@ -37,6 +37,14 @@ export interface ShopShippingReadinessResponse {
     reason: ShopShippingReadinessReason;
 }
 
+export interface ShopShippingLiveSettings {
+    preparationTimeHours: number;
+    pickupWindowStart: string;
+    pickupWindowEnd: string;
+    enabled: boolean;
+    updatedAt: string;
+}
+
 // Use case quản lý địa chỉ lấy hàng và cấu hình vận chuyển hiện tại.
 @Injectable()
 export class ShopShippingSettingsService {
@@ -66,6 +74,21 @@ export class ShopShippingSettingsService {
             settings,
         );
         return { settings, pickupAddresses };
+    }
+
+    // Đọc trực tiếp các giá trị giao nhận hiện tại theo shop đã được caller scope trước đó.
+    // Method này không dùng cache và không đọc Markdown, để câu hỏi về cấu hình hiện tại luôn phản ánh DB sau lần Seller lưu giao diện.
+    async getLiveSettingsForShop(
+        shopId: string,
+    ): Promise<ShopShippingLiveSettings> {
+        const settings = await this.ensureSettings(shopId);
+        return {
+            preparationTimeHours: settings.preparationTimeHours,
+            pickupWindowStart: settings.pickupWindowStart,
+            pickupWindowEnd: settings.pickupWindowEnd,
+            enabled: settings.enabled,
+            updatedAt: settings.updatedAt.toISOString(),
+        };
     }
 
     // Cập nhật thời gian vận hành và không cho xóa default address đang được dùng.

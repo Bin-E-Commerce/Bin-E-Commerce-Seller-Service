@@ -60,6 +60,6 @@ import { ShopFollow } from '@/database/shop-profile/entities/shop-follow.entity'
         AuthUserClient,
         PublicShopService,
     ],
-    exports: [ShopOwnershipService],
+    exports: [ShopOwnershipService, ShopShippingSettingsService],
 })
 export class ShopProfileModule {}
