@@ -14,6 +14,8 @@
 !services/seller-service/nest-cli.json
 !services/seller-service/src/
 !services/seller-service/src/**
+!services/seller-service/data/
+!services/seller-service/data/**
 
 # Không đưa artifact local, test output, Git metadata hoặc secret vào context.
 **/node_modules

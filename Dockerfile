@@ -24,6 +24,8 @@ RUN npm ci --workspace=services/seller-service --include=dev --bin-links=true --
 
 # Chỉ đưa source Seller vào image sau khi dependency đã được cache.
 COPY services/seller-service/src ./services/seller-service/src
+# Đưa policy Markdown vào image để validate/ingest trong cùng release dùng đúng source đã build.
+COPY services/seller-service/data ./services/seller-service/data
 
 WORKDIR /app/services/seller-service
 RUN npm run build
@@ -58,6 +60,8 @@ WORKDIR /app
 COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
 # dist gồm Seller Service và artifact packages/common được compile cùng rootDir.
 COPY --from=builder --chown=nestjs:nodejs /app/services/seller-service/dist ./dist
+# Giữ knowledge source trong runtime image cho job ingest/validate chạy cùng dataset với service.
+COPY --from=builder --chown=nestjs:nodejs /app/services/seller-service/data ./data
 
 ENV NODE_ENV=production \
   PORT=3007 \
