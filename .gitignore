@@ -5,3 +5,4 @@ dist
 coverage
 *.log
 .turbo
+data/seller-question-evaluation/reports/

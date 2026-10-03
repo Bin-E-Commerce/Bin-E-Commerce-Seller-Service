@@ -1,9 +1,9 @@
 <div align="center">
   <img src="https://raw.githubusercontent.com/Bin-E-Commerce/Bin-E-Commerce-UI-Web/main/public/images/logo/logo_background_white.png" alt="Bin E-Commerce" width="220" />
 
-  # Seller Service
+# Seller Service
 
-  Turn a seller application into a trusted shop with verified ownership, safe profile changes, and shipping-ready operations.
+Turn a seller application into a trusted shop with verified ownership, safe profile changes, and shipping-ready operations.
 
   <p>
     <img src="https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs&logoColor=white" alt="NestJS 11" />
@@ -14,7 +14,7 @@
     <img src="https://img.shields.io/badge/Helmet-security-4B5563" alt="Helmet security headers" />
   </p>
 
-  [Portfolio](https://daongocanh.site)
+[Portfolio](https://daongocanh.site)
 </div>
 
 ---
@@ -58,20 +58,20 @@ Seller Service owns these boundaries. It manages seller applications, approval s
 
 ## 2. Service at a glance
 
-| Property | Value |
-| --- | --- |
-| Runtime | Node.js with NestJS 11 |
-| Language | TypeScript |
-| Default HTTP port | 3007 |
-| HTTP prefix | /api |
-| URI version | /v1 |
-| Database | PostgreSQL |
-| ORM | TypeORM |
-| Event integration | Kafka producer |
-| HTTP security | Helmet |
-| Health endpoint | GET /api/v1/health |
-| API documentation | GET /docs outside production |
-| Schema policy | Migrations only; synchronize is disabled |
+| Property                 | Value                                      |
+| ------------------------ | ------------------------------------------ |
+| Runtime                  | Node.js with NestJS 11                     |
+| Language                 | TypeScript                                 |
+| Default HTTP port        | 3007                                       |
+| HTTP prefix              | /api                                       |
+| URI version              | /v1                                        |
+| Database                 | PostgreSQL                                 |
+| ORM                      | TypeORM                                    |
+| Event integration        | Kafka producer                             |
+| HTTP security            | Helmet                                     |
+| Health endpoint          | GET /api/v1/health                         |
+| API documentation        | GET /docs outside production               |
+| Schema policy            | Migrations only; synchronize is disabled   |
 | Main downstream services | Auth, Catalog, Location, Product, Shipping |
 
 ### What this service provides
@@ -91,6 +91,7 @@ Seller Service owns these boundaries. It manages seller applications, approval s
 - shipping readiness for Product and Shipping integrations;
 - Kafka events for application and shop profile changes;
 - internal shop shipping lookup.
+- Seller Intelligence Copilot with scoped live analytics, seller knowledge retrieval, and streamed AI answers.
 
 ### What this service does not provide
 
@@ -101,6 +102,7 @@ Seller Service owns these boundaries. It manages seller applications, approval s
 - shipment creation or carrier execution;
 - payment settlement;
 - public display of compliance documents or bank credentials.
+- direct ownership of product, inventory, or order data; Copilot reads those domains through internal contracts.
 
 ---
 
@@ -108,31 +110,31 @@ Seller Service owns these boundaries. It manages seller applications, approval s
 
 ### Seller Service owns
 
-| Area | Responsibility |
-| --- | --- |
-| Seller application | Draft, submit, resubmit, review state, correction targets |
-| Onboarding data | Seller identity/business, contact, payout, pickup snapshot |
-| Admin review | Approve/reject decisions, notes, reviewer identity, timestamps |
-| Shop | Stable shop ID, owner, slug, status, public profile |
-| Compliance | Verified legal, identity, tax, and payout snapshot |
-| Sensitive changes | Tax, payout, and identity change requests |
-| Public shop | Public shop listing, detail, follow relation, counters |
-| Shipping settings | Preparation time, pickup window, enabled state |
-| Pickup addresses | Shop-owned addresses and default address |
-| Integration events | Application and shop profile lifecycle events |
+| Area               | Responsibility                                                 |
+| ------------------ | -------------------------------------------------------------- |
+| Seller application | Draft, submit, resubmit, review state, correction targets      |
+| Onboarding data    | Seller identity/business, contact, payout, pickup snapshot     |
+| Admin review       | Approve/reject decisions, notes, reviewer identity, timestamps |
+| Shop               | Stable shop ID, owner, slug, status, public profile            |
+| Compliance         | Verified legal, identity, tax, and payout snapshot             |
+| Sensitive changes  | Tax, payout, and identity change requests                      |
+| Public shop        | Public shop listing, detail, follow relation, counters         |
+| Shipping settings  | Preparation time, pickup window, enabled state                 |
+| Pickup addresses   | Shop-owned addresses and default address                       |
+| Integration events | Application and shop profile lifecycle events                  |
 
 ### Other services own
 
-| Concern | Owner | Seller Service interaction |
-| --- | --- | --- |
-| Authentication and roles | Auth Service | Reads trusted identity; emits approval handoff |
-| Category taxonomy | Catalog Service | Validates application and shop category |
-| Product listing | Product Service | Reads shop ownership and active-product count |
-| Media assets | Media Service | Stores logo and document assets by reference |
-| Address master data | Location Service | Validates GHN province, district, and ward mapping |
-| Shipment execution | Shipping Service | Reads pickup address and readiness |
-| Customer-facing routing | API Gateway / Web | Forwards authenticated context and renders responses |
-| Notifications | Notification Service | Consumes seller application/profile events |
+| Concern                  | Owner                | Seller Service interaction                           |
+| ------------------------ | -------------------- | ---------------------------------------------------- |
+| Authentication and roles | Auth Service         | Reads trusted identity; emits approval handoff       |
+| Category taxonomy        | Catalog Service      | Validates application and shop category              |
+| Product listing          | Product Service      | Reads shop ownership and active-product count        |
+| Media assets             | Media Service        | Stores logo and document assets by reference         |
+| Address master data      | Location Service     | Validates GHN province, district, and ward mapping   |
+| Shipment execution       | Shipping Service     | Reads pickup address and readiness                   |
+| Customer-facing routing  | API Gateway / Web    | Forwards authenticated context and renders responses |
+| Notifications            | Notification Service | Consumes seller application/profile events           |
 
 A shop is the stable cross-service reference. Product Service stores the shop ID and seller owner ID, while Seller Service remains the owner of shop lifecycle and ownership.
 
@@ -158,19 +160,19 @@ The service handles identity, legal information, bank information, shop ownershi
 <details>
 <summary><b>Caller capabilities and data exposure</b></summary>
 
-| Caller | Allowed operation |
-| --- | --- |
-| Authenticated user | Read and edit their own draft application |
-| Applicant | Submit or resubmit their own application |
-| Admin with review permission | List, inspect, approve, and reject applications |
-| Approved seller | Read and update their own public shop profile |
-| Approved seller | Manage their own shipping settings and pickup addresses |
-| Approved seller | Submit sensitive profile change requests |
-| Admin with compliance permission | Review and approve or reject sensitive changes |
-| Public visitor | Read active public shops and public shop details |
-| Authenticated customer | Follow or unfollow a public shop |
-| Product Service | Read active product count and shipping readiness |
-| Shipping Service | Read a shop's default pickup address and readiness |
+| Caller                           | Allowed operation                                       |
+| -------------------------------- | ------------------------------------------------------- |
+| Authenticated user               | Read and edit their own draft application               |
+| Applicant                        | Submit or resubmit their own application                |
+| Admin with review permission     | List, inspect, approve, and reject applications         |
+| Approved seller                  | Read and update their own public shop profile           |
+| Approved seller                  | Manage their own shipping settings and pickup addresses |
+| Approved seller                  | Submit sensitive profile change requests                |
+| Admin with compliance permission | Review and approve or reject sensitive changes          |
+| Public visitor                   | Read active public shops and public shop details        |
+| Authenticated customer           | Follow or unfollow a public shop                        |
+| Product Service                  | Read active product count and shipping readiness        |
+| Shipping Service                 | Read a shop's default pickup address and readiness      |
 
 A public or seller response must never include raw verification documents, bank account numbers, tax identifiers, or private internal service credentials unless a narrowly authorized admin response explicitly requires a masked representation.
 
@@ -182,47 +184,47 @@ A public or seller response must never include raw verification documents, bank 
 
 ### Start the service
 
-~~~powershell
+```powershell
 cd services/seller-service
 Copy-Item .env.example .env
 npm install
 npm run dev
-~~~
+```
 
 ### Check health
 
-~~~powershell
+```powershell
 curl http://localhost:3007/api/v1/health
-~~~
+```
 
 Expected response shape:
 
-~~~json
+```json
 {
-  "service": "seller-service",
-  "status": "ok",
-  "version": "1.0.0",
-  "timestamp": "2026-09-16T08:00:00.000Z"
+    "service": "seller-service",
+    "status": "ok",
+    "version": "1.0.0",
+    "timestamp": "2026-09-16T08:00:00.000Z"
 }
-~~~
+```
 
 ### Read the current application
 
-~~~powershell
+```powershell
 curl http://localhost:3007/api/v1/seller/applications/me -H "x-user-id: user-123" -H "x-user-email: seller@example.com"
-~~~
+```
 
 ### Read public shops
 
-~~~powershell
+```powershell
 curl "http://localhost:3007/api/v1/shops?page=1&pageSize=20"
-~~~
+```
 
 ### Read shipping settings
 
-~~~powershell
+```powershell
 curl http://localhost:3007/api/v1/seller/shipping/settings -H "x-user-id: seller-123"
-~~~
+```
 
 A complete onboarding test saves a draft, submits it, reviews it with an admin context, verifies the approval event, and then reads the provisioned shop and shipping settings.
 
@@ -246,15 +248,15 @@ A complete onboarding test saves a draft, submits it, reviews it with an admin c
 
 From the repository root:
 
-~~~bash
+```bash
 npm install
-~~~
+```
 
 ### Configure local environment
 
-~~~powershell
+```powershell
 Copy-Item .env.example .env
-~~~
+```
 
 Set PostgreSQL credentials and service URLs. The local defaults point to:
 
@@ -272,25 +274,25 @@ Migrations run on startup and synchronize is disabled. Review the migration plan
 
 ### Production build
 
-~~~bash
+```bash
 npm run type-check
 npm run lint
 npm test -- --runInBand
 npm run build
 npm run start
-~~~
+```
 
 ---
 
 ## 7. Seller onboarding lifecycle
 
-~~~text
+```text
 DRAFT
   -> PENDING_REVIEW
        -> APPROVED
        -> REJECTED
        -> correction targets -> corrected draft -> resubmitted
-~~~
+```
 
 ### Draft
 
@@ -387,11 +389,11 @@ This is used by:
 
 ### Shop status
 
-| Status | Meaning |
-| --- | --- |
-| active | Shop can operate and appear in public listings |
+| Status    | Meaning                                                        |
+| --------- | -------------------------------------------------------------- |
+| active    | Shop can operate and appear in public listings                 |
 | suspended | Shop exists but operational access or visibility is restricted |
-| closed | Shop is no longer an active operating shop |
+| closed    | Shop is no longer an active operating shop                     |
 
 Shop status is independent from the original application status. An approved seller can later be suspended without rewriting the onboarding history.
 
@@ -435,14 +437,14 @@ Sensitive sections are grouped into:
 - payout;
 - identity.
 
-~~~text
+```text
 seller submits requested changes
   -> PENDING_REVIEW
   -> admin compares current snapshot and requested changes
   -> APPROVED: apply atomically and increment version
   -> REJECTED: keep effective profile unchanged
   -> CANCELLED: close without applying
-~~~
+```
 
 A request stores:
 
@@ -505,11 +507,11 @@ Address values are validated against the current Location master-data contract. 
 
 ### Internal shipping routes
 
-~~~text
+```text
 GET /api/v1/internal/seller/shops/{shopId}/pickup-address
 GET /api/v1/internal/seller/shops/{shopId}/shipping-readiness
 x-internal-service-token: shared internal token
-~~~
+```
 
 These routes do not return seller payout data or carrier credentials.
 
@@ -535,13 +537,13 @@ Follow and unfollow are idempotent:
 
 ### Public and private separation
 
-| Public response | Private/admin response |
-| --- | --- |
-| Shop name, slug, logo, description | Compliance profile |
-| Main category and public contact | Tax and identity data |
-| Follow state and public counters | Bank and payout information |
-| Public operating status | Verification documents |
-| Public catalog summary references | Review notes and internal audit fields |
+| Public response                    | Private/admin response                 |
+| ---------------------------------- | -------------------------------------- |
+| Shop name, slug, logo, description | Compliance profile                     |
+| Main category and public contact   | Tax and identity data                  |
+| Follow state and public counters   | Bank and payout information            |
+| Public operating status            | Verification documents                 |
+| Public catalog summary references  | Review notes and internal audit fields |
 
 Public shop reads must not become an indirect way to inspect onboarding or compliance data.
 
@@ -585,14 +587,14 @@ For high-assurance production delivery, monitor the event/outbox path and replay
 
 ### HTTP integrations
 
-| Integration | Use |
-| --- | --- |
-| Catalog Service | Validate main category and catalog references |
-| Location Service | Validate address and GHN mapping |
-| Product Service | Check active products before address deletion or shop operations |
-| Auth Service | Resolve identity context and role handoff |
-| Notification Service | Consume application and profile-change events |
-| Shipping Service | Read pickup address and readiness |
+| Integration          | Use                                                              |
+| -------------------- | ---------------------------------------------------------------- |
+| Catalog Service      | Validate main category and catalog references                    |
+| Location Service     | Validate address and GHN mapping                                 |
+| Product Service      | Check active products before address deletion or shop operations |
+| Auth Service         | Resolve identity context and role handoff                        |
+| Notification Service | Consume application and profile-change events                    |
+| Shipping Service     | Read pickup address and readiness                                |
 
 ---
 
@@ -674,67 +676,67 @@ All routes are served below /api/v1 when URI versioning is enabled.
 
 ### Seller applications
 
-| Method | Route | Purpose |
-| --- | --- | --- |
-| GET | /seller/applications/me | Read the current user's application |
-| PATCH | /seller/applications/me | Save or update a draft |
-| POST | /seller/applications/submit | Submit a draft for review |
-| POST | /seller/applications/resubmit | Resubmit corrected application data |
-| GET | /seller/applications/admin | List applications for admin review |
-| GET | /seller/applications/admin/:id | Read one application for admin |
-| POST | /seller/applications/admin/:id/approve | Approve a pending application |
-| POST | /seller/applications/admin/:id/reject | Reject with a review note |
+| Method | Route                                  | Purpose                             |
+| ------ | -------------------------------------- | ----------------------------------- |
+| GET    | /seller/applications/me                | Read the current user's application |
+| PATCH  | /seller/applications/me                | Save or update a draft              |
+| POST   | /seller/applications/submit            | Submit a draft for review           |
+| POST   | /seller/applications/resubmit          | Resubmit corrected application data |
+| GET    | /seller/applications/admin             | List applications for admin review  |
+| GET    | /seller/applications/admin/:id         | Read one application for admin      |
+| POST   | /seller/applications/admin/:id/approve | Approve a pending application       |
+| POST   | /seller/applications/admin/:id/reject  | Reject with a review note           |
 
 ### Shop profile
 
-| Method | Route | Purpose |
-| --- | --- | --- |
-| GET | /seller/shop/profile | Read the current seller's shop profile |
-| PATCH | /seller/shop/profile | Update allowed public profile fields |
+| Method | Route                | Purpose                                |
+| ------ | -------------------- | -------------------------------------- |
+| GET    | /seller/shop/profile | Read the current seller's shop profile |
+| PATCH  | /seller/shop/profile | Update allowed public profile fields   |
 
 ### Sensitive profile change requests
 
-| Method | Route | Purpose |
-| --- | --- | --- |
-| POST | /seller/shop/profile/change-requests | Submit a sensitive change request |
-| GET | /seller/shop/profile/change-requests/admin | List requests for admin review |
-| GET | /seller/shop/profile/change-requests/admin/:requestId | Read request snapshots |
-| POST | /seller/shop/profile/change-requests/admin/:requestId/approve | Apply approved changes |
-| POST | /seller/shop/profile/change-requests/admin/:requestId/reject | Reject a request with a reason |
+| Method | Route                                                         | Purpose                           |
+| ------ | ------------------------------------------------------------- | --------------------------------- |
+| POST   | /seller/shop/profile/change-requests                          | Submit a sensitive change request |
+| GET    | /seller/shop/profile/change-requests/admin                    | List requests for admin review    |
+| GET    | /seller/shop/profile/change-requests/admin/:requestId         | Read request snapshots            |
+| POST   | /seller/shop/profile/change-requests/admin/:requestId/approve | Apply approved changes            |
+| POST   | /seller/shop/profile/change-requests/admin/:requestId/reject  | Reject a request with a reason    |
 
 ### Shipping and pickup
 
-| Method | Route | Purpose |
-| --- | --- | --- |
-| GET | /seller/shipping/settings | Read shop shipping settings and addresses |
-| PATCH | /seller/shipping/settings | Update preparation and pickup settings |
-| POST | /seller/shipping/pickup-addresses | Add a pickup address |
-| PATCH | /seller/shipping/pickup-addresses/:id | Update an owned pickup address |
-| POST | /seller/shipping/pickup-addresses/:id/default | Set the default pickup address |
-| DELETE | /seller/shipping/pickup-addresses/:id | Delete an eligible pickup address |
+| Method | Route                                         | Purpose                                   |
+| ------ | --------------------------------------------- | ----------------------------------------- |
+| GET    | /seller/shipping/settings                     | Read shop shipping settings and addresses |
+| PATCH  | /seller/shipping/settings                     | Update preparation and pickup settings    |
+| POST   | /seller/shipping/pickup-addresses             | Add a pickup address                      |
+| PATCH  | /seller/shipping/pickup-addresses/:id         | Update an owned pickup address            |
+| POST   | /seller/shipping/pickup-addresses/:id/default | Set the default pickup address            |
+| DELETE | /seller/shipping/pickup-addresses/:id         | Delete an eligible pickup address         |
 
 ### Public shops
 
-| Method | Route | Purpose |
-| --- | --- | --- |
-| GET | /shops | List active public shops |
-| GET | /shops/:identifier | Read a public shop by identifier |
-| PUT | /shops/:identifier/follow | Follow a shop as the authenticated viewer |
-| DELETE | /shops/:identifier/follow | Unfollow a shop |
+| Method | Route                     | Purpose                                   |
+| ------ | ------------------------- | ----------------------------------------- |
+| GET    | /shops                    | List active public shops                  |
+| GET    | /shops/:identifier        | Read a public shop by identifier          |
+| PUT    | /shops/:identifier/follow | Follow a shop as the authenticated viewer |
+| DELETE | /shops/:identifier/follow | Unfollow a shop                           |
 
 ### Internal integrations
 
-| Method | Route | Purpose |
-| --- | --- | --- |
-| GET | /internal/seller/shops/:shopId/pickup-address | Return default pickup address |
-| GET | /internal/seller/shops/:shopId/shipping-readiness | Return readiness for selling/shipping |
+| Method | Route                                             | Purpose                               |
+| ------ | ------------------------------------------------- | ------------------------------------- |
+| GET    | /internal/seller/shops/:shopId/pickup-address     | Return default pickup address         |
+| GET    | /internal/seller/shops/:shopId/shipping-readiness | Return readiness for selling/shipping |
 
 ### Health and documentation
 
-| Method | Route | Purpose |
-| --- | --- | --- |
-| GET | /api/v1/health | Report service liveness |
-| GET | /docs | Swagger UI outside production |
+| Method | Route          | Purpose                       |
+| ------ | -------------- | ----------------------------- |
+| GET    | /api/v1/health | Report service liveness       |
+| GET    | /docs          | Swagger UI outside production |
 
 Seller and admin routes derive scope from trusted headers. Internal routes require x-internal-service-token. Public routes intentionally have a smaller response shape.
 
@@ -742,7 +744,7 @@ Seller and admin routes derive scope from trusted headers. Internal routes requi
 
 ## 15. Project structure
 
-~~~text
+```text
 services/seller-service/
 +-- src/
 |   +-- main.ts
@@ -776,7 +778,7 @@ services/seller-service/
 +-- package.json
 +-- tsconfig.json
 +-- README.md
-~~~
+```
 
 ### Organization rules
 
@@ -794,21 +796,30 @@ services/seller-service/
 
 Use [.env.example](./.env.example) as the canonical local template.
 
-| Variable | Required | Purpose |
-| --- | --- | --- |
-| NODE_ENV | No | Runtime environment |
-| PORT | No | HTTP port, default 3007 |
-| APP_VERSION | No | Version returned by health |
-| TYPEORM_LOGGING | No | Enable TypeORM SQL logging |
-| POSTGRES_HOST | Yes | PostgreSQL host |
-| POSTGRES_PORT | No | PostgreSQL port, default 5432 |
-| POSTGRES_USER | Yes | PostgreSQL user |
-| POSTGRES_PASSWORD | Yes | PostgreSQL password |
-| POSTGRES_DB | Yes | Seller database name |
-| CATALOG_SERVICE_URL | Yes | Category and catalog validation |
-| KAFKA_BROKERS | Yes for events | Kafka broker list |
-| KAFKA_CLIENT_ID | No | Kafka producer client ID |
+| Variable               | Required               | Purpose                          |
+| ---------------------- | ---------------------- | -------------------------------- |
+| NODE_ENV               | No                     | Runtime environment              |
+| PORT                   | No                     | HTTP port, default 3007          |
+| APP_VERSION            | No                     | Version returned by health       |
+| TYPEORM_LOGGING        | No                     | Enable TypeORM SQL logging       |
+| POSTGRES_HOST          | Yes                    | PostgreSQL host                  |
+| POSTGRES_PORT          | No                     | PostgreSQL port, default 5432    |
+| POSTGRES_USER          | Yes                    | PostgreSQL user                  |
+| POSTGRES_PASSWORD      | Yes                    | PostgreSQL password              |
+| POSTGRES_DB            | Yes                    | Seller database name             |
+| CATALOG_SERVICE_URL    | Yes                    | Category and catalog validation  |
+| KAFKA_BROKERS          | Yes for events         | Kafka broker list                |
+| KAFKA_CLIENT_ID        | No                     | Kafka producer client ID         |
 | INTERNAL_SERVICE_TOKEN | Yes for internal calls | Shared service-to-service secret |
+| SELLER_COPILOT_ENABLED | No                     | Enable or disable seller AI chat |
+| OPENAI_API_KEY         | Yes for AI answers     | Server-side OpenAI credential    |
+| SELLER_COPILOT_MODEL   | No                     | Chat model, default gpt-4.1-mini |
+| EMBEDDING_MODEL        | No                     | RAG embedding model              |
+| QDRANT_URL             | No                     | Seller knowledge vector store    |
+| QDRANT_API_KEY         | No                     | Qdrant credential when required  |
+| SELLER_KNOWLEDGE_DATASET_VERSION | No | Active policy dataset version |
+| SELLER_POLICY_MIN_RELEVANCE_SCORE | No | Dense/lexical evidence threshold |
+| SELLER_KNOWLEDGE_EMBEDDING_BATCH_SIZE | No | Offline embedding batch size |
 
 ### Configuration ownership
 
@@ -820,20 +831,42 @@ Use [.env.example](./.env.example) as the canonical local template.
 
 Do not put bank credentials, identity documents, or internal tokens in Kafka messages, logs, or public API responses.
 
+### Seller Intelligence Copilot
+
+The Copilot is a seller-scoped, read-only assistant. It combines the live dashboard snapshot with seller knowledge retrieved from Qdrant, then streams the answer through Server-Sent Events. The browser never receives `OPENAI_API_KEY` and cannot choose `shopId` or another seller's scope.
+
+| Method | Route                                              | Purpose                                 |
+| ------ | -------------------------------------------------- | --------------------------------------- |
+| POST   | `/seller/ai/copilot/chat/stream`                   | Stream a scoped answer and citations    |
+| GET    | `/seller/ai/copilot/conversations`                 | List the current seller's conversations |
+| GET    | `/seller/ai/copilot/conversations/:conversationId` | Read one owned conversation             |
+| POST   | `/seller/ai/copilot/feedback`                      | Record answer feedback                  |
+
+Knowledge documents are ingested offline. After building the service, set `OPENAI_API_KEY` and `QDRANT_URL`, then run:
+
+```bash
+npm run knowledge:validate --workspace @bin-ecommerce/seller-service
+npm run knowledge:ingest --workspace @bin-ecommerce/seller-service
+```
+
+`knowledge:validate` only checks Markdown frontmatter and published chunks. Draft, review, expired, archived, and missing documents are not activated. The ingestion command updates Qdrant and the PostgreSQL lexical projection after a successful embedding pass.
+
+Policy capabilities use four explicit states: `SUPPORTED`, `PARTIAL`, `IN_DEVELOPMENT`, and `UNSUPPORTED`. An `IN_DEVELOPMENT` capability returns a deterministic notice without calling OpenAI, Qdrant, or the language model. A provider failure is reported separately as `PROVIDER_ERROR`; it is never mislabeled as a business capability being developed.
+
 ---
 
 ## 17. Local development
 
 ### Commands
 
-~~~bash
+```bash
 npm run dev
 npm run type-check
 npm run lint
 npm test
 npm run build
 npm run start
-~~~
+```
 
 ### Recommended sequence
 
@@ -852,14 +885,15 @@ npm run start
 13. Configure pickup addresses and shipping readiness.
 14. Test public shop reads and follow/unfollow.
 15. Confirm Product and Shipping internal lookups.
+16. For Copilot RAG, configure OpenAI and Qdrant, run `knowledge:ingest`, then open Seller Center and ask an operational question.
 
 ### Swagger
 
 When NODE_ENV is not production:
 
-~~~text
+```text
 http://localhost:3007/docs
-~~~
+```
 
 Swagger documents the HTTP controllers. Kafka event payloads are defined by shared contracts and event publisher services.
 
@@ -933,12 +967,12 @@ Cover:
 
 ### Commands
 
-~~~bash
+```bash
 npm run type-check
 npm run lint
 npm test -- --runInBand
 npm run build
-~~~
+```
 
 ---
 
