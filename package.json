@@ -6,6 +6,9 @@
         "build": "nest build && tsc-alias -p tsconfig.build.json",
         "start": "node --max-old-space-size=128 dist/services/seller-service/src/main.js",
         "dev": "nest start --watch",
+        "knowledge:ingest": "node dist/services/seller-service/src/scripts/ingest-seller-knowledge.js",
+        "knowledge:validate": "node dist/services/seller-service/src/scripts/ingest-seller-knowledge.js --dry-run",
+        "question-planner:evaluate": "node dist/services/seller-service/src/scripts/evaluate-seller-question-planner.js",
         "lint": "eslint src --ext .ts",
         "type-check": "tsc --noEmit",
         "test": "jest --passWithNoTests"
@@ -31,8 +34,10 @@
     "devDependencies": {
         "@nestjs/cli": "^11.0.5",
         "@nestjs/testing": "^11.0.7",
+        "@types/express": "^5.0.6",
         "@types/jest": "^29.5.14",
         "@types/node": "^22.10.7",
+        "@types/pg": "^8.11.10",
         "jest": "^29.7.0",
         "ts-jest": "^29.2.5",
         "tsc-alias": "^1.9.4",

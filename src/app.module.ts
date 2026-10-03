@@ -8,7 +8,9 @@ import { SellerModule } from '@/modules/seller.module';
     imports: [
         ConfigModule.forRoot({
             isGlobal: true,
-            envFilePath: ['.env.local', '.env'],
+            // Khi chạy từ service, đọc thêm env ở root để Copilot nhận được OpenAI/Qdrant;
+            // biến đã inject từ Docker vẫn có ưu tiên cao hơn file env.
+            envFilePath: ['.env.local', '.env', '../../.env'],
         }),
         TypeOrmModule.forRootAsync({
             inject: [ConfigService],

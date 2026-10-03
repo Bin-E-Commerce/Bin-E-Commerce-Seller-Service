@@ -1,0 +1,702 @@
+[
+    {
+        "id": "BS01",
+        "question": "Alo bạn ơi",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "SMALL_TALK",
+                    "domain": null
+                }
+            ]
+        },
+        "labelRationale": "Lời chào xã giao, không yêu cầu tra cứu nghiệp vụ.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS02",
+        "question": "Cảm ơn nha, để mình xem lại",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "SMALL_TALK",
+                    "domain": null
+                }
+            ]
+        },
+        "labelRationale": "Lời cảm ơn/xã giao không tạo yêu cầu đọc dữ liệu shop.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS03",
+        "question": "Bạn làm được những gì cho shop mình?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CAPABILITY_QUERY",
+                    "domain": "seller-copilot-capabilities"
+                }
+            ]
+        },
+        "labelRationale": "Hỏi phạm vi khả năng của BinGPT, không yêu cầu thực hiện hay đọc số liệu cụ thể.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS04",
+        "question": "BinGPT có tự cập nhật tồn kho nếu tôi nhờ không?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CAPABILITY_QUERY",
+                    "domain": "seller-copilot-capabilities"
+                }
+            ]
+        },
+        "labelRationale": "Hỏi trợ lý có hỗ trợ một chức năng hay không; chưa yêu cầu cập nhật tồn kho ngay.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS05",
+        "question": "Mình gửi thông tin sản phẩm thì bạn viết giúp nội dung quảng cáo được chứ?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CAPABILITY_QUERY",
+                    "domain": "seller-copilot-capabilities"
+                }
+            ]
+        },
+        "labelRationale": "Cách hỏi lịch sự nhưng vẫn hỏi khả năng soạn nội dung, không phải yêu cầu tạo nội dung ngay.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS06",
+        "question": "Tên shop mình đang dùng là gì nhỉ?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-profile"
+                }
+            ]
+        },
+        "labelRationale": "Tra cứu tên shop hiện tại thuộc hồ sơ shop, không phải hướng dẫn Seller Center.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS07",
+        "question": "Cho mình xem doanh thu tháng này với",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-revenue"
+                }
+            ]
+        },
+        "labelRationale": "Yêu cầu số liệu doanh thu theo thời gian hiện tại, cần domain dữ liệu live seller-revenue.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS08",
+        "question": "Có mấy đơn đang đợi shop chuẩn bị hàng?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-orders"
+                }
+            ]
+        },
+        "labelRationale": "Hỏi số lượng đơn thực tế của shop; cụm chuẩn bị hàng không biến câu hỏi số liệu thành hỏi quy trình.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS09",
+        "question": "Mấy mẫu áo size M còn bao nhiêu cái?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        },
+        "labelRationale": "Tra cứu số lượng tồn của biến thể sản phẩm thuộc dữ liệu sản phẩm và tồn kho live.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS10",
+        "question": "Dạo này mặt hàng nào bán chạy nhất vậy?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        },
+        "labelRationale": "Hỏi hiệu quả sản phẩm bán ra, thuộc dữ liệu hiệu quả sản phẩm chứ không hỏi tổng doanh thu shop.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS11",
+        "question": "Phí ship có được cộng vào doanh thu gộp không?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "fees-settlement"
+                }
+            ]
+        },
+        "labelRationale": "Hỏi quy tắc quan hệ giữa phí giao hàng và doanh thu, thuộc chính sách phí/ghi nhận chứ không hỏi con số doanh thu live.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS12",
+        "question": "Đơn báo đã thu tiền rồi thì shop đã nhận được tiền chuyển khoản chưa?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "fees-settlement"
+                }
+            ]
+        },
+        "labelRationale": "Hỏi việc ghi nhận đã thu tiền có đồng nghĩa tiền đã chuyển vào tài khoản shop hay không; đây là ranh giới COD/đối soát của fees-settlement, không phải số doanh thu dashboard.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS13",
+        "question": "Đã giao với hoàn tất đơn khác nhau chỗ nào?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "order-status"
+                }
+            ]
+        },
+        "labelRationale": "So sánh ý nghĩa hai trạng thái vòng đời đơn hàng, thuộc order-status.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS14",
+        "question": "Đơn mới vào thì shop cần làm lần lượt những gì?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "order-processing"
+                }
+            ]
+        },
+        "labelRationale": "Hỏi chuỗi thao tác shop cần thực hiện với đơn, thuộc quy trình xử lý đơn chứ không hỏi nghĩa trạng thái.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS15",
+        "question": "Trong Seller Center, mục nào cho mình tự đổi địa chỉ lấy hàng?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-center-troubleshooting"
+                }
+            ]
+        },
+        "labelRationale": "Người dùng hỏi vị trí mục chức năng trong giao diện Seller Center, nên domain là hướng dẫn tìm chức năng chứ chưa yêu cầu đổi địa chỉ hoặc hỏi chính sách vận chuyển.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS16",
+        "question": "Khách trả hàng rồi thì shop cần kiểm tra và hoàn tiền thế nào?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "returns-refunds"
+                }
+            ]
+        },
+        "labelRationale": "Hỏi quy trình xử lý trả hàng và hoàn tiền sau khi khách trả hàng, thuộc returns-refunds.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS17",
+        "question": "Đồ ăn chức năng có bị cấm đăng bán không?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "restricted-products"
+                }
+            ]
+        },
+        "labelRationale": "Tra cứu quy định sản phẩm bị cấm/hạn chế; không yêu cầu hệ thống đăng sản phẩm.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS18",
+        "question": "Trong Seller Center tìm chỗ sửa mô tả shop ở đâu?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-center-troubleshooting"
+                }
+            ]
+        },
+        "labelRationale": "Hỏi vị trí chức năng trên Seller Center, thuộc hướng dẫn sử dụng thay vì yêu cầu sửa mô tả ngay.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS19",
+        "question": "Sửa tồn của mẫu váy đen thành 12 giúp mình",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CHANGE_REQUEST",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        },
+        "labelRationale": "Yêu cầu trực tiếp thay đổi số lượng tồn, không phải hỏi khả năng hay tra cứu số lượng.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS20",
+        "question": "Tạo giúp mình một sản phẩm mới từ thông tin này",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CHANGE_REQUEST",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        },
+        "labelRationale": "Đề nghị tạo sản phẩm là yêu cầu thay đổi dữ liệu sản phẩm; phân loại không đồng nghĩa đã thực hiện thao tác.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS21",
+        "question": "Hủy đơn 123 giúp tôi nhé",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CHANGE_REQUEST",
+                    "domain": "seller-orders"
+                }
+            ]
+        },
+        "labelRationale": "Yêu cầu chủ động hủy đơn thuộc thay đổi dữ liệu đơn hàng, dù thao tác còn phụ thuộc quyền và trạng thái.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS22",
+        "question": "Thêm địa chỉ lấy hàng mới cho shop mình",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CHANGE_REQUEST",
+                    "domain": "shipping"
+                }
+            ]
+        },
+        "labelRationale": "Yêu cầu thêm/cập nhật cấu hình địa chỉ lấy hàng, thuộc change request của shipping.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS23",
+        "question": "Cuối tuần này Đà Lạt có mưa không?",
+        "expected": {
+            "status": "OUT_OF_SCOPE",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "OUT_OF_SCOPE",
+                    "domain": null
+                }
+            ]
+        },
+        "labelRationale": "Hỏi dự báo thời tiết, không thuộc khả năng hỗ trợ vận hành seller đã đăng ký.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS24",
+        "question": "Viết giúp mình lời chúc sinh nhật cho bạn thân",
+        "expected": {
+            "status": "OUT_OF_SCOPE",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "OUT_OF_SCOPE",
+                    "domain": null
+                }
+            ]
+        },
+        "labelRationale": "Yêu cầu sáng tác cá nhân không liên quan seller hay nội dung phục vụ shop.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS25",
+        "question": "Cái đó bao nhiêu tiền vậy?",
+        "expected": {
+            "status": "NEEDS_CLARIFICATION",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": []
+        },
+        "labelRationale": "Không có ngữ cảnh cho đại từ 'cái đó' nên chưa biết người dùng hỏi giá sản phẩm, phí hay số liệu nào.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS26",
+        "question": "Làm giúp mình luôn đi",
+        "expected": {
+            "status": "NEEDS_CLARIFICATION",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": []
+        },
+        "labelRationale": "Không có lịch sử hoặc đối tượng thao tác nên không thể xác định việc cần làm an toàn.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS27",
+        "question": "Còn số đơn thì sao?",
+        "history": [
+            {
+                "role": "user",
+                "content": "Doanh thu shop 30 ngày vừa rồi thế nào?"
+            },
+            {
+                "role": "assistant",
+                "content": "Doanh thu gộp trong 30 ngày là 8 triệu đồng."
+            }
+        ],
+        "expected": {
+            "status": "READY",
+            "contextRelation": "FOLLOW_UP",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-orders",
+                    "resolvedQuestionMustContain": [
+                        "30 ngày"
+                    ]
+                }
+            ]
+        },
+        "labelRationale": "Câu nối tiếp hỏi thêm số đơn trong cùng khoảng thời gian; domain mới là seller-orders nhưng cần giữ mốc 30 ngày.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS28",
+        "question": "Thế còn hàng hoàn về thì sao?",
+        "history": [
+            {
+                "role": "user",
+                "content": "Đơn giao thất bại thì shop nên làm gì?"
+            },
+            {
+                "role": "assistant",
+                "content": "Bạn có thể kiểm tra trạng thái vận đơn và thông tin xử lý sau giao."
+            }
+        ],
+        "expected": {
+            "status": "READY",
+            "contextRelation": "FOLLOW_UP",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "returns-refunds"
+                }
+            ]
+        },
+        "labelRationale": "Câu hỏi tiếp nối cùng tình huống sau giao nhưng chuyển sang xử lý hàng hoàn, thuộc returns-refunds.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS29",
+        "question": "Còn màu đen thì sao?",
+        "history": [
+            {
+                "role": "user",
+                "content": "Áo thun trắng size M còn bao nhiêu cái?"
+            },
+            {
+                "role": "assistant",
+                "content": "Biến thể màu trắng size M hiện còn 6 sản phẩm."
+            }
+        ],
+        "expected": {
+            "status": "READY",
+            "contextRelation": "FOLLOW_UP",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-products-inventory",
+                    "resolvedQuestionMustContain": [
+                        "áo thun",
+                        "màu đen",
+                        "size M"
+                    ]
+                }
+            ]
+        },
+        "labelRationale": "Câu nối tiếp thay đổi thuộc tính màu, cần kế thừa sản phẩm, size và ý định tra cứu tồn kho.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS30",
+        "question": "Của shop nhé",
+        "history": [
+            {
+                "role": "user",
+                "content": "Mình muốn xem hồ sơ hiện tại."
+            },
+            {
+                "role": "assistant",
+                "content": "Bạn muốn xem hồ sơ tài khoản hay thông tin shop?"
+            }
+        ],
+        "expected": {
+            "status": "READY",
+            "contextRelation": "CLARIFICATION_REPLY",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-profile",
+                    "resolvedQuestionMustContain": [
+                        "shop"
+                    ]
+                }
+            ]
+        },
+        "labelRationale": "Trả lời trực tiếp lựa chọn shop mà assistant vừa hỏi, vì vậy là CLARIFICATION_REPLY thay vì câu mới hoặc follow-up.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS31",
+        "question": "90 ngày đi",
+        "history": [
+            {
+                "role": "user",
+                "content": "Doanh thu dạo này của shop thế nào?"
+            },
+            {
+                "role": "assistant",
+                "content": "Bạn muốn xem 7, 30 hay 90 ngày gần nhất?"
+            }
+        ],
+        "expected": {
+            "status": "READY",
+            "contextRelation": "CLARIFICATION_REPLY",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-revenue",
+                    "resolvedQuestionMustContain": [
+                        "90 ngày",
+                        "doanh thu"
+                    ]
+                }
+            ]
+        },
+        "labelRationale": "Người dùng chọn một trong các khoảng thời gian assistant vừa đưa ra; phải nối lựa chọn với câu hỏi doanh thu.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS32",
+        "question": "Tháng rồi shop bán được bao nhiêu, với đang có mấy đơn chờ giao?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-revenue"
+                },
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-orders"
+                }
+            ]
+        },
+        "labelRationale": "Có hai yêu cầu theo thứ tự: doanh thu tháng trước rồi số đơn chờ giao.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS33",
+        "question": "Món nào sắp hết hàng, đơn nào shop phải chuẩn bị trước?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-products-inventory"
+                },
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-orders"
+                }
+            ]
+        },
+        "labelRationale": "Tách đúng hai ý độc lập theo thứ tự: rủi ro tồn kho và đơn cần xử lý; không gộp thành một domain.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS34",
+        "question": "Phí giao hàng tính ra sao, còn đơn bị trả thì tiền hoàn thế nào?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "fees-settlement"
+                },
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "returns-refunds"
+                }
+            ]
+        },
+        "labelRationale": "Hai câu hỏi chính sách khác domain: cách tính phí giao hàng và quy trình/khoản hoàn khi trả hàng.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS35",
+        "question": "Mẫu áo thun này còn bao nhiêu cái? Mình chỉ hỏi thôi, không cần sửa tồn.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        },
+        "labelRationale": "Sản phẩm đã được nêu rõ; người dùng phủ định yêu cầu sửa và chỉ muốn tra số lượng còn lại, nên là READ_QUERY chứ không phải CHANGE_REQUEST.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS36",
+        "question": "Bạn có thể cho biết phí nền tảng bị trừ từng đơn không?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "fees-settlement"
+                }
+            ]
+        },
+        "labelRationale": "Hỏi khả năng tra cứu một thông tin chính sách/đối soát cụ thể, không hỏi chức năng chung của BinGPT.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "BS37",
+        "question": "Shop có mấy đơn đang giao vậy, tiện xem giúp doanh thu 7 ngày luôn",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-orders"
+                },
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-revenue"
+                }
+            ]
+        },
+        "labelRationale": "Hai yêu cầu đọc dữ liệu theo thứ tự câu: số đơn đang giao rồi doanh thu 7 ngày.",
+        "split": "boundary-stress",
+        "reviewStatus": "PENDING_REVIEW"
+    }
+]

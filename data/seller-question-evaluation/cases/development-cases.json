@@ -1,0 +1,1754 @@
+[
+    {
+        "id": "ST01",
+        "question": "Chào bạn",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": null,
+                    "requestType": "SMALL_TALK"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Đây là lời xã giao, không phải yêu cầu tra cứu nghiệp vụ; Một yêu cầu duy nhất hướng tới không gắn domain. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "ST02",
+        "question": "Bạn ơi",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": null,
+                    "requestType": "SMALL_TALK"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Đây là lời xã giao, không phải yêu cầu tra cứu nghiệp vụ; Một yêu cầu duy nhất hướng tới không gắn domain. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "ST03",
+        "question": "Cảm ơn bạn nha",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": null,
+                    "requestType": "SMALL_TALK"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Đây là lời xã giao, không phải yêu cầu tra cứu nghiệp vụ; Một yêu cầu duy nhất hướng tới không gắn domain. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "ST04",
+        "question": "Hôm nay bạn thế nào?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": null,
+                    "requestType": "SMALL_TALK"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Đây là lời xã giao, không phải yêu cầu tra cứu nghiệp vụ; Một yêu cầu duy nhất hướng tới không gắn domain. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "ST05",
+        "question": "Mình quay lại hỏi chút nhé",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": null,
+                    "requestType": "SMALL_TALK"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Đây là lời xã giao, không phải yêu cầu tra cứu nghiệp vụ; Một yêu cầu duy nhất hướng tới không gắn domain. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "ST06",
+        "question": "Bạn vẫn ở đó chứ?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": null,
+                    "requestType": "SMALL_TALK"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Đây là lời xã giao, không phải yêu cầu tra cứu nghiệp vụ; Một yêu cầu duy nhất hướng tới không gắn domain. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "ST07",
+        "question": "Ok, cảm ơn nhiều",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": null,
+                    "requestType": "SMALL_TALK"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Đây là lời xã giao, không phải yêu cầu tra cứu nghiệp vụ; Một yêu cầu duy nhất hướng tới không gắn domain. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "ST08",
+        "question": "Rất vui được nói chuyện với bạn",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": null,
+                    "requestType": "SMALL_TALK"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Đây là lời xã giao, không phải yêu cầu tra cứu nghiệp vụ; Một yêu cầu duy nhất hướng tới không gắn domain. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "ST09",
+        "question": "Xin chào BinGPT",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": null,
+                    "requestType": "SMALL_TALK"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Đây là lời xã giao, không phải yêu cầu tra cứu nghiệp vụ; Một yêu cầu duy nhất hướng tới không gắn domain. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "ST10",
+        "question": "Tạm biệt, hẹn gặp lại",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": null,
+                    "requestType": "SMALL_TALK"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Đây là lời xã giao, không phải yêu cầu tra cứu nghiệp vụ; Một yêu cầu duy nhất hướng tới không gắn domain. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "CP01",
+        "question": "Bạn làm được những gì?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-copilot-capabilities",
+                    "requestType": "CAPABILITY_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng hỏi phạm vi chức năng, chưa yêu cầu thực hiện thao tác; Một yêu cầu duy nhất hướng tới phạm vi chức năng BinGPT. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "CP02",
+        "question": "BinGPT có thể hỗ trợ mình những việc nào?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-copilot-capabilities",
+                    "requestType": "CAPABILITY_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng hỏi phạm vi chức năng, chưa yêu cầu thực hiện thao tác; Một yêu cầu duy nhất hướng tới phạm vi chức năng BinGPT. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "CP03",
+        "question": "Tôi có thể nhờ bạn giúp gì trong việc bán hàng?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-copilot-capabilities",
+                    "requestType": "CAPABILITY_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng hỏi phạm vi chức năng, chưa yêu cầu thực hiện thao tác; Một yêu cầu duy nhất hướng tới phạm vi chức năng BinGPT. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "CP04",
+        "question": "Bạn có xem được thông tin shop của tôi không?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-copilot-capabilities",
+                    "requestType": "CAPABILITY_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng hỏi phạm vi chức năng, chưa yêu cầu thực hiện thao tác; Một yêu cầu duy nhất hướng tới phạm vi chức năng BinGPT. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "CP05",
+        "question": "BinGPT hiện có hỗ trợ tự động cập nhật tồn kho không?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-copilot-capabilities",
+                    "requestType": "CAPABILITY_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng hỏi phạm vi chức năng, chưa yêu cầu thực hiện thao tác; Một yêu cầu duy nhất hướng tới phạm vi chức năng BinGPT. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "CP06",
+        "question": "Những nội dung nào bạn chưa hỗ trợ?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-copilot-capabilities",
+                    "requestType": "CAPABILITY_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng hỏi phạm vi chức năng, chưa yêu cầu thực hiện thao tác; Một yêu cầu duy nhất hướng tới phạm vi chức năng BinGPT. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "CP07",
+        "question": "Tôi hỏi được cả chính sách lẫn doanh số chứ?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-copilot-capabilities",
+                    "requestType": "CAPABILITY_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng hỏi phạm vi chức năng, chưa yêu cầu thực hiện thao tác; Một yêu cầu duy nhất hướng tới phạm vi chức năng BinGPT. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "CP08",
+        "question": "Bạn chỉ trả lời chính sách hay phân tích số liệu shop luôn?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-copilot-capabilities",
+                    "requestType": "CAPABILITY_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng hỏi phạm vi chức năng, chưa yêu cầu thực hiện thao tác; Một yêu cầu duy nhất hướng tới phạm vi chức năng BinGPT. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "CP09",
+        "question": "BinGPT có thay đổi dữ liệu trong hệ thống không?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-copilot-capabilities",
+                    "requestType": "CAPABILITY_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng hỏi phạm vi chức năng, chưa yêu cầu thực hiện thao tác; Một yêu cầu duy nhất hướng tới phạm vi chức năng BinGPT. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "CP10",
+        "question": "Có thể hỏi bạn về đơn hàng và sản phẩm không?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-copilot-capabilities",
+                    "requestType": "CAPABILITY_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng hỏi phạm vi chức năng, chưa yêu cầu thực hiện thao tác; Một yêu cầu duy nhất hướng tới phạm vi chức năng BinGPT. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PF01",
+        "question": "Tên shop hiện tại của tôi là gì?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-profile",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới hồ sơ tài khoản/shop. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PF02",
+        "question": "Cho tôi xem email tài khoản của mình",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-profile",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới hồ sơ tài khoản/shop. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PF03",
+        "question": "Số điện thoại liên hệ trong hồ sơ shop là số nào?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-profile",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới hồ sơ tài khoản/shop. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PF04",
+        "question": "Shop của tôi đang hoạt động hay bị khóa?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-profile",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới hồ sơ tài khoản/shop. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PF05",
+        "question": "Mô tả shop mình hiện được lưu thế nào?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-profile",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới hồ sơ tài khoản/shop. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PF06",
+        "question": "Tôi đang kinh doanh theo mô hình nào?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-profile",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới hồ sơ tài khoản/shop. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PF07",
+        "question": "Xem giúp thông tin tài khoản và thông tin shop của tôi",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-profile",
+                    "requestType": "READ_QUERY"
+                },
+                {
+                    "domain": "seller-profile",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Có 2 yêu cầu độc lập; giữ thứ tự task như người dùng nêu và lần lượt định tuyến tới hồ sơ tài khoản/shop. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PF08",
+        "question": "Vai trò tài khoản của tôi là gì?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-profile",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới hồ sơ tài khoản/shop. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PF09",
+        "question": "Shop đang đăng ký ngành hàng nào?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-profile",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới hồ sơ tài khoản/shop. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PF10",
+        "question": "Thông tin liên hệ của shop đang để ra sao?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-profile",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới hồ sơ tài khoản/shop. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "LD01",
+        "question": "Doanh thu 30 ngày gần đây của shop tôi là bao nhiêu?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-revenue",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới doanh thu tổng hợp của shop. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "LD02",
+        "question": "Tuần này tôi có bao nhiêu đơn hàng?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-orders",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới danh sách, số lượng hoặc thông tin đơn hàng. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "LD03",
+        "question": "Sản phẩm nào hiện đang hết hàng?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-products-inventory",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới sản phẩm, hiệu quả sản phẩm hoặc tồn kho. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "LD04",
+        "question": "Doanh thu kỳ này tăng hay giảm so với kỳ trước?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-revenue",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới doanh thu tổng hợp của shop. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "LD05",
+        "question": "Có đơn nào đang chờ shop xác nhận không?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-orders",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới danh sách, số lượng hoặc thông tin đơn hàng. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "LD06",
+        "question": "Cho tôi biết các mặt hàng sắp cạn tồn",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-products-inventory",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới sản phẩm, hiệu quả sản phẩm hoặc tồn kho. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "LD07",
+        "question": "Nếu tính 7 ngày gần nhất thì doanh thu là bao nhiêu?",
+        "history": [
+            {
+                "role": "user",
+                "content": "Doanh thu tháng này thế nào?"
+            },
+            {
+                "role": "assistant",
+                "content": "Bạn muốn xem 7, 30 hay 90 ngày?"
+            }
+        ],
+        "expected": {
+            "status": "READY",
+            "contextRelation": "CLARIFICATION_REPLY",
+            "tasks": [
+                {
+                    "domain": "seller-revenue",
+                    "requestType": "READ_QUERY",
+                    "resolvedQuestionMustContain": [
+                        "7 ngày",
+                        "doanh thu"
+                    ]
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/CLARIFICATION_REPLY: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới doanh thu tổng hợp của shop. Bối cảnh: lượt user trả lời yêu cầu làm rõ gần nhất trong history. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "LD08",
+        "question": "Còn số đơn thì sao?",
+        "history": [
+            {
+                "role": "user",
+                "content": "Doanh thu 30 ngày qua của tôi là bao nhiêu?"
+            },
+            {
+                "role": "assistant",
+                "content": "Mình sẽ xem doanh thu trong 30 ngày gần nhất."
+            }
+        ],
+        "expected": {
+            "status": "READY",
+            "contextRelation": "FOLLOW_UP",
+            "tasks": [
+                {
+                    "domain": "seller-orders",
+                    "requestType": "READ_QUERY",
+                    "resolvedQuestionMustContain": [
+                        "số đơn",
+                        "30 ngày"
+                    ]
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/FOLLOW_UP: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới danh sách, số lượng hoặc thông tin đơn hàng. Bối cảnh: câu hiện tại nối tiếp chủ đề trong history. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "LD09",
+        "question": "Có bao nhiêu sản phẩm đang được bán?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-products-inventory",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới sản phẩm, hiệu quả sản phẩm hoặc tồn kho. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "LD10",
+        "question": "Đơn gần nhất của tôi đang ở trạng thái nào?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-orders",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới danh sách, số lượng hoặc thông tin đơn hàng. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "LD11",
+        "question": "Hôm nay shop nhận được bao nhiêu đơn?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-orders",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới danh sách, số lượng hoặc thông tin đơn hàng. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "LD12",
+        "question": "Mặt hàng nào bán chạy nhất trong tháng?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-products-inventory",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới sản phẩm, hiệu quả sản phẩm hoặc tồn kho. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "LD13",
+        "question": "Doanh thu gộp của shop từ các đơn đã xác nhận trong 30 ngày gần nhất là bao nhiêu?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-revenue",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới doanh thu tổng hợp của shop. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "LD14",
+        "question": "Còn hàng tồn của sản phẩm A hiện tại thế nào?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-products-inventory",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới sản phẩm, hiệu quả sản phẩm hoặc tồn kho. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "LD15",
+        "question": "Đơn nào cần tôi xử lý trước?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-orders",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới danh sách, số lượng hoặc thông tin đơn hàng. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PL01",
+        "question": "Phí giao hàng được tính thế nào?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "fees-settlement",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới quy tắc phí, ghi nhận doanh thu hoặc đối soát. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PL02",
+        "question": "Doanh thu trên trang tổng quan được ghi nhận ra sao?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "fees-settlement",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới quy tắc phí, ghi nhận doanh thu hoặc đối soát. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PL03",
+        "question": "COD trong hệ thống hiện được xử lý như thế nào?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "fees-settlement",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới quy tắc phí, ghi nhận doanh thu hoặc đối soát. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PL04",
+        "question": "Hệ thống hiện lưu những thông tin nào về đối soát?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "fees-settlement",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng hỏi về nội dung và dữ liệu đối soát, không hỏi đường dẫn màn hình; Một yêu cầu duy nhất hướng tới quy tắc phí, ghi nhận doanh thu hoặc đối soát. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng tài liệu fees-settlement."
+    },
+    {
+        "id": "PL05",
+        "question": "Sau khi có đơn mới thì shop cần làm gì?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "order-processing",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới các bước shop xử lý và bàn giao đơn. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PL06",
+        "question": "Quy trình chuẩn bị và bàn giao đơn cho đơn vị giao hàng thế nào?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "order-processing",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới các bước shop xử lý và bàn giao đơn. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PL07",
+        "question": "Trạng thái đơn đã giao khác hoàn tất ở điểm nào?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "order-status",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới ý nghĩa và quan hệ giữa trạng thái đơn. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PL08",
+        "question": "Đơn bị giao thất bại có nghĩa là gì?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "order-status",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới ý nghĩa và quan hệ giữa trạng thái đơn. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PL09",
+        "question": "Khi nào một đơn được xem là hoàn tất?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "order-status",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới ý nghĩa và quan hệ giữa trạng thái đơn. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PL10",
+        "question": "Mô tả sản phẩm nên có các thông tin nào?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "product-content",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới nội dung và cách vận hành sản phẩm. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PL11",
+        "question": "Cập nhật nội dung sản phẩm cần lưu ý điều gì?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "product-content",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới nội dung và cách vận hành sản phẩm. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PL12",
+        "question": "Những mặt hàng nào bị cấm hoặc hạn chế bán?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "restricted-products",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới sản phẩm bị cấm hoặc hạn chế. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PL13",
+        "question": "Sản phẩm thuộc nhóm hạn chế có cần xét duyệt không?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "restricted-products",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới sản phẩm bị cấm hoặc hạn chế. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PL14",
+        "question": "Nếu hàng có giấy phép thì chắc chắn được bán chứ?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "restricted-products",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới sản phẩm bị cấm hoặc hạn chế. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PL15",
+        "question": "Khách yêu cầu trả hàng thì shop xử lý các bước nào?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "returns-refunds",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới quy trình trả hàng và hoàn tiền. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PL16",
+        "question": "Khi nào yêu cầu hoàn tiền được xử lý?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "returns-refunds",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới quy trình trả hàng và hoàn tiền. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PL17",
+        "question": "Địa chỉ lấy hàng mặc định được dùng thế nào khi tạo vận đơn?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "shipping",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới cấu hình giao nhận, địa chỉ lấy hàng hoặc vận đơn. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PL18",
+        "question": "Điều kiện để shop sẵn sàng giao hàng gồm những gì?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "shipping",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới cấu hình giao nhận, địa chỉ lấy hàng hoặc vận đơn. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PL19",
+        "question": "Hướng dẫn dùng Seller Center cho người mới bắt đầu",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-center-troubleshooting",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới hướng dẫn sử dụng/vị trí chức năng Seller Center. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "PL20",
+        "question": "Tôi không tìm thấy chức năng quản lý sản phẩm trong trang seller",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-center-troubleshooting",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới hướng dẫn sử dụng/vị trí chức năng Seller Center. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "AC01",
+        "question": "Cập nhật tồn kho mặt hàng này lên 20 giúp tôi",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-products-inventory",
+                    "requestType": "CHANGE_REQUEST"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng yêu cầu tạo hoặc thay đổi dữ liệu; nhãn chỉ thể hiện ý định, không cấp quyền thực thi; Một yêu cầu duy nhất hướng tới sản phẩm, hiệu quả sản phẩm hoặc tồn kho. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "AC02",
+        "question": "Đổi số điện thoại liên hệ shop thành số mới",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-profile",
+                    "requestType": "CHANGE_REQUEST"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng yêu cầu tạo hoặc thay đổi dữ liệu; nhãn chỉ thể hiện ý định, không cấp quyền thực thi; Một yêu cầu duy nhất hướng tới hồ sơ tài khoản/shop. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "AC03",
+        "question": "Hủy đơn hàng này giúp tôi",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-orders",
+                    "requestType": "CHANGE_REQUEST"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng yêu cầu tạo hoặc thay đổi dữ liệu; nhãn chỉ thể hiện ý định, không cấp quyền thực thi; Một yêu cầu duy nhất hướng tới danh sách, số lượng hoặc thông tin đơn hàng. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "AC04",
+        "question": "Thêm địa chỉ lấy hàng mới cho shop",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "shipping",
+                    "requestType": "CHANGE_REQUEST"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng yêu cầu tạo hoặc thay đổi dữ liệu; nhãn chỉ thể hiện ý định, không cấp quyền thực thi; Một yêu cầu duy nhất hướng tới cấu hình giao nhận, địa chỉ lấy hàng hoặc vận đơn. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "AC05",
+        "question": "Ẩn sản phẩm này khỏi gian hàng giúp mình",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-products-inventory",
+                    "requestType": "CHANGE_REQUEST"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng yêu cầu tạo hoặc thay đổi dữ liệu; nhãn chỉ thể hiện ý định, không cấp quyền thực thi; Một yêu cầu duy nhất hướng tới sản phẩm, hiệu quả sản phẩm hoặc tồn kho. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "AC06",
+        "question": "Sửa mô tả shop thành nội dung sau đây",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-profile",
+                    "requestType": "CHANGE_REQUEST"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng yêu cầu tạo hoặc thay đổi dữ liệu; nhãn chỉ thể hiện ý định, không cấp quyền thực thi; Một yêu cầu duy nhất hướng tới hồ sơ tài khoản/shop. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "AC07",
+        "question": "Xác nhận tất cả đơn đang chờ giúp tôi",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-orders",
+                    "requestType": "CHANGE_REQUEST"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng yêu cầu tạo hoặc thay đổi dữ liệu; nhãn chỉ thể hiện ý định, không cấp quyền thực thi; Một yêu cầu duy nhất hướng tới danh sách, số lượng hoặc thông tin đơn hàng. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "AC08",
+        "question": "Chuyển địa chỉ giao nhận mặc định sang địa chỉ mới",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "shipping",
+                    "requestType": "CHANGE_REQUEST"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng yêu cầu tạo hoặc thay đổi dữ liệu; nhãn chỉ thể hiện ý định, không cấp quyền thực thi; Một yêu cầu duy nhất hướng tới cấu hình giao nhận, địa chỉ lấy hàng hoặc vận đơn. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "AC09",
+        "question": "Tăng số lượng tồn của sản phẩm B thêm 5",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-products-inventory",
+                    "requestType": "CHANGE_REQUEST"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng yêu cầu tạo hoặc thay đổi dữ liệu; nhãn chỉ thể hiện ý định, không cấp quyền thực thi; Một yêu cầu duy nhất hướng tới sản phẩm, hiệu quả sản phẩm hoặc tồn kho. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "AC10",
+        "question": "Tạo bản nháp sản phẩm mới từ thông tin tôi gửi sau đây.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-products-inventory",
+                    "requestType": "CHANGE_REQUEST"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng yêu cầu tạo hoặc thay đổi dữ liệu; nhãn chỉ thể hiện ý định, không cấp quyền thực thi; Một yêu cầu duy nhất hướng tới sản phẩm, hiệu quả sản phẩm hoặc tồn kho. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "SA01",
+        "question": "Tôi mới mở shop, nên bắt đầu thiết lập từ đâu?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-center-troubleshooting",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới hướng dẫn sử dụng/vị trí chức năng Seller Center. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "SA02",
+        "question": "Làm sao để tìm trang quản lý đơn hàng?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-center-troubleshooting",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới hướng dẫn sử dụng/vị trí chức năng Seller Center. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "SA03",
+        "question": "Tôi không biết bắt đầu dùng Seller Center thế nào",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-center-troubleshooting",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới hướng dẫn sử dụng/vị trí chức năng Seller Center. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "SA04",
+        "question": "Có hướng dẫn chung cho người bán mới không?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-center-troubleshooting",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới hướng dẫn sử dụng/vị trí chức năng Seller Center. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "SA05",
+        "question": "Tôi cần tìm mục cài đặt vận hành shop",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-center-troubleshooting",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới hướng dẫn sử dụng/vị trí chức năng Seller Center. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "SA06",
+        "question": "Thông tin shop",
+        "history": [
+            {
+                "role": "user",
+                "content": "Tôi cần xem hồ sơ shop"
+            },
+            {
+                "role": "assistant",
+                "content": "Bạn muốn xem thông tin tài khoản hay thông tin shop?"
+            }
+        ],
+        "expected": {
+            "status": "READY",
+            "contextRelation": "CLARIFICATION_REPLY",
+            "tasks": [
+                {
+                    "domain": "seller-profile",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/CLARIFICATION_REPLY: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới hồ sơ tài khoản/shop. Bối cảnh: user chọn đúng phương án assistant vừa hỏi nên quan hệ là CLARIFICATION_REPLY. Đủ thông tin để chuyển tới luồng đọc hồ sơ shop."
+    },
+    {
+        "id": "SA07",
+        "question": "Còn thao tác đó nằm ở đâu?",
+        "history": [
+            {
+                "role": "user",
+                "content": "Tôi mới mở shop, nên bắt đầu thiết lập từ đâu?"
+            },
+            {
+                "role": "assistant",
+                "content": "Bạn có thể bắt đầu ở phần quản lý hồ sơ shop."
+            }
+        ],
+        "expected": {
+            "status": "READY",
+            "contextRelation": "FOLLOW_UP",
+            "tasks": [
+                {
+                    "domain": "seller-center-troubleshooting",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/FOLLOW_UP: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới hướng dẫn sử dụng/vị trí chức năng Seller Center. Bối cảnh: câu hiện tại nối tiếp chủ đề trong history. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "SA08",
+        "question": "Tôi muốn tìm phần cấu hình shop",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-center-troubleshooting",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới hướng dẫn sử dụng/vị trí chức năng Seller Center. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "SA09",
+        "question": "Có tài liệu hướng dẫn các khu vực trong trang bán hàng không?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-center-troubleshooting",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới hướng dẫn sử dụng/vị trí chức năng Seller Center. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "SA10",
+        "question": "Hướng dẫn tôi làm quen với trang quản trị shop",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-center-troubleshooting",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Một yêu cầu duy nhất hướng tới hướng dẫn sử dụng/vị trí chức năng Seller Center. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "OS01",
+        "question": "Ngày mai Hà Nội có mưa không?",
+        "expected": {
+            "status": "OUT_OF_SCOPE",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": null,
+                    "requestType": "OUT_OF_SCOPE"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn OUT_OF_SCOPE/NEW_TOPIC: Yêu cầu được nêu rõ nằm ngoài phạm vi trợ lý seller; Một yêu cầu duy nhất hướng tới không gắn domain. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Toàn bộ yêu cầu ngoài phạm vi nên giữ nhãn ngoài phạm vi."
+    },
+    {
+        "id": "OS02",
+        "question": "Viết cho tôi một bài thơ về mùa thu",
+        "expected": {
+            "status": "OUT_OF_SCOPE",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": null,
+                    "requestType": "OUT_OF_SCOPE"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn OUT_OF_SCOPE/NEW_TOPIC: Yêu cầu được nêu rõ nằm ngoài phạm vi trợ lý seller; Một yêu cầu duy nhất hướng tới không gắn domain. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Toàn bộ yêu cầu ngoài phạm vi nên giữ nhãn ngoài phạm vi."
+    },
+    {
+        "id": "OS03",
+        "question": "Tỷ số trận bóng tối qua là bao nhiêu?",
+        "expected": {
+            "status": "OUT_OF_SCOPE",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": null,
+                    "requestType": "OUT_OF_SCOPE"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn OUT_OF_SCOPE/NEW_TOPIC: Yêu cầu được nêu rõ nằm ngoài phạm vi trợ lý seller; Một yêu cầu duy nhất hướng tới không gắn domain. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Toàn bộ yêu cầu ngoài phạm vi nên giữ nhãn ngoài phạm vi."
+    },
+    {
+        "id": "OS04",
+        "question": "Lên lịch du lịch Đà Lạt 3 ngày giúp tôi",
+        "expected": {
+            "status": "OUT_OF_SCOPE",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": null,
+                    "requestType": "OUT_OF_SCOPE"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn OUT_OF_SCOPE/NEW_TOPIC: Yêu cầu được nêu rõ nằm ngoài phạm vi trợ lý seller; Một yêu cầu duy nhất hướng tới không gắn domain. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Toàn bộ yêu cầu ngoài phạm vi nên giữ nhãn ngoài phạm vi."
+    },
+    {
+        "id": "OS05",
+        "question": "Giải bài toán tích phân này giúp tôi",
+        "expected": {
+            "status": "OUT_OF_SCOPE",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": null,
+                    "requestType": "OUT_OF_SCOPE"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn OUT_OF_SCOPE/NEW_TOPIC: Yêu cầu được nêu rõ nằm ngoài phạm vi trợ lý seller; Một yêu cầu duy nhất hướng tới không gắn domain. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Toàn bộ yêu cầu ngoài phạm vi nên giữ nhãn ngoài phạm vi."
+    },
+    {
+        "id": "UC01",
+        "question": "Cái đó là sao?",
+        "expected": {
+            "status": "NEEDS_CLARIFICATION",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [],
+            "clarificationQuestion": "Bạn đang hỏi về nội dung nào vậy?"
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn NEEDS_CLARIFICATION/NEW_TOPIC: chưa xác định được ý định cụ thể; Không tạo task khi chưa thể xác định an toàn yêu cầu. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Thiếu thông tin cốt yếu để định tuyến nên chưa tạo task và cần hỏi lại."
+    },
+    {
+        "id": "UC02",
+        "question": "Làm giúp mình cái này với",
+        "expected": {
+            "status": "NEEDS_CLARIFICATION",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [],
+            "clarificationQuestion": "Bạn muốn mình hỗ trợ việc gì cụ thể?"
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn NEEDS_CLARIFICATION/NEW_TOPIC: chưa xác định được ý định cụ thể; Không tạo task khi chưa thể xác định an toàn yêu cầu. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Thiếu thông tin cốt yếu để định tuyến nên chưa tạo task và cần hỏi lại."
+    },
+    {
+        "id": "UC03",
+        "question": "Cái nào tốt hơn?",
+        "expected": {
+            "status": "NEEDS_CLARIFICATION",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [],
+            "clarificationQuestion": "Bạn muốn so sánh những nội dung nào?"
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn NEEDS_CLARIFICATION/NEW_TOPIC: chưa xác định được ý định cụ thể; Không tạo task khi chưa thể xác định an toàn yêu cầu. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Thiếu thông tin cốt yếu để định tuyến nên chưa tạo task và cần hỏi lại."
+    },
+    {
+        "id": "UC04",
+        "question": "Còn cái kia thì sao?",
+        "expected": {
+            "status": "NEEDS_CLARIFICATION",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [],
+            "clarificationQuestion": "Bạn nói rõ giúp mình đang nhắc tới nội dung nào nhé?"
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn NEEDS_CLARIFICATION/NEW_TOPIC: chưa xác định được ý định cụ thể; Không tạo task khi chưa thể xác định an toàn yêu cầu. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Thiếu thông tin cốt yếu để định tuyến nên chưa tạo task và cần hỏi lại."
+    },
+    {
+        "id": "UC05",
+        "question": "Cho tôi xem nó",
+        "expected": {
+            "status": "NEEDS_CLARIFICATION",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [],
+            "clarificationQuestion": "Bạn muốn xem thông tin nào?"
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn NEEDS_CLARIFICATION/NEW_TOPIC: chưa xác định được ý định cụ thể; Không tạo task khi chưa thể xác định an toàn yêu cầu. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Thiếu thông tin cốt yếu để định tuyến nên chưa tạo task và cần hỏi lại."
+    },
+    {
+        "id": "MX01",
+        "question": "Doanh thu tháng này bao nhiêu và phí giao hàng được tính thế nào?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-revenue",
+                    "requestType": "READ_QUERY"
+                },
+                {
+                    "domain": "fees-settlement",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Có 2 yêu cầu độc lập; giữ thứ tự task như người dùng nêu và lần lượt định tuyến tới doanh thu tổng hợp của shop; quy tắc phí, ghi nhận doanh thu hoặc đối soát. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "MX02",
+        "question": "Cho biết shop có mấy đơn chờ giao, rồi giải thích trạng thái đang vận chuyển",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-orders",
+                    "requestType": "READ_QUERY"
+                },
+                {
+                    "domain": "order-status",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Có 2 yêu cầu độc lập; giữ thứ tự task như người dùng nêu và lần lượt định tuyến tới danh sách, số lượng hoặc thông tin đơn hàng; ý nghĩa và quan hệ giữa trạng thái đơn. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "MX03",
+        "question": "Tên shop của tôi là gì và shop có bao nhiêu sản phẩm đang bán?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-profile",
+                    "requestType": "READ_QUERY"
+                },
+                {
+                    "domain": "seller-products-inventory",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Có 2 yêu cầu độc lập; giữ thứ tự task như người dùng nêu và lần lượt định tuyến tới hồ sơ tài khoản/shop; sản phẩm, hiệu quả sản phẩm hoặc tồn kho. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "MX04",
+        "question": "Cập nhật tồn kho lên 10 và cho tôi biết cách xử lý đơn mới",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "seller-products-inventory",
+                    "requestType": "CHANGE_REQUEST"
+                },
+                {
+                    "domain": "order-processing",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng yêu cầu tạo hoặc thay đổi dữ liệu; nhãn chỉ thể hiện ý định, không cấp quyền thực thi; Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Có 2 yêu cầu độc lập; giữ thứ tự task như người dùng nêu và lần lượt định tuyến tới sản phẩm, hiệu quả sản phẩm hoặc tồn kho; các bước shop xử lý và bàn giao đơn. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    },
+    {
+        "id": "MX05",
+        "question": "Phí COD là bao nhiêu, với tháng này doanh thu shop được ghi nhận thế nào?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "domain": "fees-settlement",
+                    "requestType": "READ_QUERY"
+                },
+                {
+                    "domain": "seller-revenue",
+                    "requestType": "READ_QUERY"
+                }
+            ]
+        },
+        "split": "development",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Người dùng muốn xem, tra cứu hoặc được giải thích thông tin; Có 2 yêu cầu độc lập; giữ thứ tự task như người dùng nêu và lần lượt định tuyến tới quy tắc phí, ghi nhận doanh thu hoặc đối soát; doanh thu tổng hợp của shop. Bối cảnh: không có tham chiếu hội thoại trước cần kế thừa. Đủ thông tin để chuyển tới luồng xử lý tương ứng."
+    }
+]

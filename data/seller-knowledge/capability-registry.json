@@ -1,0 +1,178 @@
+{
+    "version": 1,
+    "domains": [
+        {
+            "code": "seller-copilot-capabilities",
+            "label": "Khả năng BinGPT",
+            "kind": "knowledge",
+            "description": "Tài liệu mô tả những việc BinGPT hỗ trợ và giới hạn hiện tại.",
+            "documentBacked": true
+        },
+        {
+            "code": "seller-profile",
+            "label": "Hồ sơ tài khoản và shop",
+            "kind": "profile",
+            "description": "Hồ sơ tài khoản và shop đang đăng nhập: tên, email, số điện thoại, vai trò và trạng thái tài khoản; tên, slug, mô tả, ngành hàng, mô hình kinh doanh, trạng thái và thông tin liên hệ của shop.",
+            "documentBacked": false
+        },
+        {
+            "code": "seller-revenue",
+            "label": "Doanh thu và số liệu bán hàng",
+            "kind": "live-data",
+            "description": "Số tổng hợp doanh thu gộp, biến động và xu hướng bán hàng của shop trên dashboard theo khoảng thời gian; không phải trạng thái chuyển tiền, COD, payout hay lịch sử đối soát.",
+            "documentBacked": false
+        },
+        {
+            "code": "seller-orders",
+            "label": "Đơn hàng",
+            "kind": "live-data",
+            "description": "Danh sách, số lượng và tình hình xử lý đơn hàng của shop.",
+            "documentBacked": false
+        },
+        {
+            "code": "seller-products-inventory",
+            "label": "Sản phẩm và tồn kho",
+            "kind": "live-data",
+            "description": "Danh sách và thông tin sản phẩm, tình trạng kinh doanh, số lượng tồn, sản phẩm bán chạy và hiệu quả từng sản phẩm của shop.",
+            "documentBacked": false
+        },
+        {
+            "code": "fees-settlement",
+            "label": "Phí và đối soát",
+            "kind": "knowledge",
+            "description": "Quy tắc phí giao hàng/COD, cách ghi nhận doanh thu, phân biệt đã thu tiền với tiền đã chuyển cho shop, và giới hạn tra cứu đối soát; không dùng để hỏi con số doanh thu dashboard live.",
+            "documentBacked": true
+        },
+        {
+            "code": "order-processing",
+            "label": "Quy trình xử lý đơn",
+            "kind": "knowledge",
+            "description": "Các bước seller tiếp nhận, chuẩn bị và bàn giao đơn hàng.",
+            "documentBacked": true
+        },
+        {
+            "code": "order-status",
+            "label": "Trạng thái đơn hàng",
+            "kind": "knowledge",
+            "description": "Ý nghĩa và mối quan hệ giữa các trạng thái vòng đời đơn hàng.",
+            "documentBacked": true
+        },
+        {
+            "code": "product-content",
+            "label": "Nội dung và vận hành sản phẩm",
+            "kind": "knowledge",
+            "description": "Quản lý nội dung sản phẩm và các nguyên tắc vận hành có trong tài liệu.",
+            "documentBacked": true
+        },
+        {
+            "code": "restricted-products",
+            "label": "Sản phẩm hạn chế",
+            "kind": "knowledge",
+            "description": "Phạm vi thông tin được xác nhận về sản phẩm cấm hoặc hạn chế.",
+            "documentBacked": true
+        },
+        {
+            "code": "returns-refunds",
+            "label": "Trả hàng và hoàn tiền",
+            "kind": "knowledge",
+            "description": "Quy trình và trạng thái xử lý yêu cầu trả hàng, hoàn tiền.",
+            "documentBacked": true
+        },
+        {
+            "code": "seller-center-troubleshooting",
+            "label": "Seller Center và hướng dẫn sử dụng",
+            "kind": "knowledge",
+            "description": "Hướng dẫn vận hành Seller Center và cách xử lý vấn đề phổ biến.",
+            "documentBacked": true
+        },
+        {
+            "code": "shipping",
+            "label": "Giao nhận và vận chuyển",
+            "kind": "knowledge",
+            "description": "Địa chỉ lấy hàng, cấu hình giao nhận, quote và trạng thái vận đơn.",
+            "documentBacked": true
+        }
+    ],
+    "requestTypes": [
+        {
+            "code": "SMALL_TALK",
+            "label": "Trò chuyện thông thường",
+            "description": "Chào hỏi, cảm ơn hoặc trò chuyện xã giao không cần tra cứu nghiệp vụ.",
+            "domains": [],
+            "examples": ["Chào bạn", "Cảm ơn nha", "Hôm nay bạn thế nào?"]
+        },
+        {
+            "code": "CAPABILITY_QUERY",
+            "label": "Hỏi khả năng BinGPT",
+            "description": "Hỏi trợ lý có thể hỗ trợ nội dung hoặc chức năng nào; đây là hỏi về phạm vi năng lực chứ không phải yêu cầu thực hiện.",
+            "domains": ["seller-copilot-capabilities"],
+            "examples": [
+                "Bạn làm được những gì?",
+                "Mình có thể nhờ bạn hỗ trợ việc nào?",
+                "BinGPT hiện có hỗ trợ tự động cập nhật tồn kho không?"
+            ]
+        },
+        {
+            "code": "READ_QUERY",
+            "label": "Tra cứu hoặc hỏi thông tin",
+            "description": "Muốn biết, xem, giải thích hoặc được hướng dẫn về một nội dung. Domain xác định chủ đề và nguồn cần dùng; bản thân request type không phân biệt đó là hồ sơ, số liệu live hay tài liệu.",
+            "domains": [
+                "seller-copilot-capabilities",
+                "seller-profile",
+                "seller-revenue",
+                "seller-orders",
+                "seller-products-inventory",
+                "fees-settlement",
+                "order-processing",
+                "order-status",
+                "product-content",
+                "restricted-products",
+                "returns-refunds",
+                "seller-center-troubleshooting",
+                "shipping"
+            ],
+            "examples": [
+                "Tên shop của tôi là gì?",
+                "Thông tin tài khoản của tôi gồm những gì?",
+                "Doanh thu 30 ngày qua là bao nhiêu?",
+                "Đơn nào đang chờ xử lý?",
+                "Sản phẩm nào sắp hết hàng?",
+                "Phí giao hàng được tính thế nào?",
+                "Đơn đã giao khác đơn hoàn tất ra sao?",
+                "Những sản phẩm nào bị hạn chế?",
+                "Tôi bắt đầu thiết lập shop từ đâu?",
+                "Không biết tìm mục quản lý sản phẩm ở đâu",
+                "Hệ thống hiện lưu những thông tin nào về đối soát?",
+                "Tôi muốn tìm phần cấu hình shop"
+            ]
+        },
+        {
+            "code": "CHANGE_REQUEST",
+            "label": "Yêu cầu thay đổi dữ liệu",
+            "description": "Muốn tạo, cập nhật, xóa hoặc thực hiện thay đổi. Phân loại này chỉ nhận diện ý định; không cấp quyền và không có nghĩa hệ thống đã thực hiện thao tác.",
+            "domains": [
+                "seller-profile",
+                "seller-orders",
+                "seller-products-inventory",
+                "shipping"
+            ],
+            "examples": [
+                "Cập nhật tồn kho sản phẩm này giúp tôi",
+                "Đổi địa chỉ lấy hàng cho shop",
+                "Xác nhận tất cả đơn đang chờ giúp tôi",
+                "Sửa mô tả shop thành nội dung sau đây",
+                "Tạo bản nháp sản phẩm mới từ thông tin tôi gửi sau đây"
+            ]
+        },
+        {
+            "code": "OUT_OF_SCOPE",
+            "label": "Ngoài phạm vi trợ lý seller",
+            "description": "Yêu cầu không liên quan đến seller, shop, nền tảng hoặc khả năng đã đăng ký.",
+            "domains": [],
+            "examples": [
+                "Dự báo thời tiết ngày mai",
+                "Viết giúp tôi một trò chơi không liên quan đến shop"
+            ]
+        }
+    ]
+}

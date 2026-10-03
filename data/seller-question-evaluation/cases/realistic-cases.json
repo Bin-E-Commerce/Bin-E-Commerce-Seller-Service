@@ -1,0 +1,924 @@
+[
+    {
+        "id": "RC01",
+        "question": "Chào bạn nha",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "SMALL_TALK",
+                    "domain": null
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: lời xã giao; một task thuộc trò chuyện không gắn domain. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC02",
+        "question": "Alo bạn ơi, có đó không?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "SMALL_TALK",
+                    "domain": null
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: lời xã giao; một task thuộc trò chuyện không gắn domain. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC03",
+        "question": "Cảm ơn nhiều nghen",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "SMALL_TALK",
+                    "domain": null
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: lời xã giao; một task thuộc trò chuyện không gắn domain. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC04",
+        "question": "Bạn coi được doanh thu shop mình không?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CAPABILITY_QUERY",
+                    "domain": "seller-copilot-capabilities"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: câu hỏi về khả năng BinGPT; một task thuộc seller-copilot-capabilities. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC05",
+        "question": "Mình hỏi bạn về phí ship được chứ?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CAPABILITY_QUERY",
+                    "domain": "seller-copilot-capabilities"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: câu hỏi về khả năng BinGPT; một task thuộc seller-copilot-capabilities. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC06",
+        "question": "Bạn xem được thông tin shop của mình hả?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CAPABILITY_QUERY",
+                    "domain": "seller-copilot-capabilities"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: câu hỏi về khả năng BinGPT; một task thuộc seller-copilot-capabilities. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC07",
+        "question": "Bạn tự cập nhật hàng tồn giúp mình được không?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CAPABILITY_QUERY",
+                    "domain": "seller-copilot-capabilities"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: câu hỏi về khả năng BinGPT; một task thuộc seller-copilot-capabilities. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC08",
+        "question": "Shop mình tên gì ấy nhỉ?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-profile"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc seller-profile. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC09",
+        "question": "Email tài khoản mình đang dùng là gì?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-profile"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc seller-profile. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC10",
+        "question": "Shop đang để số điện thoại nào vậy?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-profile"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc seller-profile. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC11",
+        "question": "Mô hình kinh doanh của shop mình là gì?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-profile"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc seller-profile. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC12",
+        "question": "Shop đang hoạt động bình thường hay bị khóa rồi?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-profile"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc seller-profile. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC13",
+        "question": "Tháng này shop bán được khoảng bao nhiêu tiền?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-revenue"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc seller-revenue. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC14",
+        "question": "30 ngày vừa rồi doanh thu có tăng không?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-revenue"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc seller-revenue. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC15",
+        "question": "Tuần này shop nhận được mấy đơn rồi?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-orders"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc seller-orders. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC16",
+        "question": "Đơn nào đang chờ mình xác nhận vậy?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-orders"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc seller-orders. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC17",
+        "question": "Đơn mới nhất tới đâu rồi?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-orders"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc seller-orders. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC18",
+        "question": "Hôm nay có đơn nào cần gói hàng chưa?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-orders"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc seller-orders. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC19",
+        "question": "Món nào gần hết hàng rồi?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc seller-products-inventory. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC20",
+        "question": "Áo thun xanh còn bao nhiêu cái?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc seller-products-inventory. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC21",
+        "question": "Có món nào đang hết hàng không bạn?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc seller-products-inventory. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC22",
+        "question": "Mặt hàng nào đang bán chạy nhất vậy?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc seller-products-inventory. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC23",
+        "question": "Phí giao hàng tính kiểu gì vậy?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "fees-settlement"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc fees-settlement. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC24",
+        "question": "Tiền COD thường được đối soát ra sao?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "fees-settlement"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc fees-settlement. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC25",
+        "question": "Theo quy định, phí giao hàng có được tính vào doanh thu gộp của shop không?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "fees-settlement"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: câu hỏi nêu rõ đang hỏi quy tắc tính doanh thu và phí giao hàng, thuộc chính sách fees-settlement chứ không yêu cầu số doanh thu live.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC26",
+        "question": "Khách bấm yêu cầu trả hàng thì shop cần làm gì tiếp?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "returns-refunds"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc returns-refunds. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC27",
+        "question": "Khách trả hàng rồi thì tiền hoàn xử lý thế nào?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "returns-refunds"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc returns-refunds. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC28",
+        "question": "Đơn ghi “đã giao” với “hoàn tất” khác gì nhau?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "order-status"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc order-status. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC29",
+        "question": "Trạng thái giao hàng thất bại nghĩa là sao?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "order-status"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc order-status. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC30",
+        "question": "Có loại hàng nào sàn không cho bán không?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "restricted-products"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc restricted-products. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC31",
+        "question": "Mô tả sản phẩm cần ghi những gì cho đủ?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "product-content"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc product-content. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC32",
+        "question": "Tạo vận đơn thì lấy địa chỉ nào của shop?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "shipping"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc shipping. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC33",
+        "question": "Muốn đổi địa chỉ lấy hàng mặc định của shop thì vào đâu?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "shipping"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: người dùng hỏi cách quản lý địa chỉ lấy hàng mặc định, thuộc hướng dẫn giao nhận trong chính sách shipping.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC34",
+        "question": "Mới mở shop thì mình bắt đầu cài đặt từ đâu?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-center-troubleshooting"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc seller-center-troubleshooting. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC35",
+        "question": "Ẩn sản phẩm A khỏi shop giúp mình",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CHANGE_REQUEST",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu thay đổi dữ liệu; một task thuộc seller-products-inventory. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC36",
+        "question": "Đổi số điện thoại liên hệ của shop sang số mới",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CHANGE_REQUEST",
+                    "domain": "seller-profile"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu thay đổi dữ liệu; một task thuộc seller-profile. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC37",
+        "question": "Thêm địa chỉ lấy hàng mới cho shop nhé",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CHANGE_REQUEST",
+                    "domain": "shipping"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu thay đổi dữ liệu; một task thuộc shipping. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC38",
+        "question": "Xác nhận đơn này giúp tôi",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CHANGE_REQUEST",
+                    "domain": "seller-orders"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu thay đổi dữ liệu; một task thuộc seller-orders. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC39",
+        "question": "Tăng tồn áo thun xanh lên 15 cái",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CHANGE_REQUEST",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu thay đổi dữ liệu; một task thuộc seller-products-inventory. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC40",
+        "question": "Tạo sản phẩm mới từ thông tin này giúp mình",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CHANGE_REQUEST",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu thay đổi dữ liệu; một task thuộc seller-products-inventory. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC41",
+        "question": "Mai thời tiết ở Đà Nẵng thế nào?",
+        "expected": {
+            "status": "OUT_OF_SCOPE",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "OUT_OF_SCOPE",
+                    "domain": null
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn OUT_OF_SCOPE/NEW_TOPIC: nội dung ngoài phạm vi hỗ trợ seller; một task thuộc trò chuyện không gắn domain. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC42",
+        "question": "Viết cho mình bài thơ tặng mẹ nhé",
+        "expected": {
+            "status": "OUT_OF_SCOPE",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "OUT_OF_SCOPE",
+                    "domain": null
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn OUT_OF_SCOPE/NEW_TOPIC: nội dung ngoài phạm vi hỗ trợ seller; một task thuộc trò chuyện không gắn domain. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC43",
+        "question": "Tỷ số trận Việt Nam hôm qua bao nhiêu?",
+        "expected": {
+            "status": "OUT_OF_SCOPE",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "OUT_OF_SCOPE",
+                    "domain": null
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn OUT_OF_SCOPE/NEW_TOPIC: nội dung ngoài phạm vi hỗ trợ seller; một task thuộc trò chuyện không gắn domain. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC44",
+        "question": "Cái này bị gì vậy?",
+        "expected": {
+            "status": "NEEDS_CLARIFICATION",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": []
+        },
+        "labelRationale": "Đề xuất nhãn NEEDS_CLARIFICATION/NEW_TOPIC: chưa đủ thông tin xác định ý định; chưa tạo task vì thiếu chủ đề hoặc hành động cần định tuyến. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC45",
+        "question": "Sửa giúp mình với",
+        "expected": {
+            "status": "NEEDS_CLARIFICATION",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": []
+        },
+        "labelRationale": "Đề xuất nhãn NEEDS_CLARIFICATION/NEW_TOPIC: chưa đủ thông tin xác định ý định; chưa tạo task vì thiếu chủ đề hoặc hành động cần định tuyến. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC46",
+        "question": "Nó bao nhiêu vậy?",
+        "expected": {
+            "status": "NEEDS_CLARIFICATION",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": []
+        },
+        "labelRationale": "Đề xuất nhãn NEEDS_CLARIFICATION/NEW_TOPIC: chưa đủ thông tin xác định ý định; chưa tạo task vì thiếu chủ đề hoặc hành động cần định tuyến. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC47",
+        "question": "Còn số đơn thì sao?",
+        "history": [
+            {
+                "role": "user",
+                "content": "Doanh thu shop trong 30 ngày gần nhất là bao nhiêu?"
+            },
+            {
+                "role": "assistant",
+                "content": "Mình sẽ xem doanh thu trong 30 ngày gần nhất."
+            }
+        ],
+        "expected": {
+            "status": "READY",
+            "contextRelation": "FOLLOW_UP",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-orders",
+                    "resolvedQuestionMustContain": [
+                        "số đơn",
+                        "30 ngày"
+                    ]
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/FOLLOW_UP: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc seller-orders. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC48",
+        "question": "7 ngày gần nhất nhé",
+        "history": [
+            {
+                "role": "user",
+                "content": "Doanh thu shop dạo này thế nào?"
+            },
+            {
+                "role": "assistant",
+                "content": "Bạn muốn xem 7, 30 hay 90 ngày gần nhất?"
+            }
+        ],
+        "expected": {
+            "status": "READY",
+            "contextRelation": "CLARIFICATION_REPLY",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-revenue",
+                    "resolvedQuestionMustContain": [
+                        "7 ngày",
+                        "doanh thu"
+                    ]
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/CLARIFICATION_REPLY: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc seller-revenue. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC49",
+        "question": "Thông tin shop nhé",
+        "history": [
+            {
+                "role": "user",
+                "content": "Mình muốn xem hồ sơ của mình"
+            },
+            {
+                "role": "assistant",
+                "content": "Bạn muốn xem thông tin tài khoản hay thông tin shop?"
+            }
+        ],
+        "expected": {
+            "status": "READY",
+            "contextRelation": "CLARIFICATION_REPLY",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-profile",
+                    "resolvedQuestionMustContain": [
+                        "shop"
+                    ]
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/CLARIFICATION_REPLY: yêu cầu xem hoặc tìm hiểu thông tin; một task thuộc seller-profile. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC50",
+        "question": "Doanh thu tháng này bao nhiêu, với có mấy đơn đang chờ xác nhận?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-revenue"
+                },
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-orders"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; yêu cầu xem hoặc tìm hiểu thông tin; 2 task theo đúng thứ tự hỏi, thuộc seller-revenue và seller-orders. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC51",
+        "question": "Món nào sắp hết hàng với đơn nào cần xử lý trước?",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-products-inventory"
+                },
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-orders"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu xem hoặc tìm hiểu thông tin; yêu cầu xem hoặc tìm hiểu thông tin; 2 task theo đúng thứ tự hỏi, thuộc seller-products-inventory và seller-orders. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    },
+    {
+        "id": "RC52",
+        "question": "Đổi địa chỉ lấy hàng cho shop và chỉ mình cách chuẩn bị đơn mới",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CHANGE_REQUEST",
+                    "domain": "shipping"
+                },
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "order-processing"
+                }
+            ]
+        },
+        "labelRationale": "Đề xuất nhãn READY/NEW_TOPIC: yêu cầu thay đổi dữ liệu; yêu cầu xem hoặc tìm hiểu thông tin; 2 task theo đúng thứ tự hỏi, thuộc shipping và order-processing. Nhãn cần người nắm nghiệp vụ duyệt trước khi dùng làm gold label.",
+        "split": "realistic",
+        "reviewStatus": "PENDING_REVIEW"
+    }
+]
