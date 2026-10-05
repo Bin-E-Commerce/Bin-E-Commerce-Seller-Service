@@ -1,3 +1,5 @@
+// CLI nạp các Markdown tĩnh được công bố trước đó thành chunk/vector trong Qdrant; không ghi projection policy vào PostgreSQL.
+// sourcePath chỉ dùng nội bộ để báo lỗi file trùng; payload Qdrant không chứa đường dẫn file nguồn.
 import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
@@ -11,6 +13,7 @@ interface KnowledgeChunk {
     title: string;
     section: string;
     content: string;
+    // Đường dẫn cục bộ chỉ để phát hiện document/version khai báo từ nhiều file; không gửi trường này lên Qdrant.
     sourcePath: string;
     domain: string;
     domains: string[];
@@ -72,19 +75,22 @@ const dryRun = process.argv.includes('--dry-run');
 const headers: Record<string, string> = { 'content-type': 'application/json' };
 if (qdrantKey) headers['api-key'] = qdrantKey;
 
-// CLI đọc policy markdown, kiểm tra metadata rồi đồng bộ toàn bộ knowledge vào Qdrant.
+// CLI đọc file Markdown, kiểm tra toàn bộ metadata/domain/version trước khi gọi dịch vụ ngoài.
 // Qdrant là nguồn retrieval duy nhất; PostgreSQL không còn được ghi projection policy.
 // Dataset cũ chỉ bị dọn sau khi dataset mới đã upsert đủ points để tránh mất evidence.
 async function main(): Promise<void> {
+    // Dry-run chỉ kiểm tra file/metadata nên không bắt buộc khóa provider hay địa chỉ Qdrant.
     if (!dryRun && !openAiKey)
         throw new Error('OPENAI_API_KEY is required for knowledge ingestion.');
     if (!dryRun && !qdrantUrl)
         throw new Error('QDRANT_URL is required for knowledge ingestion.');
 
+    // Chỉ duyệt file Markdown trong thư mục đã chọn, sau đó validate mọi file trước khi bỏ qua draft.
     const files = (await readdir(inputDirectory)).filter((file) =>
         file.endsWith('.md'),
     );
     await validatePolicyFiles(files);
+    // Đọc/chia file song song để tăng tốc I/O; flat gom các phần thành một batch nhất quán cho dataset.
     const chunks = (
         await Promise.all(files.map((file) => readChunks(file)))
     ).flat();
@@ -95,6 +101,7 @@ async function main(): Promise<void> {
     }
     validateDocumentVersions(chunks);
 
+    // Dry-run dừng trước embedding/Qdrant để người vận hành kiểm tra cấu trúc mà không phát sinh chi phí hoặc ghi dữ liệu.
     if (dryRun) {
         console.log(
             `Validated ${chunks.length} published seller knowledge chunks for ${datasetVersion}.`,
@@ -102,6 +109,7 @@ async function main(): Promise<void> {
         return;
     }
 
+    // Sinh một vector cho mỗi chunk và kiểm tra count trước khi ghép cặp; thiếu vector sẽ làm sai nội dung point.
     const embeddings = await createEmbeddings(
         chunks.map(buildKnowledgeEmbeddingInput),
     );
@@ -110,6 +118,7 @@ async function main(): Promise<void> {
             `Embedding count mismatch: expected ${chunks.length}, received ${embeddings.length}.`,
         );
     }
+    // Chuẩn bị schema collection/index trước khi dựng payload; size lấy từ model thực tế nếu batch có vector.
     await ensureCollection(embeddings[0]?.length ?? 1536);
     await ensurePayloadIndexes();
     const points = chunks.map((chunk, index) => ({
@@ -120,7 +129,6 @@ async function main(): Promise<void> {
             title: chunk.title,
             section: chunk.section,
             content: chunk.content,
-            sourcePath: chunk.sourcePath,
             domain: chunk.domain,
             domains: chunk.domains,
             version: chunk.version,
@@ -132,6 +140,7 @@ async function main(): Promise<void> {
         },
     }));
 
+    // Upsert dataset mới trước; chỉ sau thành công mới reconcile chunk cũ và xóa dataset version cũ.
     const response = await fetchWithRetry(
         `${qdrantUrl}/collections/${encodeURIComponent(collection)}/points?wait=true`,
         {
