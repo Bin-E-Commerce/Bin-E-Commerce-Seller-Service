@@ -2,7 +2,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
     SELLER_QUESTION_CAPABILITY_REGISTRY,
-    type SellerQuestionCapabilityRegistry,
+    type SellerQuestionCapabilityRegistryProvider,
 } from '@/modules/seller-copilot/application/question-understanding/registry/seller-question-capability-registry.types';
 import { buildSellerQuestionContext } from '@/modules/seller-copilot/application/question-understanding/context/seller-question-context.util';
 import {
@@ -24,7 +24,7 @@ export class SellerQuestionUnderstandingService {
         @Inject(SELLER_QUESTION_PLANNER)
         private readonly planner: SellerQuestionPlannerPort,
         @Inject(SELLER_QUESTION_CAPABILITY_REGISTRY)
-        private readonly registry: SellerQuestionCapabilityRegistry,
+        private readonly registryProvider: SellerQuestionCapabilityRegistryProvider,
     ) {}
 
     // Mỗi tin nhắn đi qua đúng một planner call; lỗi provider và output sai schema được trả riêng, không giả thành câu chưa rõ.
@@ -47,9 +47,11 @@ export class SellerQuestionUnderstandingService {
         }
 
         // Gọi planner để phân loại câu hỏi; planner chỉ nhận câu hỏi và lịch sử đã xác minh; không truyền shop object, ID tenant hay dữ liệu hồ sơ đã đọc từ database.
+        // Nạp registry trước lần gọi planner để domain vừa được kích hoạt có thể phân loại ngay trong request kế tiếp.
+        const registry = await this.registryProvider.getActiveRegistry();
         const result = await this.planner.classify({
             ...context,
-            registry: this.registry,
+            registry,
             signal: input.signal,
         });
 
@@ -62,10 +64,7 @@ export class SellerQuestionUnderstandingService {
         }
 
         // Nếu planner trả về JSON chưa xác minh thì validate trước khi dùng; nếu sai schema thì trả về plan lỗi.
-        const validated = validateSellerQuestionPlan(
-            result.response,
-            this.registry,
-        );
+        const validated = validateSellerQuestionPlan(result.response, registry);
 
         // Nếu planner trả về JSON hợp lệ thì trả về plan đã xác minh; caller có thể dùng plan để thực hiện nghiệp vụ.
         return validated ?? this.plannerFailure('AI_INVALID_RESPONSE');

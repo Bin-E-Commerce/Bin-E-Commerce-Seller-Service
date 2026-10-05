@@ -12,16 +12,16 @@ import { ConversationPersistenceService } from '@/modules/seller-copilot/applica
 import { StreamSellerCopilotUseCase } from '@/modules/seller-copilot/application/conversation/streaming/stream-seller-copilot.use-case';
 import { TypeOrmSellerCopilotRepository } from '@/modules/seller-copilot/infrastructure/repositories/typeorm-seller-copilot.repository';
 import { SellerCopilotController } from '@/modules/seller-copilot/presentation/controllers/seller-copilot.controller';
-import { SELLER_QUESTION_CAPABILITY_REGISTRY } from '@/modules/seller-copilot/application/question-understanding/registry/seller-question-capability-registry.types';
 import { SELLER_QUESTION_PLANNER } from '@/modules/seller-copilot/application/question-understanding/planner/contracts/seller-question-planner.port';
 import { SellerQuestionUnderstandingService } from '@/modules/seller-copilot/application/question-understanding/planner/classification/seller-question-understanding.service';
 import { OpenAiSellerQuestionPlannerClient } from '@/modules/seller-copilot/infrastructure/clients/openai-seller-question-planner.client';
-import { loadSellerQuestionCapabilityRegistry } from '@/modules/seller-copilot/infrastructure/registry/load-seller-question-capability-registry';
+import { SellerKnowledgeModule } from '@/modules/seller-knowledge/seller-knowledge.module';
 
 // Đăng ký planner nội bộ độc lập; stream công khai vẫn giữ thông báo bảo trì cho tới phase sinh câu trả lời.
 @Module({
     imports: [
         ShopProfileModule,
+        SellerKnowledgeModule,
         TypeOrmModule.forFeature([
             SellerCopilotConversation,
             SellerCopilotMessage,
@@ -35,16 +35,6 @@ import { loadSellerQuestionCapabilityRegistry } from '@/modules/seller-copilot/i
         ConversationHistoryService,
         ConversationPersistenceService,
         SellerQuestionUnderstandingService,
-        {
-            provide: SELLER_QUESTION_CAPABILITY_REGISTRY,
-            inject: [ConfigService],
-            useFactory: (config: ConfigService) =>
-                loadSellerQuestionCapabilityRegistry(
-                    config.get<string>(
-                        'SELLER_COPILOT_CAPABILITY_REGISTRY_PATH',
-                    ),
-                ),
-        },
         {
             provide: SELLER_QUESTION_PLANNER,
             inject: [ConfigService],

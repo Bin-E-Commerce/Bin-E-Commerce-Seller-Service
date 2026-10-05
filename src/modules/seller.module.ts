@@ -3,12 +3,14 @@ import { SellerOnboardingModule } from '@/modules/seller-onboarding/seller-onboa
 import { ShopProfileModule } from '@/modules/shop-profile/shop-profile.module';
 import { SellerDashboardModule } from '@/modules/seller-dashboard/seller-dashboard.module';
 import { SellerCopilotModule } from '@/modules/seller-copilot/seller-copilot.module';
+import { SellerKnowledgeModule } from '@/modules/seller-knowledge/seller-knowledge.module';
 
 @Module({
     imports: [
         SellerOnboardingModule,
         ShopProfileModule,
         SellerDashboardModule,
+        SellerKnowledgeModule,
         SellerCopilotModule,
     ],
 })

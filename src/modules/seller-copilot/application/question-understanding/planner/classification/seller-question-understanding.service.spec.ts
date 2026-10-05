@@ -41,7 +41,11 @@ describe('SellerQuestionUnderstandingService', () => {
                 { provide: SELLER_QUESTION_PLANNER, useValue: mockPlanner },
                 {
                     provide: SELLER_QUESTION_CAPABILITY_REGISTRY,
-                    useValue: registry,
+                    useValue: {
+                        getActiveRegistry: jest
+                            .fn()
+                            .mockResolvedValue(registry),
+                    },
                 },
             ],
         }).compile();

@@ -20,6 +20,8 @@ export interface SellerQuestionDomainDefinition {
     kind: SellerKnowledgeDomainKind;
     // Giải thích phạm vi chủ đề để model phân biệt domain gần nghĩa với nhau.
     description: string;
+    // Ví dụ ngôn ngữ tự nhiên do Admin quản lý giúp planner hiểu domain mới mà không cần sửa prompt/code.
+    examples?: string[];
     // Cho biết domain có tài liệu làm căn cứ hay không; domain live/profile lấy dữ liệu từ hệ thống ứng dụng.
     documentBacked: boolean;
 }
@@ -47,6 +49,11 @@ export interface SellerQuestionCapabilityRegistry {
     domains: SellerQuestionDomainDefinition[];
     // Danh sách loại yêu cầu và domain được phép kết hợp; phải đủ các request type chuẩn.
     requestTypes: SellerQuestionRequestTypeDefinition[];
+}
+
+// Planner đọc registry lúc xử lý từng câu để domain ACTIVE mới có hiệu lực ngay, không cần restart service.
+export interface SellerQuestionCapabilityRegistryProvider {
+    getActiveRegistry(): Promise<SellerQuestionCapabilityRegistry>;
 }
 
 // Token DI để service, loader và test cùng inject đúng một registry đã được kiểm tra.

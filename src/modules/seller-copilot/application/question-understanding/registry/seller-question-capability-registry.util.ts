@@ -32,6 +32,11 @@ export function validateSellerQuestionCapabilityRegistry(
                 String(domain.kind),
             ) ||
             typeof domain.documentBacked !== 'boolean' ||
+            (domain.examples !== undefined &&
+                (!Array.isArray(domain.examples) ||
+                    domain.examples.some(
+                        (example) => !isNonEmptyString(example),
+                    ))) ||
             domainCodes.has(domain.code)
         ) {
             throw new Error(
