@@ -1,6 +1,6 @@
 # Hướng dẫn gán nhãn và duyệt dữ liệu Phase 1
 
-File này quy định cách gán nhãn chung cho development, realistic, boundary-stress và holdout. `cases/development-cases.json` dùng để chẩn đoán/tinh chỉnh; `cases/realistic-cases.json` bổ sung cách nói đời thường; `cases/boundary-stress-cases.json` tập trung vào câu tự nhiên dễ nhầm giữa các intent/domain gần nhau. Ba bộ này chỉ dùng chẩn đoán, không dùng làm holdout nghiệm thu. `cases/holdout-cases.json` phải độc lập, không được dùng để sửa prompt sau khi xem kết quả.
+File này quy định cách gán nhãn chung cho development, realistic, boundary-stress, five-routes và holdout. `cases/development-cases.json` dùng để chẩn đoán/tinh chỉnh; `cases/realistic-cases.json` bổ sung cách nói đời thường; `cases/boundary-stress-cases.json` tập trung vào câu tự nhiên dễ nhầm giữa các intent/domain gần nhau; `cases/five-routes-cases.json` kiểm tra riêng năm cổng trò chuyện, hồ sơ, dữ liệu live, tài liệu và agent. Các bộ này chỉ dùng chẩn đoán, không dùng làm holdout nghiệm thu. `cases/holdout-cases.json` phải độc lập, không được dùng để sửa prompt sau khi xem kết quả.
 
 ## Điều kiện để một ca được tính
 
@@ -88,3 +88,17 @@ npm run question-planner:evaluate -- --split=boundary-stress
 ```
 
 Nhãn của boundary-stress cũng cần được người nắm nghiệp vụ duyệt; kết quả hiện chỉ có giá trị chẩn đoán, không phải holdout nghiệm thu.
+
+Chạy dry-run bộ năm cổng để xác nhận nhãn và số lượng ca mà không gọi model:
+
+```powershell
+npm run question-planner:evaluate -- --split=five-routes --dry-run
+```
+
+Chạy planner thật trên 50 câu thuộc năm cổng (mỗi câu gọi model một lần và có phát sinh chi phí API):
+
+```powershell
+npm run question-planner:evaluate -- --split=five-routes
+```
+
+Report có accuracy và confusion matrix riêng cho `CONVERSATION`, `PROFILE`, `LIVE_DATA`, `KNOWLEDGE`, `AGENT_INVENTORY`. Bộ này giữ nhãn `PENDING_REVIEW`, chỉ phục vụ chẩn đoán; cần kiểm duyệt nghiệp vụ trước khi dùng nhãn làm gold data.

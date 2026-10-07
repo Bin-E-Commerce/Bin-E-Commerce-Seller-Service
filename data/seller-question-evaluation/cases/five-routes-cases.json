@@ -1,0 +1,952 @@
+[
+    {
+        "id": "FR-CONV-01",
+        "question": "Chào BinGPT, hôm nay bạn khỏe không?",
+        "expectedRoute": "CONVERSATION",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Lời chào xã giao, không hỏi dữ liệu shop hay yêu cầu thao tác.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "SMALL_TALK",
+                    "domain": null
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-CONV-02",
+        "question": "Nay mình hơi buồn, kể mình nghe chuyện gì vui vui đi.",
+        "expectedRoute": "CONVERSATION",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Người dùng tâm sự và muốn nghe chuyện; không cần gọi nguồn dữ liệu nghiệp vụ.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "SMALL_TALK",
+                    "domain": null
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-CONV-03",
+        "question": "Tám với mình chút được không?",
+        "expectedRoute": "CONVERSATION",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Lời mời trò chuyện chung, không chứa yêu cầu xem hay sửa dữ liệu shop.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "SMALL_TALK",
+                    "domain": null
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-CONV-04",
+        "question": "Cảm ơn nha, bạn dễ thương ghê.",
+        "expectedRoute": "CONVERSATION",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Lời cảm ơn/khen ngợi là small talk, không phải câu hỏi về năng lực sản phẩm.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "SMALL_TALK",
+                    "domain": null
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-CONV-05",
+        "question": "Kể một câu chuyện ngắn trước khi mình làm việc tiếp đi.",
+        "expectedRoute": "CONVERSATION",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Yêu cầu kể chuyện giải trí, không phải yêu cầu truy xuất tài liệu có từ khóa công việc.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "SMALL_TALK",
+                    "domain": null
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-CONV-06",
+        "question": "Mình đang stress quá, nghe mình than thở một chút nhé.",
+        "expectedRoute": "CONVERSATION",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Người dùng muốn tâm sự; không nên route sang hồ sơ, live-data hoặc Qdrant.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "SMALL_TALK",
+                    "domain": null
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-PROFILE-01",
+        "question": "Shop mình tên gì ấy nhỉ?",
+        "expectedRoute": "PROFILE",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Hỏi tên shop hiện được gắn với người bán đang đăng nhập; đọc seller-profile.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-profile"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-PROFILE-02",
+        "question": "Tài khoản người bán này đang đứng tên ai?",
+        "expectedRoute": "PROFILE",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Hỏi hồ sơ người bán hiện tại, không hỏi hướng dẫn hoặc dữ liệu vận hành.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-profile"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-PROFILE-03",
+        "question": "Cho mình xem thông tin cơ bản của shop đang đăng nhập.",
+        "expectedRoute": "PROFILE",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Yêu cầu thông tin cơ bản thuộc hồ sơ shop đang đăng nhập.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-profile"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-PROFILE-04",
+        "question": "Email liên hệ của tài khoản mình là gì?",
+        "expectedRoute": "PROFILE",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Email là trường hồ sơ tài khoản cơ bản; câu hỏi không yêu cầu dữ liệu live.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-profile"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-PROFILE-05",
+        "question": "Shop của mình hiện đang hoạt động hay bị tạm ngưng vậy?",
+        "expectedRoute": "PROFILE",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Hỏi trạng thái hồ sơ/shop hiện tại, không hỏi chính sách chung về trạng thái shop.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-profile"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-PROFILE-06",
+        "question": "Bạn biết tên người bán đang đăng nhập không?",
+        "expectedRoute": "PROFILE",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đại từ hỏi thông tin người dùng hiện tại; route hồ sơ, không tra tài liệu.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-profile"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-LIVE-01",
+        "question": "Doanh thu shop mình tháng này tới giờ là bao nhiêu?",
+        "expectedRoute": "LIVE_DATA",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Cần số liệu doanh thu thực tế theo thời gian hiện tại; domain seller-revenue.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-revenue"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-LIVE-02",
+        "question": "30 ngày qua mình có bao nhiêu đơn hàng?",
+        "expectedRoute": "LIVE_DATA",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Hỏi số lượng đơn phát sinh theo khoảng thời gian; domain seller-orders.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-orders"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-LIVE-03",
+        "question": "Đơn nào đang chờ mình xác nhận?",
+        "expectedRoute": "LIVE_DATA",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Cần danh sách/trạng thái đơn hiện tại từ dữ liệu live của shop.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-orders"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-LIVE-04",
+        "question": "Sản phẩm nào trong shop sắp hết hàng nhất?",
+        "expectedRoute": "LIVE_DATA",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Hỏi tình trạng tồn kho sản phẩm hiện tại; domain seller-products-inventory.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-LIVE-05",
+        "question": "Áo thun xanh size M còn bao nhiêu cái vậy?",
+        "expectedRoute": "LIVE_DATA",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Hỏi tồn kho live của một sản phẩm/biến thể cụ thể; domain seller-products-inventory.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-LIVE-06",
+        "question": "Món nào bán chạy nhất tuần này?",
+        "expectedRoute": "LIVE_DATA",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Hỏi thứ hạng sản phẩm dựa trên giao dịch thực tế trong tuần; domain seller-products-inventory.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-KNOW-01",
+        "question": "Chính sách đổi trả hàng cho người mua thế nào?",
+        "expectedRoute": "KNOWLEDGE",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Tra cứu chính sách Seller đã xuất bản; nội dung thuộc knowledge/Qdrant.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "returns-refunds"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-KNOW-02",
+        "question": "Shop cần làm gì trước khi bàn giao đơn cho đơn vị vận chuyển?",
+        "expectedRoute": "KNOWLEDGE",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Hỏi quy trình/hướng dẫn xử lý đơn, không cần dữ liệu đơn đang tồn tại.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "order-processing"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-KNOW-03",
+        "question": "Phí giao hàng được tính như thế nào khi khách đặt đơn?",
+        "expectedRoute": "KNOWLEDGE",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Hỏi quy tắc/phương pháp tính phí, không hỏi số tiền của một giao dịch live.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "fees-settlement"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-KNOW-04",
+        "question": "Trạng thái Đã giao khác Hoàn tất ở điểm nào?",
+        "expectedRoute": "KNOWLEDGE",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Hỏi ý nghĩa/quy tắc của trạng thái đơn, không yêu cầu danh sách đơn live.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "order-status"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-KNOW-05",
+        "question": "Quy trình xác nhận đơn mới trên Seller Center gồm những bước nào?",
+        "expectedRoute": "KNOWLEDGE",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Hỏi hướng dẫn thao tác chuẩn, không yêu cầu thực hiện trên đơn cụ thể.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "order-processing"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-KNOW-06",
+        "question": "Điều kiện nào để yêu cầu hoàn tiền được chấp nhận?",
+        "expectedRoute": "KNOWLEDGE",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Hỏi điều kiện chính sách hoàn tiền; phải truy xuất tài liệu thay vì xem trạng thái dữ liệu shop.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "returns-refunds"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-AGENT-01",
+        "question": "Tăng tồn kho Áo thun xanh size M lên 20 cái.",
+        "expectedRoute": "AGENT_INVENTORY",
+        "interactionMode": "agent",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "UI đã chọn agent; động từ tăng và đích tồn kho rõ nên phân loại yêu cầu thay đổi tồn, chưa ghi trước xác nhận.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CHANGE_REQUEST",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-AGENT-02",
+        "question": "Đặt số lượng tồn của SKU TS-BLUE-M thành 12.",
+        "expectedRoute": "AGENT_INVENTORY",
+        "interactionMode": "agent",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Yêu cầu đặt số tồn tuyệt đối theo SKU; agent phải tạo preview và chờ xác nhận.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CHANGE_REQUEST",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-AGENT-03",
+        "question": "Giảm tồn của Bình nước 750ml xuống còn 5.",
+        "expectedRoute": "AGENT_INVENTORY",
+        "interactionMode": "agent",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Yêu cầu đặt mức đích thấp hơn hiện tại; không được hiểu là giảm thêm 5.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CHANGE_REQUEST",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-AGENT-04",
+        "question": "Cộng thêm 8 cái vào tồn kho mẫu Ly sứ trắng.",
+        "expectedRoute": "AGENT_INVENTORY",
+        "interactionMode": "agent",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Từ cộng thêm thể hiện rõ phép tăng tương đối; agent vẫn phải hiển thị tồn mới dự kiến và chờ xác nhận.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CHANGE_REQUEST",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-AGENT-05",
+        "question": "@BinGPT chỉnh biến thể áo khoác màu đen size L còn 15 sản phẩm nhé.",
+        "expectedRoute": "AGENT_INVENTORY",
+        "interactionMode": "agent",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Agent mode được chọn và có biến thể cùng số tồn đích cụ thể; phân loại CHANGE_REQUEST/inventory.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CHANGE_REQUEST",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-AGENT-06",
+        "question": "Cập nhật tồn kho sản phẩm mã SP-2048 lên 30 cái giúp mình.",
+        "expectedRoute": "AGENT_INVENTORY",
+        "interactionMode": "agent",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Yêu cầu chỉnh số lượng tuyệt đối theo mã sản phẩm; thao tác chỉ được thực hiện sau preview/xác nhận.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CHANGE_REQUEST",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-CONV-07",
+        "question": "BinGPT ơi, còn thức không đó?",
+        "expectedRoute": "CONVERSATION",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Câu bắt chuyện tự nhiên, không chứa yêu cầu nghiệp vụ dù có nhắc tên BinGPT.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "SMALL_TALK",
+                    "domain": null
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-CONV-08",
+        "question": "Mình chán quá, chơi đố chữ với mình nha.",
+        "expectedRoute": "CONVERSATION",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Lời mời chơi trò chuyện giải trí, không liên quan dữ liệu Seller.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "SMALL_TALK",
+                    "domain": null
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-CONV-09",
+        "question": "Nói chuyện phiếm với mình một lát đi.",
+        "expectedRoute": "CONVERSATION",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Yêu cầu tán gẫu trực tiếp; không cần nguồn kiến thức hoặc dữ liệu shop.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "SMALL_TALK",
+                    "domain": null
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-CONV-10",
+        "question": "Hôm nay mình mệt ghê, động viên mình chút được không?",
+        "expectedRoute": "CONVERSATION",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Người dùng tìm sự đồng cảm/động viên, không yêu cầu xử lý dữ liệu shop.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "SMALL_TALK",
+                    "domain": null
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-PROFILE-07",
+        "question": "Tên người bán trên tài khoản của mình là gì?",
+        "expectedRoute": "PROFILE",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Hỏi tên hiển thị của người bán hiện đăng nhập; thuộc hồ sơ tài khoản.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-profile"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-PROFILE-08",
+        "question": "Vai trò hiện tại của tài khoản shop mình là gì?",
+        "expectedRoute": "PROFILE",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Hỏi role của tài khoản đang hoạt động, không tra quy định Seller.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-profile"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-PROFILE-09",
+        "question": "Shop hiện tại của mình có mã nào vậy?",
+        "expectedRoute": "PROFILE",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Hỏi định danh cơ bản của shop hiện tại; cần đọc hồ sơ shop đã xác thực.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-profile"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-PROFILE-10",
+        "question": "Bạn cho mình xem tên và trạng thái của shop đang dùng nhé.",
+        "expectedRoute": "PROFILE",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Hai trường đều mô tả shop đang đăng nhập nên gộp thành một task hồ sơ.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-profile"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-LIVE-07",
+        "question": "Hôm nay shop mình thu được bao nhiêu doanh thu?",
+        "expectedRoute": "LIVE_DATA",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Cần số liệu doanh thu live theo ngày hiện tại, không phải chính sách ghi nhận doanh thu.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-revenue"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-LIVE-08",
+        "question": "Có đơn nào bị giao trễ cần mình xử lý không?",
+        "expectedRoute": "LIVE_DATA",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Hỏi danh sách đơn live theo trạng thái giao hàng và việc cần xử lý; domain seller-orders.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-orders"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-LIVE-09",
+        "question": "SKU TS-BLUE-M đang còn tồn thực tế bao nhiêu?",
+        "expectedRoute": "LIVE_DATA",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Hỏi lượng tồn hiện tại theo SKU; nguồn đúng là live inventory, không phải tài liệu.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-LIVE-10",
+        "question": "Liệt kê giúp mình các sản phẩm đang còn hàng trong shop.",
+        "expectedRoute": "LIVE_DATA",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Yêu cầu danh sách sản phẩm theo tồn kho hiện tại; domain seller-products-inventory.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-KNOW-07",
+        "question": "Shop cần chuẩn bị hàng trong bao lâu trước khi bàn giao cho shipper?",
+        "expectedRoute": "KNOWLEDGE",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Hỏi quy định/hướng dẫn về thời hạn chuẩn bị và bàn giao, cần truy xuất knowledge.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "order-processing"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-KNOW-08",
+        "question": "COD đã thu thì bao giờ được đối soát theo quy định?",
+        "expectedRoute": "KNOWLEDGE",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Hỏi quy tắc và thời điểm đối soát chung, không hỏi số tiền live của shop.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "fees-settlement"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-KNOW-09",
+        "question": "Sản phẩm bị hạn chế thì Seller cần đáp ứng điều kiện nào để đăng bán?",
+        "expectedRoute": "KNOWLEDGE",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Hỏi chính sách/điều kiện đăng bán của nhóm hàng hạn chế; truy xuất tài liệu.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "restricted-products"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-KNOW-10",
+        "question": "Nếu khách yêu cầu trả hàng thì shop phải làm theo quy trình nào?",
+        "expectedRoute": "KNOWLEDGE",
+        "interactionMode": "chat",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Hỏi quy trình xử lý đổi trả, không tra một yêu cầu trả hàng cụ thể của shop.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "READ_QUERY",
+                    "domain": "returns-refunds"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-AGENT-07",
+        "question": "@BinGPT, cập nhật tồn mẫu Bình giữ nhiệt lên 18 cái.",
+        "expectedRoute": "AGENT_INVENTORY",
+        "interactionMode": "agent",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Agent được gọi rõ ràng; thay đổi số tồn sản phẩm thuộc CHANGE_REQUEST/inventory và phải chờ xác nhận.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CHANGE_REQUEST",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-AGENT-08",
+        "question": "Đặt tồn kho của sản phẩm mã SP-2048 là 0 giúp mình.",
+        "expectedRoute": "AGENT_INVENTORY",
+        "interactionMode": "agent",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Đặt về 0 là giá trị đích hợp lệ, không đồng nghĩa xóa sản phẩm; vẫn phải preview và xác nhận.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CHANGE_REQUEST",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-AGENT-09",
+        "question": "Bớt giùm mình 3 cái tồn của mẫu Ly sứ trắng.",
+        "expectedRoute": "AGENT_INVENTORY",
+        "interactionMode": "agent",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Cụm bớt 3 thể hiện phép giảm tương đối; tác vụ phải xác minh tồn hiện tại rồi yêu cầu xác nhận.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CHANGE_REQUEST",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        }
+    },
+    {
+        "id": "FR-AGENT-10",
+        "question": "Cho sản phẩm Áo khoác gió màu be size M thêm hàng vào kho nhé.",
+        "expectedRoute": "AGENT_INVENTORY",
+        "interactionMode": "agent",
+        "split": "five-routes",
+        "reviewStatus": "PENDING_REVIEW",
+        "labelRationale": "Ý định thay đổi tồn và đối tượng đã rõ nhưng chưa có số lượng; planner vẫn phân loại agent, bước tác vụ sẽ hỏi số lượng.",
+        "expected": {
+            "status": "READY",
+            "contextRelation": "NEW_TOPIC",
+            "tasks": [
+                {
+                    "requestType": "CHANGE_REQUEST",
+                    "domain": "seller-products-inventory"
+                }
+            ]
+        }
+    }
+]

@@ -3,12 +3,12 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { loadEnvFile } from 'node:process';
-import { buildSellerQuestionContext } from '@/modules/seller-copilot/application/question-understanding/context/seller-question-context.util';
-import { evaluateSellerQuestionCases } from '@/modules/seller-copilot/application/question-understanding/evaluation/seller-question-evaluation.service';
-import type { SellerQuestionPlan } from '@/modules/seller-copilot/application/question-understanding/types/seller-question-plan.types';
-import type { SellerQuestionCapabilityRegistry } from '@/modules/seller-copilot/application/question-understanding/registry/seller-question-capability-registry.types';
-import type { SellerQuestionEvaluationCase } from '@/modules/seller-copilot/application/question-understanding/types/seller-question-plan.types';
-import { validateSellerQuestionPlan } from '@/modules/seller-copilot/application/question-understanding/planner/validation/seller-question-plan.validator';
+import { buildSellerQuestionContext } from '@/modules/seller-copilot/application/question-understanding/shared/context/seller-question-context.util';
+import { evaluateSellerQuestionCases } from '@/modules/seller-copilot/application/question-understanding/shared/evaluation/seller-question-evaluation.service';
+import type { SellerQuestionPlan } from '@/modules/seller-copilot/application/question-understanding/shared/types/seller-question-plan.types';
+import type { SellerQuestionCapabilityRegistry } from '@/modules/seller-copilot/application/question-understanding/shared/registry/seller-question-capability-registry.types';
+import type { SellerQuestionEvaluationCase } from '@/modules/seller-copilot/application/question-understanding/shared/types/seller-question-plan.types';
+import { validateSellerQuestionPlan } from '@/modules/seller-copilot/application/question-understanding/shared/planner/validation/seller-question-plan.validator';
 import {
     OpenAiSellerQuestionPlannerClient,
     buildSellerQuestionPlannerInstructions,
@@ -17,25 +17,26 @@ import { loadSellerQuestionCapabilityRegistry } from '@/modules/seller-copilot/i
 
 const root = process.cwd();
 type EvaluationSplit =
-    | 'development'
-    | 'realistic'
-    | 'boundary-stress'
-    | 'holdout';
+    'development' | 'realistic' | 'boundary-stress' | 'five-routes' | 'holdout';
 const evaluationFixtures: Record<EvaluationSplit, string> = {
     development: 'data/seller-question-evaluation/cases/development-cases.json',
     realistic: 'data/seller-question-evaluation/cases/realistic-cases.json',
     'boundary-stress':
         'data/seller-question-evaluation/cases/boundary-stress-cases.json',
+    'five-routes':
+        'data/seller-question-evaluation/cases/five-routes-cases.json',
     holdout: 'data/seller-question-evaluation/cases/holdout-cases.json',
 };
 
 // Chọn tập dữ liệu tường minh; split lạ phải dừng thay vì âm thầm chạy nhầm development.
 const requestedSplit =
-    process.argv.find((argument) => argument.startsWith('--split='))?.slice(8) ??
-    'development';
+    process.argv
+        .find((argument) => argument.startsWith('--split='))
+        ?.slice(8) ?? 'development';
+// Fail fast trước khi load fixture/provider để typo split không vô tình tiêu tốn API hoặc ghi report nhầm tập.
 if (!Object.hasOwn(evaluationFixtures, requestedSplit)) {
     throw new Error(
-        `Unknown evaluation split "${requestedSplit}". Use development, realistic, boundary-stress, or holdout.`,
+        `Unknown evaluation split "${requestedSplit}". Use development, realistic, boundary-stress, five-routes, or holdout.`,
     );
 }
 const split = requestedSplit as EvaluationSplit;
@@ -46,6 +47,7 @@ for (const envPath of [
     join(root, '.env'),
     join(root, '..', '..', '.env'),
 ]) {
+    // File môi trường đầu tiên tồn tại được load theo thứ tự ưu tiên; thiếu file không cản benchmark dùng env đã export.
     if (existsSync(envPath)) loadEnvFile(envPath);
 }
 
@@ -59,14 +61,17 @@ function validateEvaluationFixture(
     registry: SellerQuestionCapabilityRegistry,
     selectedSplit: EvaluationSplit,
 ): void {
+    // Kiểm tra shape ngoài cùng trước khi truy cập field để JSON lỗi được báo như fixture invalid, không thành TypeError mơ hồ.
     if (!Array.isArray(cases)) {
         throw new Error('Evaluation fixture must be a JSON array.');
     }
     const ids = new Set(cases.map((testCase) => testCase.id));
+    // ID duy nhất là điều kiện để holdout chứng minh độc lập; duplicate sẽ làm inflate số mẫu và report sai.
     if (ids.size !== cases.length) {
         throw new Error('Evaluation case IDs must be unique.');
     }
     for (const testCase of cases) {
+        // Mỗi ca cần câu hỏi và expected label; split mismatch bị từ chối thay vì trộn dữ liệu giữa các tập.
         if (!testCase.question.trim() || !testCase.expected) {
             throw new Error(`Evaluation case ${testCase.id} is incomplete.`);
         }
@@ -80,6 +85,7 @@ function validateEvaluationFixture(
             (testCase.reviewStatus !== 'APPROVED' ||
                 !testCase.labelRationale?.trim())
         ) {
+            // Holdout chỉ được chạy với label đã review và rationale để số đo không biến thành đánh giá trên nhãn chưa duyệt.
             throw new Error(
                 `Holdout case ${testCase.id} needs an approved label and rationale.`,
             );
@@ -103,6 +109,7 @@ function validateEvaluationFixture(
             registry,
         );
         if (!expectedPlan) {
+            // Dùng chính validator production để fixture không thể đo một cặp intent/domain mà runtime sẽ từ chối.
             throw new Error(
                 `Evaluation case ${testCase.id} does not match the request-type/domain registry.`,
             );
@@ -125,6 +132,7 @@ function printReport(
         `${report.split}: ${report.semanticCorrect}/${report.semanticCases} semantic-correct; technical success ${(report.technicalSuccessRate * 100).toFixed(1)}%; labels approved/pending ${report.approvedGoldLabels}/${report.pendingGoldLabels}; ${outcome}`,
     );
     for (const [dimension, grouping] of Object.entries(report.groups)) {
+        // In từng group kể cả INSUFFICIENT_DATA để số liệu thiếu không bị hiểu nhầm là đạt hoặc biến mất.
         console.log(`\n${dimension}`);
         for (const [name, group] of Object.entries(grouping)) {
             const interval = group.confidenceInterval95
@@ -150,11 +158,13 @@ function printReport(
 
 // Gọi planner đúng một lần cho từng ca; giữ nguyên normalizer, strict validator và registry production.
 async function main(): Promise<void> {
+    // Registry/prompt/model được lấy giống cấu hình production để benchmark đo đúng logic đang triển khai.
     const registry = loadSellerQuestionCapabilityRegistry(
         process.env.SELLER_COPILOT_CAPABILITY_REGISTRY_PATH,
     );
     validateEvaluationFixture(fixtures, registry, split);
     if (process.argv.includes('--dry-run')) {
+        // Dry-run chỉ kiểm tra coverage/schema, không khởi tạo planner hoặc gọi API tính phí.
         printFixtureCoverage(fixtures, registry, split);
         console.log(
             `Validated ${fixtures.length} ${split} cases; approved labels: ${fixtures.filter(({ reviewStatus }) => reviewStatus === 'APPROVED').length}.`,
@@ -178,12 +188,18 @@ async function main(): Promise<void> {
     const report = await evaluateSellerQuestionCases(
         fixtures,
         async (testCase) => {
+            // Normalizer và validator giống request thật; chỉ plan được xác thực mới được evaluator xem là kết quả.
             const context = buildSellerQuestionContext({
                 question: testCase.question,
                 history: testCase.history,
             });
-            const result = await planner.classify({ ...context, registry });
+            const result = await planner.classify({
+                ...context,
+                interactionMode: testCase.interactionMode ?? 'chat',
+                registry,
+            });
             if (result.kind === 'failure') {
+                // Giữ failureReason/usage để lỗi provider làm giảm technical success, không bị tính nhầm thành sai ngữ nghĩa.
                 return {
                     plan: createFailurePlan(result.reason),
                     tokenUsage: result.usage ?? null,
@@ -191,6 +207,7 @@ async function main(): Promise<void> {
             }
             const plan = validateSellerQuestionPlan(result.response, registry);
             if (!plan)
+                // JSON hợp lệ về cú pháp nhưng sai contract cũng là lỗi kỹ thuật của planner.
                 return { plan: createFailurePlan('AI_INVALID_RESPONSE') };
             return { plan, tokenUsage: result.usage ?? null };
         },
@@ -226,6 +243,30 @@ function printFixtureCoverage(
     registry: SellerQuestionCapabilityRegistry,
     selectedSplit: EvaluationSplit,
 ): void {
+    if (selectedSplit === 'five-routes') {
+        console.log(
+            'Five-entry route coverage (diagnostic, labels pending review):',
+        );
+        for (const route of [
+            'CONVERSATION',
+            'PROFILE',
+            'LIVE_DATA',
+            'KNOWLEDGE',
+            'AGENT_INVENTORY',
+        ]) {
+            const total = cases.filter(
+                ({ expectedRoute }) => expectedRoute === route,
+            ).length;
+            console.log(`  ${route}: ${total}`);
+        }
+        console.log(
+            `  chat mode: ${cases.filter(({ interactionMode }) => (interactionMode ?? 'chat') === 'chat').length}`,
+        );
+        console.log(
+            `  agent mode: ${cases.filter(({ interactionMode }) => interactionMode === 'agent').length}`,
+        );
+        return;
+    }
     if (selectedSplit !== 'holdout') {
         console.log(
             `${selectedSplit} set is diagnostic only; its labels do not count toward holdout acceptance.`,
@@ -235,6 +276,7 @@ function printFixtureCoverage(
     const approvedCases = cases.filter(
         ({ reviewStatus }) => reviewStatus === 'APPROVED',
     );
+    // Mỗi set lưu ID ca duy nhất, không số task; vì vậy nhiều domain trong một câu chỉ góp một mẫu vào từng domain.
     const requestTypeCases = new Map<string, Set<string>>();
     const domainCases = new Map<string, Set<string>>();
     for (const testCase of approvedCases) {
@@ -302,6 +344,7 @@ function createFailurePlan(
     };
 }
 
+// Lỗi top-level chỉ in thông điệp và đặt exit code; không dump stack/config có thể chứa chi tiết môi trường.
 void main().catch((error: unknown) => {
     const message =
         error instanceof Error ? error.message : 'Unknown evaluation error.';

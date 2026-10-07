@@ -178,7 +178,8 @@
             "tasks": [
                 {
                     "domain": "seller-copilot-capabilities",
-                    "requestType": "CAPABILITY_QUERY"
+                    "requestType": "CAPABILITY_QUERY",
+                    "resolvedQuestionMustContain": ["BinGPT"]
                 }
             ]
         },
@@ -635,10 +636,7 @@
                 {
                     "domain": "seller-revenue",
                     "requestType": "READ_QUERY",
-                    "resolvedQuestionMustContain": [
-                        "7 ngày",
-                        "doanh thu"
-                    ]
+                    "resolvedQuestionMustContain": ["7 ngày", "doanh thu"]
                 }
             ]
         },
@@ -666,10 +664,7 @@
                 {
                     "domain": "seller-orders",
                     "requestType": "READ_QUERY",
-                    "resolvedQuestionMustContain": [
-                        "số đơn",
-                        "30 ngày"
-                    ]
+                    "resolvedQuestionMustContain": ["số đơn", "30 ngày"]
                 }
             ]
         },
