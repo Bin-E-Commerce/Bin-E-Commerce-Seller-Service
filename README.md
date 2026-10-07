@@ -796,30 +796,39 @@ services/seller-service/
 
 Use [.env.example](./.env.example) as the canonical local template.
 
-| Variable               | Required               | Purpose                          |
-| ---------------------- | ---------------------- | -------------------------------- |
-| NODE_ENV               | No                     | Runtime environment              |
-| PORT                   | No                     | HTTP port, default 3007          |
-| APP_VERSION            | No                     | Version returned by health       |
-| TYPEORM_LOGGING        | No                     | Enable TypeORM SQL logging       |
-| POSTGRES_HOST          | Yes                    | PostgreSQL host                  |
-| POSTGRES_PORT          | No                     | PostgreSQL port, default 5432    |
-| POSTGRES_USER          | Yes                    | PostgreSQL user                  |
-| POSTGRES_PASSWORD      | Yes                    | PostgreSQL password              |
-| POSTGRES_DB            | Yes                    | Seller database name             |
-| CATALOG_SERVICE_URL    | Yes                    | Category and catalog validation  |
-| KAFKA_BROKERS          | Yes for events         | Kafka broker list                |
-| KAFKA_CLIENT_ID        | No                     | Kafka producer client ID         |
-| INTERNAL_SERVICE_TOKEN | Yes for internal calls | Shared service-to-service secret |
-| SELLER_COPILOT_ENABLED | No                     | Enable or disable seller AI chat |
-| OPENAI_API_KEY         | Yes for AI answers     | Server-side OpenAI credential    |
-| SELLER_COPILOT_MODEL   | No                     | Chat model, default gpt-4.1-mini |
-| EMBEDDING_MODEL        | No                     | RAG embedding model              |
-| QDRANT_URL             | No                     | Seller knowledge vector store    |
-| QDRANT_API_KEY         | No                     | Qdrant credential when required  |
-| SELLER_KNOWLEDGE_DATASET_VERSION | No | Active policy dataset version |
-| SELLER_POLICY_MIN_RELEVANCE_SCORE | No | Dense/lexical evidence threshold |
-| SELLER_KNOWLEDGE_EMBEDDING_BATCH_SIZE | No | Offline embedding batch size |
+| Variable                                 | Required               | Purpose                                                              |
+| ---------------------------------------- | ---------------------- | -------------------------------------------------------------------- |
+| NODE_ENV                                 | No                     | Runtime environment                                                  |
+| PORT                                     | No                     | HTTP port, default 3007                                              |
+| APP_VERSION                              | No                     | Version returned by health                                           |
+| TYPEORM_LOGGING                          | No                     | Enable TypeORM SQL logging                                           |
+| POSTGRES_HOST                            | Yes                    | PostgreSQL host                                                      |
+| POSTGRES_PORT                            | No                     | PostgreSQL port, default 5432                                        |
+| POSTGRES_USER                            | Yes                    | PostgreSQL user                                                      |
+| POSTGRES_PASSWORD                        | Yes                    | PostgreSQL password                                                  |
+| POSTGRES_DB                              | Yes                    | Seller database name                                                 |
+| CATALOG_SERVICE_URL                      | Yes                    | Category and catalog validation                                      |
+| KAFKA_BROKERS                            | Yes for events         | Kafka broker list                                                    |
+| KAFKA_CLIENT_ID                          | No                     | Kafka producer client ID                                             |
+| INTERNAL_SERVICE_TOKEN                   | Yes for internal calls | Shared service-to-service secret                                     |
+| SELLER_COPILOT_ENABLED                   | No                     | Enable or disable seller AI chat                                     |
+| OPENAI_API_KEY                           | Yes for AI answers     | Server-side OpenAI credential                                        |
+| SELLER_COPILOT_MODEL                     | No                     | Chat model, default gpt-4.1-mini                                     |
+| SELLER_COPILOT_ANSWER_MODEL              | No                     | Grounded answer model, default gpt-4.1-mini                          |
+| COHERE_API_KEY                           | Recommended            | Enables multilingual Cohere reranking; hybrid RRF is the fallback    |
+| SELLER_KNOWLEDGE_EMBEDDING_MODEL         | No                     | Admin knowledge embedding model, default text-embedding-3-large      |
+| SELLER_KNOWLEDGE_EMBEDDING_DIMENSIONS    | No                     | Admin knowledge vector dimensions, default 3072                      |
+| EMBEDDING_MODEL                          | No                     | Legacy static ingestion model; not used by Admin-published retrieval |
+| QDRANT_URL                               | No                     | Seller knowledge vector store                                        |
+| QDRANT_API_KEY                           | No                     | Qdrant credential when required                                      |
+| QDRANT_COLLECTION_SELLER_KNOWLEDGE_V2    | No                     | Admin retrieval collection, default seller_knowledge_v2              |
+| SELLER_KNOWLEDGE_RERANKER_MODEL          | No                     | Cohere model, default rerank-v4.0-pro                                |
+| SELLER_KNOWLEDGE_RETRIEVAL_PER_LEG_LIMIT | No                     | Dense/BM25 candidates per channel, default 40                        |
+| SELLER_KNOWLEDGE_RERANK_CANDIDATE_LIMIT  | No                     | RRF candidates sent to reranking, default 50                         |
+| SELLER_KNOWLEDGE_CONTEXT_LIMIT           | No                     | Maximum reranked context chunks, default 6                           |
+| SELLER_KNOWLEDGE_DATASET_VERSION         | No                     | Active policy dataset version                                        |
+| SELLER_POLICY_MIN_RELEVANCE_SCORE        | No                     | Dense/lexical evidence threshold                                     |
+| SELLER_KNOWLEDGE_EMBEDDING_BATCH_SIZE    | No                     | Offline embedding batch size                                         |
 
 ### Configuration ownership
 
@@ -842,7 +851,9 @@ The Copilot is a seller-scoped, read-only assistant. It combines the live dashbo
 | GET    | `/seller/ai/copilot/conversations/:conversationId` | Read one owned conversation             |
 | POST   | `/seller/ai/copilot/feedback`                      | Record answer feedback                  |
 
-Knowledge documents are ingested offline. After building the service, set `OPENAI_API_KEY` and `QDRANT_URL`, then run:
+Production BinGPT retrieval uses only documents published through Seller Knowledge Admin. PostgreSQL provides the allowlist of active domains, current published revisions, language, and effective dates; Qdrant v2 stores dense `text-embedding-3-large` vectors plus multilingual BM25 vectors. Dense and lexical candidates are fused with RRF, then optionally reranked with Cohere. If `COHERE_API_KEY` is absent or reranking fails, the service uses a smaller RRF-only context. Answers are generated only from retrieved chunks and citations are stored with conversation messages.
+
+The current local database was cleared before this retrieval work, so import/publish Admin documents again before expecting BinGPT to find policy evidence. The legacy static ingestion command below still targets the v1 collection and is not included in production chat retrieval:
 
 ```bash
 npm run knowledge:validate --workspace @bin-ecommerce/seller-service

@@ -3,17 +3,18 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { SellerKnowledgeEmbeddingPort } from '@/modules/seller-knowledge/application/ports/seller-knowledge-index.port';
+import { fetchSellerKnowledgeWithRetry } from '@/modules/seller-knowledge/infrastructure/clients/seller-knowledge-fetch.util';
 
 // Thực thi hợp đồng tạo embedding bằng OpenAI; lỗi cấu hình, HTTP hoặc output đều được chuyển thành lỗi dịch vụ có thể hiểu được.
 @Injectable()
 export class OpenAiSellerKnowledgeEmbeddingClient implements SellerKnowledgeEmbeddingPort {
-    // Inject cấu hình backend để bí mật và lựa chọn model không cần truyền qua request của quản trị viên.
+    // Cấu hình server giữ API key và model khỏi payload do quản trị viên gửi từ trình duyệt.
     constructor(private readonly config: ConfigService) {}
 
     // Nhận từng đoạn văn bản và trả về một vector tương ứng theo đúng thứ tự; caller dùng vị trí này để gắn vector lại với chunk.
     // Chỉ gọi dịch vụ embedding, không sinh câu trả lời hay tự lưu dữ liệu vào PostgreSQL/Qdrant.
     // Nếu thiếu khóa, provider lỗi, quá thời gian hoặc trả vector thiếu/rỗng thì dừng publish để không tạo index một phần.
-    async embed(inputs: string[]): Promise<number[][]> {
+    async embed(inputs: string[], signal?: AbortSignal): Promise<number[][]> {
         // Đọc khóa ở server để credential không xuất hiện trong payload FE hoặc log request quản trị.
         const key = this.config.get<string>('OPENAI_API_KEY', '');
         // Từ chối sớm trước khi gọi mạng vì request không xác thực sẽ luôn thất bại và không thể tạo vector.
@@ -22,23 +23,45 @@ export class OpenAiSellerKnowledgeEmbeddingClient implements SellerKnowledgeEmbe
                 'Embedding provider chưa được cấu hình.',
             );
 
-        // Gửi cả batch trong một request; model embedding biến mỗi input thành mảng số biểu diễn ngữ nghĩa.
+        // Chặn cấu hình dimension lỗi trước network call để không tạo vector sai schema cho collection Qdrant.
+        const dimensions = Number(
+            this.config.get<string>(
+                'SELLER_KNOWLEDGE_EMBEDDING_DIMENSIONS',
+                '3072',
+            ),
+        );
+        if (!Number.isInteger(dimensions) || dimensions < 1)
+            throw new ServiceUnavailableException(
+                'Kích thước embedding chưa được cấu hình hợp lệ.',
+            );
+
+        // Gửi batch trong một request; model biến mỗi input thành vector số theo đúng thứ tự index provider trả về.
         // Timeout giới hạn thời gian chờ để tác vụ publish không treo vô hạn khi provider không phản hồi.
-        const response = await fetch('https://api.openai.com/v1/embeddings', {
-            method: 'POST',
-            headers: {
-                authorization: `Bearer ${key}`,
-                'content-type': 'application/json',
-            },
-            signal: AbortSignal.timeout(30_000),
-            body: JSON.stringify({
-                model: this.config.get<string>(
-                    'EMBEDDING_MODEL',
-                    'text-embedding-3-small',
-                ),
-                input: inputs,
-            }),
+        const body = JSON.stringify({
+            model: this.config.get<string>(
+                'SELLER_KNOWLEDGE_EMBEDDING_MODEL',
+                'text-embedding-3-large',
+            ),
+            dimensions,
+            input: inputs,
         });
+        const response = await fetchSellerKnowledgeWithRetry(
+            'OpenAI',
+            'embedding creation',
+            () =>
+                fetch('https://api.openai.com/v1/embeddings', {
+                    method: 'POST',
+                    headers: {
+                        authorization: `Bearer ${key}`,
+                        'content-type': 'application/json',
+                    },
+                    // Tạo timeout mới cho mỗi lần thử; tín hiệu hủy từ caller vẫn dừng ngay, không bị retry.
+                    signal: signal
+                        ? AbortSignal.any([signal, AbortSignal.timeout(30_000)])
+                        : AbortSignal.timeout(30_000),
+                    body,
+                }),
+        );
         // Không tiếp tục với body lỗi của provider vì dữ liệu đó không phải tập vector hợp lệ để ghi vào Qdrant.
         if (!response.ok)
             throw new ServiceUnavailableException(
@@ -49,22 +72,40 @@ export class OpenAiSellerKnowledgeEmbeddingClient implements SellerKnowledgeEmbe
         const result = (await response.json()) as {
             data?: { index: number; embedding: number[] }[];
         };
-        // Sắp xếp theo index gốc vì không nên phụ thuộc thứ tự phần tử trong response.
-        // Việc giữ thứ tự là điều kiện để vector thứ i tiếp tục đi cùng chunk thứ i ở bước ghi Qdrant.
-        const vectors = (result.data ?? [])
-            .sort((a, b) => a.index - b.index)
-            .map((item) => item.embedding);
+        // Lưu theo đúng slot input thay vì chỉ sort: response thiếu/lặp index có thể vẫn đủ số dòng nhưng ghép sai chunk.
+        const vectorsByIndex: (number[] | undefined)[] = Array(
+            inputs.length,
+        ).fill(undefined);
+        const seenIndexes = new Set<number>();
+        for (const item of result.data ?? []) {
+            if (
+                !Number.isInteger(item.index) ||
+                item.index < 0 ||
+                item.index >= inputs.length ||
+                seenIndexes.has(item.index)
+            ) {
+                throw new ServiceUnavailableException(
+                    'Embedding provider trả về thứ tự dữ liệu không hợp lệ.',
+                );
+            }
+            seenIndexes.add(item.index);
+            vectorsByIndex[item.index] = item.embedding;
+        }
 
-        // Thiếu vector hoặc vector rỗng báo hiệu batch không đầy đủ; từ chối cả batch để tránh lệch chunk-vector.
+        // Từ chối thiếu vector, sai dimension hoặc giá trị không hữu hạn để tránh ghi point không thể truy vấn.
         if (
-            vectors.length !== inputs.length ||
-            vectors.some((vector) => !Array.isArray(vector) || !vector.length)
+            vectorsByIndex.some(
+                (vector) =>
+                    !Array.isArray(vector) ||
+                    vector.length !== dimensions ||
+                    vector.some((value) => !Number.isFinite(value)),
+            )
         ) {
             throw new ServiceUnavailableException(
                 'Embedding provider trả về dữ liệu không hợp lệ.',
             );
         }
-        // Trả các vector đã được kiểm tra; caller chịu trách nhiệm gửi chúng tới vector index.
-        return vectors;
+        // Sau validation, mọi slot được kiểm tra là vector đủ dimension; ép kiểu chỉ phản ánh invariant vừa xác lập.
+        return vectorsByIndex as number[][];
     }
 }

@@ -15,6 +15,7 @@ import {
 } from '@/database/seller-knowledge/enums/seller-knowledge-status.enum';
 import type { SellerKnowledgeDocumentMetadata } from '@/modules/seller-knowledge/application/types/seller-knowledge.types';
 import type { SellerKnowledgeRepositoryPort } from '@/modules/seller-knowledge/application/ports/seller-knowledge-repository.port';
+import type { SellerKnowledgeRetrievalScope } from '@/modules/seller-knowledge/application/ports/seller-knowledge-retrieval.port';
 
 // Adapter duy nhất chứa truy vấn PostgreSQL cho catalog, revision metadata, publish job và audit Seller Knowledge.
 @Injectable()
@@ -32,6 +33,61 @@ export class TypeOrmSellerKnowledgeRepository implements SellerKnowledgeReposito
         @InjectRepository(SellerKnowledgeAuditEvent)
         private readonly audits: Repository<SellerKnowledgeAuditEvent>,
     ) {}
+
+    // Tạo allowlist trực tiếp từ catalog chuẩn; point Qdrant cũ/bản nháp không lọt vào dù vẫn còn lưu trong index.
+    // Join theo publishedRevisionId và trạng thái domain/document/revision đồng thời áp ngày hiệu lực ở PostgreSQL.
+    async listRetrievalScopes(input: {
+        domainCodes?: string[];
+        language: string;
+        asOf: string;
+    }): Promise<SellerKnowledgeRetrievalScope[]> {
+        const query = this.documents
+            .createQueryBuilder('document')
+            .innerJoin(
+                SellerKnowledgeDomain,
+                'domain',
+                'domain.code = document.domainCode',
+            )
+            .innerJoin(
+                SellerKnowledgeRevision,
+                'revision',
+                'revision.id = document.publishedRevisionId AND revision.documentId = document.id',
+            )
+            .select('document.id', 'documentId')
+            .addSelect('revision.id', 'revisionId')
+            .addSelect('document.title', 'title')
+            .addSelect('document.domainCode', 'domainCode')
+            .addSelect('document.language', 'language')
+            .addSelect('document.effectiveFrom', 'effectiveFrom')
+            .addSelect('document.effectiveTo', 'effectiveTo')
+            .where('document.status = :published', { published: 'PUBLISHED' })
+            .andWhere('revision.status = :revisionPublished', {
+                revisionPublished: 'PUBLISHED',
+            })
+            .andWhere('domain.status = :active', { active: 'ACTIVE' })
+            .andWhere('domain.kind = :kind', { kind: 'knowledge' })
+            .andWhere(
+                '(document.effectiveFrom IS NULL OR document.effectiveFrom <= :asOf)',
+                { asOf: input.asOf },
+            )
+            .andWhere(
+                '(document.effectiveTo IS NULL OR document.effectiveTo >= :asOf)',
+                { asOf: input.asOf },
+            )
+            .andWhere('document.language = :language', {
+                language: input.language,
+            })
+            .orderBy('document.id', 'ASC');
+
+        // Khi planner không xác định domain, chỉ language/date giới hạn tập; có domain thì dùng exact allowlist, không mở lọc rộng.
+        if (input.domainCodes?.length) {
+            query.andWhere('document.domainCode IN (:...domainCodes)', {
+                domainCodes: [...new Set(input.domainCodes)],
+            });
+        }
+
+        return query.getRawMany<SellerKnowledgeRetrievalScope>();
+    }
 
     // Draft chỉ hiện ở giao diện quản trị khi được yêu cầu; planner chỉ nhận domain ACTIVE.
     async listDomains(

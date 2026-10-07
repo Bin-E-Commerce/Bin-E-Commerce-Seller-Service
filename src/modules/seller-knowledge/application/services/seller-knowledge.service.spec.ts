@@ -24,6 +24,7 @@ describe('SellerKnowledgeService', () => {
     // Tạo dependency giả để unit test không truy cập PostgreSQL, S3, OpenAI hoặc Qdrant thật.
     beforeEach(() => {
         repository = {
+            listRetrievalScopes: jest.fn(),
             listDomains: jest.fn(),
             findDomain: jest.fn(),
             saveDomain: jest.fn(),
@@ -318,11 +319,13 @@ describe('SellerKnowledgeService', () => {
 
         await expect(
             service.publish('revision-id', 'admin-id'),
-        ).rejects.toBeInstanceOf(ServiceUnavailableException);
+        ).rejects.toThrow(
+            'Tạo vector ngữ nghĩa chưa hoàn tất. Bản đang sử dụng vẫn được giữ nguyên; vui lòng thử lại sau.',
+        );
 
         expect(repository.failJob).toHaveBeenCalledWith(
             'job-id',
-            'Embedding provider chưa được cấu hình.',
+            '[Tạo vector ngữ nghĩa] Embedding provider chưa được cấu hình.',
         );
         expect(repository.activateRevision).not.toHaveBeenCalled();
     });

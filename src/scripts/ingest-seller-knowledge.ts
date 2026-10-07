@@ -5,7 +5,7 @@ import { existsSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import { loadEnvFile } from 'node:process';
 import { join, relative, resolve } from 'node:path';
-import { validateSellerQuestionCapabilityRegistry } from '@/modules/seller-copilot/application/question-understanding/registry/seller-question-capability-registry.util';
+import { validateSellerQuestionCapabilityRegistry } from '@/modules/seller-copilot/application/question-understanding/shared/registry/seller-question-capability-registry.util';
 
 interface KnowledgeChunk {
     id: string;

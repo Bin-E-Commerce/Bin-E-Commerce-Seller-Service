@@ -402,7 +402,9 @@ export class SellerKnowledgeService {
         // Vector đầu tiên đại diện câu hỏi; các vector sau lần lượt đại diện chunk nên index chunk phải cộng thêm một.
         const vectors = await this.embedding.embed([
             question,
-            ...chunks.map((chunk) => `${chunk.section}\n${chunk.content}`),
+            ...chunks.map(
+                (chunk) => `${chunk.sectionPath.join(' > ')}\n${chunk.content}`,
+            ),
         ]);
         // Ghép score với chunk tương ứng, sắp xếp giảm dần và chỉ trả tối đa 5 kết quả hữu ích cho màn hình kiểm tra.
         return {
@@ -467,29 +469,37 @@ export class SellerKnowledgeService {
             lastError: null,
             leaseUntil: null,
         });
-        // Mỗi chunk được embed với tiêu đề và section làm ngữ cảnh; sau đó vector được ghép cùng chunk và ghi Qdrant.
+        // Mỗi chunk được embed với tiêu đề và đường dẫn section cha-con; cùng cấu trúc này giúp dense/sparse tìm đúng ngữ cảnh.
         // Cả embedding lẫn Qdrant phải thành công trước khi revision được xác nhận indexed/validated.
+        let indexingStage = 'Tạo vector ngữ nghĩa';
         try {
             const vectors = await this.embedding.embed(
                 chunks.map(
                     (chunk) =>
-                        `${metadata.title}\n${chunk.section}\n${chunk.content}`,
+                        `${metadata.title}\n${chunk.sectionPath.join(' > ')}\n${chunk.content}`,
                 ),
             );
+            // Đổi giai đoạn trước khi gọi Qdrant để job lưu đúng dịch vụ gây lỗi thay vì chỉ ghi fetch failed chung chung.
+            indexingStage = 'Ghi chỉ mục tìm kiếm vào Qdrant';
             await this.vectorIndex.publishRevision({
                 document: { ...document, ...metadata },
                 revision,
                 chunks,
                 vectors,
             });
+            // Tách cập nhật metadata PostgreSQL thành giai đoạn riêng để lỗi DB không bị báo nhầm là lỗi Qdrant.
+            indexingStage = 'Cập nhật trạng thái revision trong PostgreSQL';
             await this.repository.updateRevision(revision.id, {
                 status: 'VALIDATED',
                 validationReport: { chunkCount: chunks.length, indexed: true },
             });
         } catch (error) {
             // Ghi job/audit lỗi và không đổi con trỏ publishedRevisionId; revision cũ vẫn là nguồn retrieval chính thức.
-            const message =
-                error instanceof Error ? error.message : 'Indexing failed.';
+            const detail =
+                error instanceof Error
+                    ? error.message
+                    : 'Unknown indexing error.';
+            const message = `[${indexingStage}] ${detail}`;
             await this.recordPublishFailure(
                 job.id,
                 revision.id,
@@ -497,7 +507,7 @@ export class SellerKnowledgeService {
                 message,
             );
             throw new ServiceUnavailableException(
-                'Chưa thể xuất bản tài liệu; bản đang sử dụng vẫn được giữ nguyên.',
+                `${indexingStage} chưa hoàn tất. Bản đang sử dụng vẫn được giữ nguyên; vui lòng thử lại sau.`,
             );
         }
 

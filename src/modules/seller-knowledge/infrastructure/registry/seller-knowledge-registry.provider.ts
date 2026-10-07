@@ -5,9 +5,9 @@ import { ConfigService } from '@nestjs/config';
 import type {
     SellerQuestionCapabilityRegistryProvider,
     SellerQuestionCapabilityRegistry,
-} from '@/modules/seller-copilot/application/question-understanding/registry/seller-question-capability-registry.types';
+} from '@/modules/seller-copilot/application/question-understanding/shared/registry/seller-question-capability-registry.types';
 import { loadSellerQuestionCapabilityRegistry } from '@/modules/seller-copilot/infrastructure/registry/load-seller-question-capability-registry';
-import { validateSellerQuestionCapabilityRegistry } from '@/modules/seller-copilot/application/question-understanding/registry/seller-question-capability-registry.util';
+import { validateSellerQuestionCapabilityRegistry } from '@/modules/seller-copilot/application/question-understanding/shared/registry/seller-question-capability-registry.util';
 import { SellerKnowledgeDomainStatus } from '@/database/seller-knowledge/enums/seller-knowledge-status.enum';
 import { SELLER_KNOWLEDGE_SYSTEM_ACTOR_ID } from '@/modules/seller-knowledge/application/constants/seller-knowledge-system.constants';
 import { TypeOrmSellerKnowledgeRepository } from '@/modules/seller-knowledge/infrastructure/repositories/typeorm-seller-knowledge.repository';

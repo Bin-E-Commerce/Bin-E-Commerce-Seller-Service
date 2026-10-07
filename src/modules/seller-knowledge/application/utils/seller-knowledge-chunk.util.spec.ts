@@ -22,13 +22,20 @@ describe('chunkSellerKnowledgeMarkdown', () => {
         // Assert
         expect(chunks).toEqual([
             {
-                section: 'Nội dung chính',
-                content: '# Tổng quan\nNội dung giới thiệu.',
+                section: 'Tổng quan',
+                sectionPath: ['Tổng quan'],
+                content: 'Nội dung giới thiệu.',
+                chunkIndex: 1,
             },
             {
-                section: 'Điều kiện',
-                content:
-                    '### Hàng còn nguyên trạng\nSản phẩm cần đầy đủ tem nhãn và phụ kiện.',
+                section: 'Hàng còn nguyên trạng',
+                sectionPath: [
+                    'Tổng quan',
+                    'Điều kiện',
+                    'Hàng còn nguyên trạng',
+                ],
+                content: 'Sản phẩm cần đầy đủ tem nhãn và phụ kiện.',
+                chunkIndex: 2,
             },
         ]);
     });
@@ -47,6 +54,9 @@ describe('chunkSellerKnowledgeMarkdown', () => {
         expect(chunks.length).toBeGreaterThan(1);
         expect(chunks.every((chunk) => chunk.section === 'Quy trình')).toBe(
             true,
+        );
+        expect(chunks.map((chunk) => chunk.chunkIndex)).toEqual(
+            chunks.map((_chunk, index) => index + 1),
         );
         expect(chunks[0]?.content).toContain(
             chunks[1]?.content.slice(0, 80) ?? '',
