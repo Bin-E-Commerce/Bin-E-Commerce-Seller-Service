@@ -1,10 +1,15 @@
 // Adapter duy nhất gọi OpenAI để phân loại; response format buộc JSON schema và không cung cấp tool hay quyền truy cập.
-import type { SellerQuestionCapabilityRegistry } from '@/modules/seller-copilot/application/question-understanding/registry/seller-question-capability-registry.types';
-import { buildSellerQuestionRegistryCatalog } from '@/modules/seller-copilot/application/question-understanding/registry/seller-question-capability-registry.util';
+import type { SellerQuestionCapabilityRegistry } from '@/modules/seller-copilot/application/question-understanding/shared/registry/seller-question-capability-registry.types';
+import { buildSellerQuestionRegistryCatalog } from '@/modules/seller-copilot/application/question-understanding/shared/registry/seller-question-capability-registry.util';
 import type {
     SellerQuestionPlannerPort,
     SellerQuestionPlannerResult,
-} from '@/modules/seller-copilot/application/question-understanding/planner/contracts/seller-question-planner.port';
+} from '@/modules/seller-copilot/application/question-understanding/shared/planner/contracts/seller-question-planner.port';
+import { AGENT_PLANNER_RULE } from '@/modules/seller-copilot/application/question-understanding/modes/agent/planner-rule';
+import { CHAT_PLANNER_RULE } from '@/modules/seller-copilot/application/question-understanding/modes/chat/planner-rule';
+import { KNOWLEDGE_PLANNER_RULE } from '@/modules/seller-copilot/application/question-understanding/modes/knowledge/planner-rule';
+import { SHOP_DATA_PLANNER_RULE } from '@/modules/seller-copilot/application/question-understanding/modes/shop-data/planner-rule';
+import { SELLER_QUESTION_SHOP_DATA_INTENTS } from '@/modules/seller-copilot/application/question-understanding/shared/types/seller-question-plan.types';
 import { Injectable } from '@nestjs/common';
 
 export interface OpenAiSellerQuestionPlannerOptions {
@@ -23,6 +28,7 @@ const MAX_COMPLETION_TOKENS = 1600;
 
 @Injectable()
 export class OpenAiSellerQuestionPlannerClient implements SellerQuestionPlannerPort {
+    // Cho phép inject fetcher để test lỗi/response mà không gọi mạng; production mặc định dùng fetch chuẩn.
     constructor(
         private readonly options: OpenAiSellerQuestionPlannerOptions,
         private readonly fetcher: FetchLike = fetch,
@@ -32,6 +38,7 @@ export class OpenAiSellerQuestionPlannerClient implements SellerQuestionPlannerP
     async classify(input: {
         question: string;
         history: Array<{ role: 'user' | 'assistant'; content: string }>;
+        interactionMode?: 'chat' | 'shop_data' | 'knowledge' | 'agent';
         registry: SellerQuestionCapabilityRegistry; // Registry cung cấp request type, domain và ví dụ ngữ nghĩa được phép.
         signal?: AbortSignal;
     }): Promise<SellerQuestionPlannerResult> {
@@ -79,6 +86,8 @@ export class OpenAiSellerQuestionPlannerClient implements SellerQuestionPlannerP
                             content: JSON.stringify({
                                 recentConversation: input.history,
                                 currentQuestion: input.question,
+                                interactionMode:
+                                    input.interactionMode ?? 'chat',
                             }),
                         },
                     ],
@@ -189,7 +198,12 @@ function buildPlannerResponseSchema(
                 items: {
                     type: 'object',
                     additionalProperties: false,
-                    required: ['requestType', 'domain', 'resolvedQuestion'],
+                    required: [
+                        'requestType',
+                        'domain',
+                        'resolvedQuestion',
+                        'shopDataIntent',
+                    ],
                     properties: {
                         requestType: { type: 'string', enum: requestTypes },
                         domain: {
@@ -197,6 +211,10 @@ function buildPlannerResponseSchema(
                             enum: [...domains, null],
                         },
                         resolvedQuestion: { type: 'string' },
+                        shopDataIntent: {
+                            type: ['string', 'null'],
+                            enum: [...SELLER_QUESTION_SHOP_DATA_INTENTS, null],
+                        },
                     },
                 },
             },
@@ -220,6 +238,7 @@ export function buildSellerQuestionPlannerInstructions(
         '- domain mô tả người dùng đang hỏi về chủ đề nào; nó độc lập với requestType. Ví dụ cùng domain tồn kho có thể xuất hiện trong câu hỏi “còn bao nhiêu?”, câu “bạn có sửa được không?” hoặc yêu cầu “cập nhật lên 20”.',
         '- Chọn domain chỉ trong registry và chỉ khi domain được phép cho requestType đó; dùng null khi loại yêu cầu không gắn domain.',
         '- resolvedQuestion là cách diễn đạt lại yêu cầu hiện tại thành một câu tự đủ nghĩa để bước sau xử lý độc lập. Giữ nguyên ý người dùng, không tự thêm dữ kiện, điều kiện, con số hoặc câu trả lời.',
+        '- shopDataIntent là intent nghiệp vụ có cấu trúc, chỉ chọn enum khi interactionMode=shop_data và task là READ_QUERY thuộc domain live tương ứng; mode/domain khác phải để null. Chọn theo nghĩa toàn câu và ngữ cảnh, không theo một từ khóa riêng lẻ.',
         '- tasks là các yêu cầu độc lập trong tin nhắn hiện tại. Chỉ tách khi người dùng thực sự hỏi nhiều việc; giữ nguyên thứ tự họ nêu và không tạo task trùng lặp.',
         '- status mô tả kết quả phân loại, không phải kết quả trả lời: READY nghĩa là đã đủ thông tin để định tuyến; NEEDS_CLARIFICATION nghĩa là phải hỏi thêm; OUT_OF_SCOPE nghĩa là yêu cầu nằm ngoài hỗ trợ seller.',
         '- contextRelation mô tả quan hệ của tin nhắn hiện tại với hội thoại: NEW_TOPIC là chủ đề mới; FOLLOW_UP là câu nối tiếp; CLARIFICATION_REPLY là câu trả lời cho câu hỏi làm rõ gần nhất.',
@@ -229,8 +248,13 @@ export function buildSellerQuestionPlannerInstructions(
         '- Trước hết xác định người dùng đang xã giao, hỏi BinGPT có hỗ trợ việc gì, muốn tra cứu/giải thích thông tin, hay đang yêu cầu thực hiện một thay đổi. Cách nói lịch sự như “giúp tôi” không tự biến yêu cầu thay đổi thành câu hỏi về khả năng.',
         '- SMALL_TALK: lời chào, gọi trợ lý, cảm ơn, tạm biệt hoặc xã giao ngắn. Trả plan READY với một task SMALL_TALK và domain null; không hỏi làm rõ chỉ vì câu ngắn hoặc chưa nêu nghiệp vụ.',
         '- CAPABILITY_QUERY: hỏi về chức năng/phạm vi BinGPT, không yêu cầu thực hiện ngay; domain luôn là seller-copilot-capabilities. Ví dụ “BinGPT có hỗ trợ cập nhật tồn kho không?” là hỏi khả năng; “Cập nhật tồn kho lên 20 giúp tôi” là yêu cầu thay đổi.',
+        '- Trong hội thoại trực tiếp với trợ lý, “bạn/mày làm được gì?”, “bạn hỗ trợ gì?” là cách gọi trợ lý và phải được hiểu là CAPABILITY_QUERY/seller-copilot-capabilities; resolvedQuestion cần nêu rõ “BinGPT” để truy xuất không phụ thuộc đại từ. “Bạn ơi” không kèm yêu cầu vẫn là SMALL_TALK. Không thay “tao/tôi/mình” bằng BinGPT: đó thường là người bán đang nói về chính họ; xét cả động từ, đối tượng và lịch sử trước khi chọn ý định.',
         '- READ_QUERY: muốn xem, biết, giải thích hoặc được hướng dẫn. Chọn domain theo điều người dùng muốn biết và loại nguồn cần dùng; các domain gần nghĩa phải phân biệt theo quy tắc và ví dụ bên dưới.',
         '- CHANGE_REQUEST: muốn tạo/cập nhật/xóa/thay đổi dữ liệu. Chọn domain của đối tượng cần thay đổi; đây chỉ là phân loại ý định, không phải quyền thực thi hay xác nhận thao tác thành công.',
+        // Ghép lại thành đúng một rule liền mạch như trước để việc tách ownership không đổi prompt gửi tới model.
+        `${AGENT_PLANNER_RULE} ${CHAT_PLANNER_RULE.slice(2)}`,
+        KNOWLEDGE_PLANNER_RULE,
+        SHOP_DATA_PLANNER_RULE,
         '- Với CHANGE_REQUEST, nếu động từ thao tác và đối tượng đã rõ thì tạo task READY dù còn thiếu giá trị mới, nội dung cần sửa hoặc lựa chọn chi tiết. Việc thiếu tham số chỉ ảnh hưởng bước thực hiện sau, không làm mơ hồ ý định phân loại; ví dụ “Sửa mô tả shop thành nội dung sau đây” vẫn là CHANGE_REQUEST/seller-profile và “Tạo bản nháp sản phẩm mới từ thông tin tôi gửi sau đây” là CHANGE_REQUEST/seller-products-inventory.',
         '- “Xác nhận tất cả đơn đang chờ giúp tôi” là CHANGE_REQUEST/seller-orders vì user yêu cầu đổi trạng thái; “Đơn nào đang chờ xác nhận?” là READ_QUERY/seller-orders. Câu như “Tôi muốn tìm phần cấu hình shop” đã đủ để route tới seller-center-troubleshooting dù chưa nêu tên nút con; không hỏi lại nếu nhóm màn hình/chức năng đã rõ.',
         '- OUT_OF_SCOPE: ý định rõ ràng nằm ngoài hỗ trợ seller. Câu mơ hồ phải hỏi lại, không được gán ngoài phạm vi theo phỏng đoán.',

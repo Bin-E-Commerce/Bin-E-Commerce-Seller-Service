@@ -28,6 +28,7 @@ import { PublicShopController } from '@/modules/shop-profile/presentation/contro
 import { ShopFollow } from '@/database/shop-profile/entities/shop-follow.entity';
 
 @Module({
+    // Đăng ký entity và Kafka dependency mà các service hồ sơ/sự kiện đang dùng; AuthUserClient chỉ là adapter đọc nội bộ.
     imports: [
         KafkaModule,
         TypeOrmModule.forFeature([
@@ -60,6 +61,10 @@ import { ShopFollow } from '@/database/shop-profile/entities/shop-follow.entity'
         AuthUserClient,
         PublicShopService,
     ],
-    exports: [ShopOwnershipService, ShopShippingSettingsService],
+    exports: [
+        ShopOwnershipService,
+        ShopShippingSettingsService,
+        AuthUserClient,
+    ],
 })
 export class ShopProfileModule {}

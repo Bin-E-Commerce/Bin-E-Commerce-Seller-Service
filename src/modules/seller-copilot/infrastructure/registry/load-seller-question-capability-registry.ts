@@ -1,8 +1,8 @@
 // Nạp registry cấu hình ngoài code; đường dẫn mặc định hoạt động khi chạy từ workspace service hoặc Docker image.
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import type { SellerQuestionCapabilityRegistry } from '@/modules/seller-copilot/application/question-understanding/registry/seller-question-capability-registry.types';
-import { validateSellerQuestionCapabilityRegistry } from '@/modules/seller-copilot/application/question-understanding/registry/seller-question-capability-registry.util';
+import type { SellerQuestionCapabilityRegistry } from '@/modules/seller-copilot/application/question-understanding/shared/registry/seller-question-capability-registry.types';
+import { validateSellerQuestionCapabilityRegistry } from '@/modules/seller-copilot/application/question-understanding/shared/registry/seller-question-capability-registry.util';
 
 const DEFAULT_REGISTRY_RELATIVE_PATH =
     'data/seller-knowledge/capability-registry.json';

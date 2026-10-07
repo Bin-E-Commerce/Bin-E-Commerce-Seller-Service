@@ -7,7 +7,7 @@ import {
 import {
     SELLER_COPILOT_REPOSITORY,
     type SellerCopilotRepositoryPort,
-} from '@/modules/seller-copilot/application/shared/ports/seller-copilot-repository.port';
+} from '@/modules/seller-copilot/application/conversation/ports/seller-copilot-repository.port';
 import { SellerCopilotAccessService } from '@/modules/seller-copilot/application/conversation/access/seller-copilot-access.service';
 
 // Đọc lịch sử hội thoại theo owner/shop đã xác thực; không gọi lại pipeline trả lời hay tải thêm dữ liệu live.

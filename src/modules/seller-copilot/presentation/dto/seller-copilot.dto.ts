@@ -9,11 +9,11 @@ import {
     MaxLength,
     MinLength,
 } from 'class-validator';
-import type { SellerCopilotRange } from '@/modules/seller-copilot/application/shared/types/seller-copilot.types';
+import type { SellerCopilotRange } from '@/modules/seller-copilot/application/conversation/types/seller-copilot.types';
 import { SELLER_COPILOT_CONVERSATION_TITLE_MAX_LENGTH } from '@/modules/seller-copilot/application/conversation/utils/conversation-title.util';
 
 // DTO giới hạn dữ liệu từ browser; shop scope luôn được resolve từ x-user-id tại Seller Service.
-// Payload chat chỉ nhận message/range/conversationId; scope shop luôn được resolve từ identity trusted.
+// Payload chat nhận message/mode và range legacy tùy chọn; scope shop luôn được resolve từ identity trusted.
 export class SellerCopilotChatDto {
     @IsOptional()
     @IsUUID()
@@ -25,12 +25,26 @@ export class SellerCopilotChatDto {
     message!: string;
 
     @IsOptional()
-    @IsIn(['7d', '30d', '90d'])
+    @IsIn(['7d', '30d', '90d', 'current-month'])
     range?: SellerCopilotRange;
 
     @IsOptional()
     @IsUUID()
     productId?: string;
+
+    @IsOptional()
+    @IsIn(['chat', 'shop_data', 'knowledge', 'agent'])
+    interactionMode?: 'chat' | 'shop_data' | 'knowledge' | 'agent';
+
+    @IsOptional()
+    @IsUUID()
+    modeSessionId?: string;
+}
+
+// Payload chuyển phiên chỉ nhận mode đích; owner, shop và sessionId luôn do backend xác định.
+export class SellerCopilotModeSessionDto {
+    @IsIn(['chat', 'shop_data', 'knowledge', 'agent'])
+    interactionMode!: 'chat' | 'shop_data' | 'knowledge' | 'agent';
 }
 
 // Payload feedback giới hạn rating và reason để telemetry không trở thành command nghiệp vụ.

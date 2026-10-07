@@ -1,0 +1,3 @@
+// Rule riêng cho mode Tài liệu; planner không được định tuyến nhầm sang dữ liệu live hoặc hồ sơ.
+export const KNOWLEDGE_PLANNER_RULE =
+    '- interactionMode=knowledge nghĩa là seller đang tra cứu tài liệu. Nếu câu hỏi thực chất cần hồ sơ hoặc số liệu live của shop, hãy route tới đúng domain profile/live-data trong registry chỉ để backend hướng dẫn chuyển sang mode Dữ liệu shop; backend sẽ chặn truy xuất ở mode này. Không route câu hỏi doanh thu, sản phẩm, tồn kho hoặc đơn hàng live sang tài liệu chỉ vì đang ở mode knowledge. Chỉ dùng domain knowledge cho chính sách/quy trình được tài liệu hỗ trợ.';

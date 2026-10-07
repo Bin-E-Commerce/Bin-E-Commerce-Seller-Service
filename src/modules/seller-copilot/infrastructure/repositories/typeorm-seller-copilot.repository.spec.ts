@@ -92,4 +92,42 @@ describe('TypeOrmSellerCopilotRepository.deleteConversation', () => {
         expect(feedbackRepository.createQueryBuilder).not.toHaveBeenCalled();
         expect(conversationRepository.delete).not.toHaveBeenCalled();
     });
+
+    // Citation phải đi nguyên vẹn qua persistence adapter để API history khôi phục đúng nguồn sau khi tải lại.
+    it('persists message metadata together with the message content', async () => {
+        // Arrange
+        const mockMessageRepository = { save: jest.fn().mockResolvedValue({}) };
+        target = new TypeOrmSellerCopilotRepository(
+            {} as never,
+            mockMessageRepository as never,
+            {} as never,
+            {} as never,
+        );
+        const input = {
+            conversationId: 'conversation-1',
+            role: 'assistant' as const,
+            content: 'Phí được tính theo tuyến [1].',
+            metadata: {
+                citations: [
+                    {
+                        id: 'point-1',
+                        label: 'Chính sách vận chuyển · Phí',
+                        type: 'seller_knowledge' as const,
+                        excerpt: 'Phí phụ thuộc tuyến.',
+                        content: 'Phí phụ thuộc tuyến giao nhận.',
+                        documentId: 'document-1',
+                        domain: 'shipping',
+                        version: '1',
+                    },
+                ],
+            },
+        };
+
+        // Act
+        await target.saveMessage(input);
+
+        // Assert
+        expect(mockMessageRepository.save).toHaveBeenCalledWith(input);
+        expect(mockMessageRepository.save).toHaveBeenCalledTimes(1);
+    });
 });

@@ -1,6 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ShopStatus } from '@/database/shop-profile/enums/shop-status.enum';
-import type { SellerCopilotRepositoryPort } from '@/modules/seller-copilot/application/shared/ports/seller-copilot-repository.port';
+import type { SellerCopilotRepositoryPort } from '@/modules/seller-copilot/application/conversation/ports/seller-copilot-repository.port';
 import { ConversationPersistenceService } from '@/modules/seller-copilot/application/conversation/persistence/conversation-persistence.service';
 import { SellerCopilotAccessService } from '@/modules/seller-copilot/application/conversation/access/seller-copilot-access.service';
 

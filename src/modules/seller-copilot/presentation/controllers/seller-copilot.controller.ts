@@ -6,6 +6,7 @@ import {
     Delete,
     Get,
     Headers,
+    HttpException,
     HttpCode,
     HttpStatus,
     Logger,
@@ -13,6 +14,7 @@ import {
     Param,
     ParseIntPipe,
     Post,
+    ParseUUIDPipe,
     Body,
     Query,
     Req,
@@ -23,14 +25,18 @@ import { randomUUID } from 'node:crypto';
 import { StreamSellerCopilotUseCase } from '@/modules/seller-copilot/application/conversation/streaming/stream-seller-copilot.use-case';
 import { ConversationHistoryService } from '@/modules/seller-copilot/application/conversation/history/conversation-history.service';
 import { ConversationPersistenceService } from '@/modules/seller-copilot/application/conversation/persistence/conversation-persistence.service';
+import { ConfirmSellerInventoryActionUseCase } from '@/modules/seller-copilot/application/modes/agent/actions/confirm-seller-inventory-action.use-case';
+import { ConversationModeSessionService } from '@/modules/seller-copilot/application/conversation/mode-session/conversation-mode-session.service';
 import {
     SellerCopilotChatDto,
     SellerCopilotFeedbackDto,
     SellerCopilotPinConversationDto,
     SellerCopilotRenameConversationDto,
+    SellerCopilotModeSessionDto,
 } from '@/modules/seller-copilot/presentation/dto/seller-copilot.dto';
 
 @Controller('seller/ai/copilot')
+// HTTP adapter chỉ lo ownership preflight, vòng đời kết nối SSE và map transport; nghiệp vụ chat nằm ở application services.
 export class SellerCopilotController {
     private readonly logger = new Logger(SellerCopilotController.name);
 
@@ -39,7 +45,24 @@ export class SellerCopilotController {
         private readonly history: ConversationHistoryService,
         private readonly persistence: ConversationPersistenceService,
         private readonly streamCopilot: StreamSellerCopilotUseCase,
+        private readonly confirmInventoryAction: ConfirmSellerInventoryActionUseCase,
+        private readonly modeSessions: ConversationModeSessionService,
     ) {}
+
+    // Tạo phiên mode mới trong conversation hiện tại; tenant được resolve từ identity Gateway, không từ payload.
+    // Service trả cùng session nếu request lặp cho mode đang hoạt động, tránh tạo divider trùng khi client retry.
+    @Post('conversations/:conversationId/mode-sessions')
+    async startModeSession(
+        @Headers('x-user-id') ownerUserId: string,
+        @Param('conversationId', new ParseUUIDPipe()) conversationId: string,
+        @Body() body: SellerCopilotModeSessionDto,
+    ) {
+        return this.modeSessions.startModeSession(
+            ownerUserId,
+            conversationId,
+            body.interactionMode,
+        );
+    }
 
     // Xác minh tenant và conversation trước khi mở SSE để lỗi quyền/ID sai vẫn giữ HTTP status chuẩn.
     // Theo dõi disconnect ngay từ preflight; hủy planner khi client rời đi thay vì tiếp tục tiêu thụ generator.
@@ -71,7 +94,13 @@ export class SellerCopilotController {
             ReturnType<StreamSellerCopilotUseCase['prepare']>
         >;
         try {
-            preparedChat = await this.streamCopilot.prepare(ownerUserId, body);
+            preparedChat = await this.streamCopilot.prepare(ownerUserId, body, {
+                email: this.getHeader(request, 'x-user-email'),
+                permissions: this.getHeader(request, 'x-user-permissions')
+                    .split(',')
+                    .map((permission) => permission.trim())
+                    .filter(Boolean),
+            });
         } catch (error) {
             response.off('close', handleResponseClose);
             throw error;
@@ -83,11 +112,9 @@ export class SellerCopilotController {
             return;
         }
 
-        // SSE cần kết nối mở lâu hơn HTTP thông thường; các header này yêu cầu proxy không cache hoặc gom chunk.
-        // X-Accel-Buffering là header riêng của Nginx để tắt buffer; các proxy khác có thể cần header tương tự.
-        // Content-Type là text/event-stream để client hiểu đây là SSE; charset=utf-8 để tránh lỗi decode ký tự.\
-        // Cache-Control: no-cache để client không cache; no-transform để proxy không thay đổi nội dung.
-        // Connection: keep-alive để giữ kết nối mở lâu; SSE cần kết nối liên tục.
+        // Flush header trước planner để browser nhận được kết nối và trạng thái sớm, không phải chờ cả câu trả lời.
+        // no-transform/no-buffering hạn chế proxy gộp delta; nếu proxy khác Nginx còn buffer thì cần cấu hình tại proxy đó.
+        // Sau lần flush này không thể đổi HTTP status, nên lỗi trong stream phải được gửi bằng event SSE `error`.
         response.status(200);
         response.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
         response.setHeader('Cache-Control', 'no-cache, no-transform');
@@ -106,19 +133,17 @@ export class SellerCopilotController {
                 // break gọi return() trên async generator, không âm thầm chạy nốt các bước có thể tốn chi phí.
                 if (clientClosed) break;
 
-                // Ghi event theo định dạng SSE: event: <type>\ndata: <json>\n\n; JSON.stringify để gửi object.
-                // Mục đích là gửi event theo chuẩn SSE, client sẽ nhận và xử lý từng event theo type.
+                // Mỗi event là một frame SSE độc lập; JSON giữ payload có cấu trúc và không làm mất metadata/citation.
                 const canContinue = response.write(
                     `event: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`,
                 );
 
-                // Dùng để đảm bảo event được gửi ngay lập tức, tránh bị buffer ở proxy hoặc adapter.
-                // Một số adapter/proxy cần flush tường minh; gọi tùy chọn sau mỗi event để nội dung không bị giữ tới cuối.
+                // Một số middleware/adapter hỗ trợ flush tường minh; gọi có điều kiện để giảm độ trễ của delta.
                 const flushableResponse = response as Response & {
                     flush?: () => void;
                 };
 
-                // Nếu adapter hỗ trợ flush thì gọi flush để gửi ngay event; nếu không có flush thì bỏ qua.
+                // Flush không thay thế xử lý backpressure; socket đầy vẫn phải chờ drain ở khối dưới.
                 flushableResponse.flush?.();
 
                 // Khi socket đầy buffer, chờ drain; nếu socket đóng/error thì dừng producer để không tăng RAM.
@@ -164,6 +189,57 @@ export class SellerCopilotController {
         }
     }
 
+    // Mở SSE trước external call để giao diện thấy ngay trạng thái xác nhận; response đã flush nên mọi lỗi được trả bằng action_result.
+    // Chỉ chuyển identity do Gateway xác thực và proposalId opaque; use case kiểm tra owner/shop, còn Product Service kiểm tra quyền + tồn mới nhất.
+    // Lỗi nghiệp vụ 4xx được giải thích an toàn; lỗi downstream không lộ nội bộ và không được báo thành công khi chưa có kết quả ghi.
+    @Post('actions/:proposalId/confirm')
+    async confirmInventory(
+        @Headers('x-user-id') ownerUserId: string,
+        @Param('proposalId', new ParseUUIDPipe()) proposalId: string,
+        @Req() request: Request,
+        @Res() response: Response,
+    ): Promise<void> {
+        response.status(200);
+        response.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+        response.setHeader('Cache-Control', 'no-cache, no-transform');
+        response.setHeader('Connection', 'keep-alive');
+        response.setHeader('X-Accel-Buffering', 'no');
+        response.flushHeaders();
+
+        // Trả trạng thái trước khi gọi Product Service để seller thấy thao tác đang được xác minh/ghi nhận.
+        response.write(
+            'event: status\ndata: {"type":"status","phase":"action_confirm","message":"Đang kiểm tra quyền và cập nhật tồn kho…"}\n\n',
+        );
+        try {
+            const result = await this.confirmInventoryAction.confirm({
+                ownerUserId,
+                proposalId,
+                email: this.getHeader(request, 'x-user-email'),
+                permissions: this.getHeader(request, 'x-user-permissions')
+                    .split(',')
+                    .map((permission) => permission.trim())
+                    .filter(Boolean),
+            });
+            response.write(
+                `event: action_result\ndata: ${JSON.stringify({ type: 'action_result', ...result })}\n\n`,
+            );
+        } catch (error) {
+            // Chỉ trả thông điệp nghiệp vụ 4xx; lỗi nội bộ không được lộ stack hoặc chi tiết downstream qua SSE.
+            const message =
+                error instanceof HttpException && error.getStatus() < 500
+                    ? extractHttpExceptionMessage(error)
+                    : 'Không thể xác nhận cập nhật tồn kho lúc này. Bạn hãy tạo đề xuất mới hoặc thử lại sau.';
+            response.write(
+                `event: action_result\ndata: ${JSON.stringify({ type: 'action_result', proposalId, status: 'failed', message })}\n\n`,
+            );
+        } finally {
+            response.write(
+                `event: done\ndata: ${JSON.stringify({ type: 'done', dataAsOf: new Date().toISOString(), citations: [], latencyMs: 0 })}\n\n`,
+            );
+            response.end();
+        }
+    }
+
     // Chờ buffer socket thoát backpressure; close/error giải phóng promise để request không mắc kẹt.
     private waitForResponseDrain(response: Response): Promise<boolean> {
         return new Promise((resolve) => {
@@ -185,6 +261,13 @@ export class SellerCopilotController {
             response.once('close', handleClose);
             response.once('error', handleClose);
         });
+    }
+
+    // Đọc header đơn hoặc header lặp để chỉ chuyển identity do Gateway gắn vào request nội bộ.
+    private getHeader(request: Request, name: string): string {
+        const value = request.headers[name];
+        if (Array.isArray(value)) return value[0] ?? '';
+        return value ?? '';
     }
 
     // Liệt kê hội thoại của user hiện tại; offset/limit mặc định lần lượt là 0/20 và được ParseIntPipe ép thành số.
@@ -275,4 +358,25 @@ export class SellerCopilotController {
     ) {
         return this.persistence.addFeedback(ownerUserId, body);
     }
+}
+
+// Trích message từ exception HTTP theo dạng string hoặc Nest response object, fallback về mô tả an toàn.
+function extractHttpExceptionMessage(error: HttpException): string {
+    const payload = error.getResponse();
+    if (typeof payload === 'string') return payload;
+    if (
+        typeof payload === 'object' &&
+        payload !== null &&
+        'message' in payload
+    ) {
+        const message = payload.message;
+        if (typeof message === 'string') return message;
+        if (
+            Array.isArray(message) &&
+            message.every((item) => typeof item === 'string')
+        ) {
+            return message.join(' ');
+        }
+    }
+    return 'Không thể xác nhận cập nhật tồn kho.';
 }

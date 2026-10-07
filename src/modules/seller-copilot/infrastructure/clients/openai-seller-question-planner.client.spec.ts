@@ -1,8 +1,8 @@
 // Kiểm tra hợp đồng request planner: nội dung hướng dẫn, ngữ cảnh gửi đi và schema giới hạn phản hồi của model.
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { validateSellerQuestionCapabilityRegistry } from '@/modules/seller-copilot/application/question-understanding/registry/seller-question-capability-registry.util';
-import type { SellerQuestionCapabilityRegistry } from '@/modules/seller-copilot/application/question-understanding/registry/seller-question-capability-registry.types';
+import { validateSellerQuestionCapabilityRegistry } from '@/modules/seller-copilot/application/question-understanding/shared/registry/seller-question-capability-registry.util';
+import type { SellerQuestionCapabilityRegistry } from '@/modules/seller-copilot/application/question-understanding/shared/registry/seller-question-capability-registry.types';
 import { OpenAiSellerQuestionPlannerClient } from '@/modules/seller-copilot/infrastructure/clients/openai-seller-question-planner.client';
 
 describe('OpenAiSellerQuestionPlannerClient', () => {
@@ -58,6 +58,7 @@ describe('OpenAiSellerQuestionPlannerClient', () => {
                     domain: 'shipping',
                     resolvedQuestion:
                         'Cấu hình giao nhận hiện tại được mô tả thế nào?',
+                    shopDataIntent: null,
                 },
             ],
             clarificationQuestion: null,
@@ -111,13 +112,28 @@ describe('OpenAiSellerQuestionPlannerClient', () => {
             'requestType mô tả người dùng muốn làm gì',
         );
         expect(requestBody.messages[0]?.content).toContain(
+            'rule này mở rộng SMALL_TALK',
+        );
+        expect(requestBody.messages[0]?.content).toContain(
+            'hướng dẫn chuyển sang Dữ liệu shop',
+        );
+        expect(requestBody.messages[0]?.content).toContain(
             'CLARIFICATION_REPLY là câu trả lời cho câu hỏi làm rõ gần nhất',
+        );
+        expect(requestBody.messages[0]?.content).toContain(
+            'không phân loại bằng khớp từ/cụm từ đơn lẻ',
+        );
+        expect(requestBody.messages[0]?.content).toContain(
+            'low_stock_products là tồn thấp/cận ngưỡng (bao gồm cách nói “gần hết hàng”)',
         );
         expect(requestBody.messages[0]?.content).toContain(
             'Không dùng NEEDS_CLARIFICATION như lựa chọn mặc định',
         );
         expect(requestBody.messages[0]?.content).toContain(
             '“Bạn ơi” → READY, một task SMALL_TALK domain null',
+        );
+        expect(requestBody.messages[0]?.content).toContain(
+            '“bạn/mày làm được gì?”',
         );
         expect(requestBody.messages[0]?.content).toContain(
             'seller-products-inventory: danh sách/thông tin sản phẩm, tồn kho và sản phẩm bán chạy/top sản phẩm',
@@ -173,6 +189,7 @@ describe('OpenAiSellerQuestionPlannerClient', () => {
         expect(JSON.parse(requestBody.messages[1]?.content ?? '')).toEqual({
             recentConversation: [],
             currentQuestion: 'Giao nhận của shop hoạt động ra sao?',
+            interactionMode: 'chat',
         });
         expect(requestBody.response_format.json_schema.schema).toMatchObject({
             additionalProperties: false,
@@ -191,7 +208,23 @@ describe('OpenAiSellerQuestionPlannerClient', () => {
                 },
                 tasks: {
                     items: {
-                        required: ['requestType', 'domain', 'resolvedQuestion'],
+                        required: [
+                            'requestType',
+                            'domain',
+                            'resolvedQuestion',
+                            'shopDataIntent',
+                        ],
+                        properties: {
+                            shopDataIntent: {
+                                type: ['string', 'null'],
+                                enum: expect.arrayContaining([
+                                    'product_catalog',
+                                    'low_stock_products',
+                                    'out_of_stock_products',
+                                    null,
+                                ]),
+                            },
+                        },
                     },
                 },
             },

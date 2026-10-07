@@ -13,6 +13,7 @@ export type SellerCopilotActiveShop = {
     id: string;
     ownerUserId: string;
     name: string;
+    logoUrl: string | null;
     slug: string;
     description: string | null;
     mainCategoryId: string;
@@ -51,6 +52,7 @@ export class SellerCopilotAccessService {
             id: shop.id,
             ownerUserId: shop.ownerUserId,
             name: shop.name,
+            logoUrl: shop.logoUrl?.trim() || null,
             slug: shop.slug,
             description: shop.description,
             mainCategoryId: shop.mainCategoryId,
