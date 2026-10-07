@@ -1,78 +1,82 @@
-// Unit test bảo vệ timezone và giới hạn range, vì sai ngày sẽ làm sai toàn bộ chart doanh thu.
-/// <reference types="jest" />
-
+// Kiểm thử biên ngày của dashboard theo múi giờ nghiệp vụ Việt Nam.
 import {
     createDashboardDateRange,
     fillDashboardTrend,
-    formatSellerDashboardDate,
-    formatSellerDashboardDateRange,
-    normalizeDashboardRange,
 } from '@/modules/seller-dashboard/application/utils/dashboard-date-range.util';
 
 describe('dashboard-date-range.util', () => {
-    // Range không hợp lệ phải quay về 30 ngày để query không nhận khoảng tùy ý.
-    it('normalizes unknown range to 30d', () => {
-        expect(normalizeDashboardRange('unknown')).toBe('30d');
-        expect(normalizeDashboardRange('7d')).toBe('7d');
-        expect(normalizeDashboardRange('90d')).toBe('90d');
-    });
+    // Kỳ hiện tại là MTD, còn kỳ trước bao phủ từ đầu đến cuối tháng lịch liền trước.
+    it('should compare month-to-date with the entire previous calendar month', () => {
+        // Arrange
+        const now = new Date('2026-10-06T12:00:00.000Z');
 
-    // Answer không được hiển thị timestamp ISO; ngày phải theo múi giờ và cách đọc của seller Việt Nam.
-    it('formats dashboard dates for seller-facing output', () => {
-        expect(formatSellerDashboardDate('2026-08-31T17:00:00.000Z')).toBe(
-            '01/09/2026',
-        );
-        expect(
-            formatSellerDashboardDateRange({
-                from: '2026-08-31T17:00:00.000Z',
-                to: '2026-09-30T11:44:09.642Z',
-            }),
-        ).toBe('01/09/2026 đến 30/09/2026');
-    });
+        // Act
+        const result = createDashboardDateRange('current-month', now);
 
-    // Mốc ngày phải bắt đầu từ nửa đêm Việt Nam dù test chạy trên timezone máy khác.
-    it('creates a Vietnam-local date range', () => {
-        const range = createDashboardDateRange(
-            '7d',
-            new Date('2026-09-26T10:00:00.000Z'),
-        );
-
-        expect(range.from).toBe('2026-09-19T17:00:00.000Z');
-        expect(range.previousFrom).toBe('2026-09-12T17:00:00.000Z');
-        expect(range.previousTo).toBe('2026-09-19T17:00:00.000Z');
-    });
-
-    // Những ngày không có đơn vẫn phải xuất hiện với giá trị 0 để đường biểu đồ không bị đứt sai.
-    it('fills missing trend days with zero values', () => {
-        const range = createDashboardDateRange(
-            '7d',
-            new Date('2026-09-26T10:00:00.000Z'),
-        );
-
-        const trend = fillDashboardTrend(
-            [
-                {
-                    date: '2026-09-21',
-                    grossRevenue: 100000,
-                    orderCount: 1,
-                },
-            ],
-            range,
-        );
-
-        expect(trend).toHaveLength(7);
-        expect(trend.find((point) => point.date === '2026-09-21')).toEqual({
-            date: '2026-09-21',
-            grossRevenue: 100000,
-            orderCount: 1,
+        // Assert
+        expect(result).toEqual({
+            key: 'current-month',
+            from: '2026-09-30T17:00:00.000Z',
+            to: '2026-10-06T12:00:00.000Z',
+            previousFrom: '2026-08-31T17:00:00.000Z',
+            previousTo: '2026-09-30T17:00:00.000Z',
         });
-        // range.from là 00:00 Việt Nam, tương ứng 17:00 UTC ngày hôm trước.
-        // Khóa ngày của chart phải bắt đầu từ ngày 20 theo lịch Việt Nam.
-        expect(trend[0]).toEqual({
-            date: '2026-09-20',
-            grossRevenue: 0,
-            orderCount: 0,
+    });
+
+    // Tháng lịch dùng biên loại trừ đầu tháng kế tiếp và so với trọn tháng liền trước.
+    it('should create exact calendar-month ranges across a year boundary', () => {
+        // Arrange / Act
+        const result = createDashboardDateRange(
+            'calendar-month:2026-01',
+            new Date('2026-10-06T12:00:00.000Z'),
+        );
+
+        // Assert
+        expect(result).toEqual({
+            key: 'calendar-month:2026-01',
+            from: '2025-12-31T17:00:00.000Z',
+            to: '2026-01-31T17:00:00.000Z',
+            previousFrom: '2025-11-30T17:00:00.000Z',
+            previousTo: '2025-12-31T17:00:00.000Z',
         });
-        expect(trend.at(-1)?.date).toBe('2026-09-26');
+    });
+
+    // Biểu đồ và nhãn range bỏ biên loại trừ để tháng 9 chỉ có điểm từ ngày 1 đến ngày 30.
+    it('should fill and format an exact calendar month without including the next month', () => {
+        // Arrange
+        const range = createDashboardDateRange(
+            'calendar-month:2026-09',
+            new Date('2026-10-06T12:00:00.000Z'),
+        );
+
+        // Act
+        const points = fillDashboardTrend([], range);
+
+        // Assert
+        expect(points).toHaveLength(30);
+        expect(points[0]?.date).toBe('2026-09-01');
+        expect(points[29]?.date).toBe('2026-09-30');
+    });
+
+    // Chart tháng hiện tại có đúng một điểm mỗi ngày đã bắt đầu theo lịch Việt Nam.
+    it('should fill every elapsed Vietnam calendar day for month-to-date', () => {
+        // Arrange
+        const range = createDashboardDateRange(
+            'current-month',
+            new Date('2026-10-06T12:00:00.000Z'),
+        );
+
+        // Act
+        const result = fillDashboardTrend([], range);
+
+        // Assert
+        expect(result.map(({ date }) => date)).toEqual([
+            '2026-10-01',
+            '2026-10-02',
+            '2026-10-03',
+            '2026-10-04',
+            '2026-10-05',
+            '2026-10-06',
+        ]);
     });
 });

@@ -23,6 +23,8 @@ export interface OrderDashboardSnapshot {
         returnRefund: number;
     };
     pendingReturns: number;
+    topProductsTotalCount: number;
+    topProductsHasMore: boolean;
     latestOrders: Array<{
         id: string;
         orderNumber: string;
@@ -30,8 +32,29 @@ export interface OrderDashboardSnapshot {
         fulfillmentStatus: string;
         grossAmount: number;
         itemCount: number;
+        itemLineCount: number;
+        returnReason?: string | null;
+        returnDescription?: string | null;
+        cancelReason?: string | null;
+        items: Array<{
+            productId: string;
+            name: string;
+            thumbnailUrl: string | null;
+            quantity: number;
+            lineTotal: number;
+        }>;
         createdAt: string;
     }>;
+    recentReturnOrders: OrderDashboardSnapshot['latestOrders'];
+    recentReturnOrdersHasMore: boolean;
+    actionableOrders: OrderDashboardSnapshot['latestOrders'];
+    actionableOrdersHasMore: boolean;
+    cancelledOrders: OrderDashboardSnapshot['latestOrders'];
+    cancelledOrdersHasMore: boolean;
+    deliveredOrders: OrderDashboardSnapshot['latestOrders'];
+    deliveredOrdersHasMore: boolean;
+    completedOrders: OrderDashboardSnapshot['latestOrders'];
+    completedOrdersHasMore: boolean;
     topProducts: Array<{
         productId: string;
         name: string;

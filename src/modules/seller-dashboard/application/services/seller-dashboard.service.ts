@@ -53,7 +53,7 @@ export class SellerDashboardService {
         const dateRange = createDashboardDateRange(range);
         const [orders, products] = await Promise.all([
             this.orderClient.getSnapshot(shop.id, dateRange),
-            this.productClient.getSnapshot(shop.id),
+            this.productClient.getSnapshot(shop.id, ownerUserId),
         ]);
 
         return this.toSnapshot(shop, range, dateRange, orders, products);
@@ -80,22 +80,6 @@ export class SellerDashboardService {
             orders.current.orderCount,
             orders.previous.orderCount,
         );
-        const productById = new Map(
-            products.topProducts.map((product) => [product.productId, product]),
-        );
-        const orderTopProducts = orders.topProducts.map((product) => ({
-            ...product,
-            thumbnailUrl:
-                product.thumbnailUrl ??
-                productById.get(product.productId)?.thumbnailUrl ??
-                null,
-            // Không biến việc Product Service chưa trả stock thành số 0 giả trên dashboard.
-            stock: productById.get(product.productId)?.stock ?? null,
-        }));
-        const orderTopProductIds = new Set(
-            orderTopProducts.map((product) => product.productId),
-        );
-
         return {
             generatedAt: new Date().toISOString(),
             timezone: 'Asia/Ho_Chi_Minh',
@@ -118,19 +102,32 @@ export class SellerDashboardService {
                 pendingShipment: orders.orderStatusCounts.pendingShipment,
                 shipping: orders.orderStatusCounts.shipping,
                 pendingReturns: orders.pendingReturns,
+                catalogProducts: products.summary.catalogProducts,
                 activeProducts: products.summary.activeProducts,
+                inStockProducts: products.summary.inStockProducts,
+                stockUnits: products.summary.stockUnits,
                 outOfStockProducts: products.summary.outOfStockProducts,
             },
             revenueTrend: fillDashboardTrend(orders.revenueTrend, dateRange),
             orderStatusCounts: orders.orderStatusCounts,
             latestOrders: orders.latestOrders,
-            // Giữ đúng giới hạn top 5 sau khi ghép doanh thu theo range với dữ liệu bán tích lũy.
-            topProducts: [
-                ...orderTopProducts,
-                ...products.topProducts.filter(
-                    (product) => !orderTopProductIds.has(product.productId),
-                ),
-            ].slice(0, 5),
+            recentReturnOrders: orders.recentReturnOrders,
+            recentReturnOrdersHasMore: orders.recentReturnOrdersHasMore,
+            actionableOrders: orders.actionableOrders,
+            actionableOrdersHasMore: orders.actionableOrdersHasMore,
+            cancelledOrders: orders.cancelledOrders,
+            cancelledOrdersHasMore: orders.cancelledOrdersHasMore,
+            deliveredOrders: orders.deliveredOrders,
+            deliveredOrdersHasMore: orders.deliveredOrdersHasMore,
+            completedOrders: orders.completedOrders,
+            completedOrdersHasMore: orders.completedOrdersHasMore,
+            // Sản phẩm bán được chỉ đến từ Order Service trong range hiện tại; không ghép total_sold tích lũy từ catalog.
+            topProducts: orders.topProducts.map((product) => ({
+                ...product,
+                stock: null,
+            })),
+            topProductsTotalCount: orders.topProductsTotalCount,
+            topProductsHasMore: orders.topProductsHasMore,
         };
     }
 

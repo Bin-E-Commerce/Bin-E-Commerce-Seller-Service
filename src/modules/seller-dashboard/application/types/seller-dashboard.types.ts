@@ -1,6 +1,12 @@
 // Contract public của Seller Dashboard; Seller Service ghép dữ liệu từ các service sở hữu domain.
 
-export type SellerDashboardRange = '7d' | '30d' | '90d';
+// Range giữ preset cũ và thêm tháng lịch có định dạng kiểm soát để dashboard truy vấn đúng kỳ tuyệt đối.
+export type SellerDashboardRange =
+    | '7d'
+    | '30d'
+    | '90d'
+    | 'current-month'
+    | `calendar-month:${number}-${number}`;
 
 export interface SellerDashboardDateRange {
     key: SellerDashboardRange;
@@ -31,7 +37,10 @@ export interface SellerDashboardSnapshot {
         pendingShipment: number;
         shipping: number;
         pendingReturns: number;
+        catalogProducts: number;
         activeProducts: number;
+        inStockProducts: number;
+        stockUnits: number;
         outOfStockProducts: number;
     };
     revenueTrend: Array<{
@@ -56,8 +65,31 @@ export interface SellerDashboardSnapshot {
         fulfillmentStatus: string;
         grossAmount: number;
         itemCount: number;
+        itemLineCount: number;
+        returnReason?: string | null;
+        returnDescription?: string | null;
+        cancelReason?: string | null;
+        items: Array<{
+            productId: string;
+            name: string;
+            thumbnailUrl: string | null;
+            quantity: number;
+            lineTotal: number;
+        }>;
         createdAt: string;
     }>;
+    recentReturnOrders: SellerDashboardSnapshot['latestOrders'];
+    recentReturnOrdersHasMore: boolean;
+    actionableOrders: SellerDashboardSnapshot['latestOrders'];
+    actionableOrdersHasMore: boolean;
+    cancelledOrders: SellerDashboardSnapshot['latestOrders'];
+    cancelledOrdersHasMore: boolean;
+    deliveredOrders: SellerDashboardSnapshot['latestOrders'];
+    deliveredOrdersHasMore: boolean;
+    completedOrders: SellerDashboardSnapshot['latestOrders'];
+    completedOrdersHasMore: boolean;
+    topProductsTotalCount: number;
+    topProductsHasMore: boolean;
     topProducts: Array<{
         productId: string;
         name: string;

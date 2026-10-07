@@ -100,11 +100,27 @@ describe('SellerDashboardService', () => {
             },
             pendingReturns: 2,
             latestOrders: [],
+            recentReturnOrders: [],
+            actionableOrders: [],
+            actionableOrdersHasMore: false,
+            cancelledOrders: [],
+            cancelledOrdersHasMore: false,
+            deliveredOrders: [],
+            deliveredOrdersHasMore: false,
+            completedOrders: [],
+            completedOrdersHasMore: false,
             topProducts: [],
+            topProductsTotalCount: 0,
+            topProductsHasMore: false,
         });
         productClient.getSnapshot.mockResolvedValue({
-            summary: { activeProducts: 4, outOfStockProducts: 1 },
-            topProducts: [],
+            summary: {
+                catalogProducts: 6,
+                activeProducts: 4,
+                inStockProducts: 3,
+                stockUnits: 25,
+                outOfStockProducts: 1,
+            },
         });
 
         const service = new SellerDashboardService(
@@ -118,21 +134,27 @@ describe('SellerDashboardService', () => {
             'shop-1',
             expect.objectContaining({ key: '30d' }),
         );
-        expect(productClient.getSnapshot).toHaveBeenCalledWith('shop-1');
+        expect(productClient.getSnapshot).toHaveBeenCalledWith(
+            'shop-1',
+            'owner-1',
+        );
         expect(result.kpis).toMatchObject({
             grossRevenue: 1200000,
             orderCount: 3,
             pendingConfirmation: 1,
             pendingReturns: 2,
+            catalogProducts: 6,
             activeProducts: 4,
+            inStockProducts: 3,
+            stockUnits: 25,
             outOfStockProducts: 1,
         });
         expect(result.kpis.grossRevenueChangePercent).toBe(20);
         expect(result.revenueTrend).toHaveLength(30);
     });
 
-    // Snapshot public không được vượt quá giới hạn top 5 dù hai downstream cùng trả dữ liệu sản phẩm.
-    it('limits merged top products to five items', async () => {
+    // Ranking doanh số phải đến từ Order Service; catalog service chỉ cấp số liệu tồn, không lifetime total_sold.
+    it('keeps period sales from order data and never merges catalog ranking', async () => {
         // Arrange
         ownership.findOwnedShop.mockResolvedValue({
             id: 'shop-1',
@@ -156,18 +178,25 @@ describe('SellerDashboardService', () => {
             },
             pendingReturns: 0,
             latestOrders: [],
-            topProducts: [],
-        });
-        productClient.getSnapshot.mockResolvedValue({
-            summary: { activeProducts: 6, outOfStockProducts: 0 },
-            topProducts: Array.from({ length: 6 }, (_, index) => ({
-                productId: `product-${index}`,
-                name: `Product ${index}`,
+            recentReturnOrders: [],
+            topProducts: Array.from({ length: 2 }, (_, index) => ({
+                productId: `order-product-${index}`,
+                name: `Order Product ${index}`,
                 thumbnailUrl: null,
                 quantitySold: 6 - index,
-                revenue: null,
-                stock: 10,
+                revenue: 1000,
             })),
+            topProductsTotalCount: 2,
+            topProductsHasMore: false,
+        });
+        productClient.getSnapshot.mockResolvedValue({
+            summary: {
+                catalogProducts: 6,
+                activeProducts: 6,
+                inStockProducts: 6,
+                stockUnits: 60,
+                outOfStockProducts: 0,
+            },
         });
         const target = new SellerDashboardService(
             ownership as never,
@@ -179,13 +208,11 @@ describe('SellerDashboardService', () => {
         const result = await target.getOverview('owner-1');
 
         // Assert
-        expect(result.topProducts).toHaveLength(5);
+        expect(result.topProducts).toHaveLength(2);
         expect(result.topProducts.map((product) => product.productId)).toEqual([
-            'product-0',
-            'product-1',
-            'product-2',
-            'product-3',
-            'product-4',
+            'order-product-0',
+            'order-product-1',
         ]);
+        expect(result.topProductsTotalCount).toBe(2);
     });
 });

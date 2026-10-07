@@ -6,10 +6,11 @@ import type {
 } from '@/modules/seller-dashboard/application/types/seller-dashboard.types';
 
 const VIETNAM_OFFSET_MS = 7 * 60 * 60 * 1000;
-const RANGE_DAYS: Record<SellerDashboardRange, number> = {
+const RANGE_DAYS: Record<'7d' | '30d' | '90d' | 'current-month', number> = {
     '7d': 7,
     '30d': 30,
     '90d': 90,
+    'current-month': 0,
 };
 
 const VIETNAM_DATE_FORMATTER = new Intl.DateTimeFormat('vi-VN', {
@@ -32,7 +33,13 @@ export function formatSellerDashboardDate(value: string): string {
 export function formatSellerDashboardDateRange(
     range: Pick<SellerDashboardDateRange, 'from' | 'to'>,
 ): string {
-    return `${formatSellerDashboardDate(range.from)} đến ${formatSellerDashboardDate(range.to)}`;
+    // `to` là biên loại trừ; lùi 1ms để nhãn luôn hiển thị ngày cuối thực sự thuộc kỳ.
+    const exclusiveEnd = new Date(range.to);
+    if (Number.isNaN(exclusiveEnd.getTime())) {
+        return `${formatSellerDashboardDate(range.from)} đến ${range.to}`;
+    }
+
+    return `${formatSellerDashboardDate(range.from)} đến ${formatSellerDashboardDate(new Date(exclusiveEnd.getTime() - 1).toISOString())}`;
 }
 
 // Đổi instant UTC về khóa ngày theo múi giờ Việt Nam để chart dùng đúng ngày nghiệp vụ.
@@ -52,18 +59,77 @@ function getVietnamTodayStart(now: Date): Date {
     return new Date(Date.UTC(year, month, day) - VIETNAM_OFFSET_MS);
 }
 
-// Chuẩn hóa range hợp lệ để query không thể yêu cầu khoảng thời gian vô hạn.
+// Chuẩn hóa range hợp lệ; current-month là khoảng lịch có biên Việt Nam, còn giá trị lạ an toàn về 30 ngày.
 export function normalizeDashboardRange(value?: string): SellerDashboardRange {
-    return value === '7d' || value === '90d' ? value : '30d';
+    if (
+        value === '7d' ||
+        value === '30d' ||
+        value === '90d' ||
+        value === 'current-month'
+    ) {
+        return value;
+    }
+
+    // Chỉ nhận tháng YYYY-MM hợp lệ; chuỗi tháng sai không được âm thầm biến thành kỳ báo cáo khác.
+    if (value && /^calendar-month:\d{4}-(0[1-9]|1[0-2])$/u.test(value)) {
+        return value as SellerDashboardRange;
+    }
+
+    return '30d';
 }
 
-// Tạo current/previous period có cùng độ dài để backend tính phần trăm thay đổi nhất quán.
+// Tạo biên kỳ dashboard theo ngày Việt Nam; current-month là MTD so với toàn bộ tháng lịch liền trước.
+// Các range cố định vẫn giữ chính xác độ dài cũ, không phụ thuộc timezone của máy chạy service.
 export function createDashboardDateRange(
     range: SellerDashboardRange,
     now = new Date(),
 ): SellerDashboardDateRange {
-    const days = RANGE_DAYS[range];
+    // Tính ngày bắt đầu hôm nay tại Việt Nam một lần; các kỳ 7/30/90 ngày lấy ngày này làm mốc thay vì UTC server.
     const todayStart = getVietnamTodayStart(now);
+    if (range === 'current-month') {
+        // MTD dùng ngày đầu tháng hiện tại tới đúng instant now, tránh bao gồm thời gian tương lai trong ngày.
+        const vietnamNow = new Date(now.getTime() + VIETNAM_OFFSET_MS);
+        const year = vietnamNow.getUTCFullYear();
+        const month = vietnamNow.getUTCMonth();
+        const from = new Date(Date.UTC(year, month, 1) - VIETNAM_OFFSET_MS);
+        const previousMonthStart = new Date(
+            Date.UTC(year, month - 1, 1) - VIETNAM_OFFSET_MS,
+        );
+        // Lấy đúng phần cuối tháng trước bằng mốc đầu tháng hiện tại trừ 1ms;
+        // cách này bao phủ mọi ngày tháng trước và tự xử lý tháng ngắn, năm nhuận, chuyển năm.
+        const previousTo = from;
+
+        return {
+            key: range,
+            from: from.toISOString(),
+            to: new Date(now).toISOString(),
+            previousFrom: previousMonthStart.toISOString(),
+            previousTo: previousTo.toISOString(),
+        };
+    }
+
+    // Tháng lịch cụ thể dùng khoảng [đầu tháng, đầu tháng kế tiếp), phù hợp trực tiếp với truy vấn SQL >= / <.
+    const calendarMonth = /^calendar-month:(\d{4})-(\d{2})$/u.exec(range);
+    if (calendarMonth) {
+        const year = Number(calendarMonth[1]);
+        const month = Number(calendarMonth[2]) - 1;
+        const from = new Date(Date.UTC(year, month, 1) - VIETNAM_OFFSET_MS);
+        const to = new Date(Date.UTC(year, month + 1, 1) - VIETNAM_OFFSET_MS);
+        const previousFrom = new Date(
+            Date.UTC(year, month - 1, 1) - VIETNAM_OFFSET_MS,
+        );
+
+        return {
+            key: range,
+            from: from.toISOString(),
+            to: to.toISOString(),
+            previousFrom: previousFrom.toISOString(),
+            previousTo: from.toISOString(),
+        };
+    }
+
+    const days = RANGE_DAYS[range as '7d' | '30d' | '90d' | 'current-month'];
+    // Ngày đầu kỳ được tính inclusive (hôm nay là ngày thứ nhất), kỳ trước liền kề và có cùng số ngày.
     const from = new Date(todayStart.getTime() - (days - 1) * 86400000);
     const to = new Date(now);
     const previousTo = new Date(from);
@@ -78,7 +144,7 @@ export function createDashboardDateRange(
     };
 }
 
-// Bổ sung ngày không có giao dịch để biểu đồ luôn có đủ số điểm theo range đã chọn.
+// Bổ sung ngày không có giao dịch; số điểm được tính từ hai biên ngày Việt Nam để cả kỳ tháng và kỳ cố định khớp nhau.
 export function fillDashboardTrend(
     points: Array<{
         date: string;
@@ -87,10 +153,20 @@ export function fillDashboardTrend(
     }>,
     range: SellerDashboardDateRange,
 ): Array<{ date: string; grossRevenue: number; orderCount: number }> {
-    const days = RANGE_DAYS[range.key];
+    // Range.to là instant hiện tại nhưng chart làm việc theo ngày; quy về đầu ngày Việt Nam để số điểm không bị lệch do giờ UTC.
     const start = new Date(range.from);
+    // `to` là biên loại trừ nên chart kết thúc tại ngày chứa instant cuối cùng thuộc kỳ.
+    const end = getVietnamTodayStart(
+        new Date(new Date(range.to).getTime() - 1),
+    );
+    // Kỳ đã được chuẩn hóa về biên ngày nên cộng ngày UTC 24 giờ là ổn định, không chịu DST của timezone máy chủ.
+    const days =
+        Math.floor(
+            (end.getTime() - getVietnamTodayStart(start).getTime()) / 86400000,
+        ) + 1;
     const pointByDate = new Map(points.map((point) => [point.date, point]));
 
+    // Tạo đủ từng ngày trong range; ngày không có giao dịch hiện 0 thay vì bị bỏ khỏi chuỗi và làm chart đứt đoạn.
     return Array.from({ length: days }, (_, index) => {
         const date = toVietnamDateKey(
             new Date(start.getTime() + index * 86400000),

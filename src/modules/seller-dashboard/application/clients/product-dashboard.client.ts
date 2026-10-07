@@ -4,15 +4,13 @@ import { BadGatewayException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 export interface ProductDashboardSnapshot {
-    summary: { activeProducts: number; outOfStockProducts: number };
-    topProducts: Array<{
-        productId: string;
-        name: string;
-        thumbnailUrl: string | null;
-        quantitySold: number;
-        revenue: number | null;
-        stock: number;
-    }>;
+    summary: {
+        catalogProducts: number;
+        activeProducts: number;
+        inStockProducts: number;
+        stockUnits: number;
+        outOfStockProducts: number;
+    };
 }
 
 @Injectable()
@@ -28,10 +26,15 @@ export class ProductDashboardClient {
         this.token = config.get<string>('INTERNAL_SERVICE_TOKEN', '');
     }
 
-    // Product dashboard là read-only và scope trực tiếp theo shopId đã resolve từ Seller Service.
-    async getSnapshot(shopId: string): Promise<ProductDashboardSnapshot> {
+    // Product dashboard chỉ đọc; shopId và ownerUserId đều do Seller Service xác thực trước khi gửi qua internal token.
+    async getSnapshot(
+        shopId: string,
+        ownerUserId: string,
+    ): Promise<ProductDashboardSnapshot> {
+        // Owner là identity đã được Seller Service xác thực; gửi thêm để Product Service tìm cả record legacy chưa gắn seller_shop_id.
+        const query = new URLSearchParams({ ownerUserId });
         const response = await fetch(
-            `${this.baseUrl}/api/v1/internal/products/shops/${shopId}/dashboard`,
+            `${this.baseUrl}/api/v1/internal/products/shops/${shopId}/dashboard?${query}`,
             {
                 headers: {
                     accept: 'application/json',
