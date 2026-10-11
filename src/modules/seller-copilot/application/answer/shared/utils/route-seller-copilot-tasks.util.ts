@@ -50,16 +50,18 @@ export function routeSellerCopilotTasks(input: {
         (task) => !domainKinds.has(task.domain ?? ''),
     );
 
-    // Knowledge chỉ nhận tài liệu, shop_data nhận live/profile; chat và agent được điều phối qua nhánh riêng bên ngoài.
+    // Knowledge chỉ nhận tài liệu; hai mode dữ liệu chỉ nhận live/profile; Agent không thể lén truy xuất tài liệu.
     const wrongSourceTasks =
         interactionMode === 'knowledge'
             ? routedTasks.filter(
                   (task) => domainKinds.get(task.domain ?? '') !== 'knowledge',
               )
-            : interactionMode === 'shop_data'
+            : interactionMode === 'shop_data' || interactionMode === 'agent'
               ? routedTasks.filter((task) => {
                     const sourceKind = domainKinds.get(task.domain ?? '');
-                    return sourceKind !== 'live-data' && sourceKind !== 'profile';
+                    return (
+                        sourceKind !== 'live-data' && sourceKind !== 'profile'
+                    );
                 })
               : [];
 

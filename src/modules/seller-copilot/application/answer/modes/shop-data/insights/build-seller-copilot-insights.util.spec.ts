@@ -293,6 +293,7 @@ it('builds the full catalog and chooses the lowest available variant for low-sto
         items: [
             {
                 productId: 'low-stock-product',
+                isShopLinked: true,
                 name: 'Quần dài nam',
                 description: 'Quần ống suông.',
                 thumbnailUrl: 'https://cdn.example.test/trousers.jpg',
@@ -337,6 +338,7 @@ it('builds the full catalog and chooses the lowest available variant for low-sto
             },
             {
                 productId: 'second-product',
+                isShopLinked: true,
                 name: 'Giày sục',
                 description: null,
                 thumbnailUrl: 'https://cdn.example.test/shoes.jpg',
@@ -424,20 +426,26 @@ it('builds the full catalog and chooses the lowest available variant for low-sto
         {
             type: 'LOW_STOCK',
             productId: 'low-stock-product',
+            variantId: 'variant-low',
             name: 'Quần dài nam',
             thumbnailUrl: 'https://cdn.example.test/trousers.jpg',
             stock: 2,
             variantName: 'Đen / M',
+            sku: 'SKU-LOW',
+            sellerSku: 'SHOP-LOW',
         },
     ]);
     expect(outOfStockInsights).toEqual([
         {
             type: 'LOW_STOCK',
             productId: 'second-product',
+            variantId: 'variant-out-of-stock',
             name: 'Giày sục',
             thumbnailUrl: 'https://cdn.example.test/shoes.jpg',
             stock: 0,
             variantName: 'Nâu / 39',
+            sku: 'SKU-EMPTY',
+            sellerSku: null,
         },
     ]);
     expect(noRevenueInsights).toEqual([

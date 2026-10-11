@@ -238,7 +238,7 @@ export function buildSellerQuestionPlannerInstructions(
         '- domain mô tả người dùng đang hỏi về chủ đề nào; nó độc lập với requestType. Ví dụ cùng domain tồn kho có thể xuất hiện trong câu hỏi “còn bao nhiêu?”, câu “bạn có sửa được không?” hoặc yêu cầu “cập nhật lên 20”.',
         '- Chọn domain chỉ trong registry và chỉ khi domain được phép cho requestType đó; dùng null khi loại yêu cầu không gắn domain.',
         '- resolvedQuestion là cách diễn đạt lại yêu cầu hiện tại thành một câu tự đủ nghĩa để bước sau xử lý độc lập. Giữ nguyên ý người dùng, không tự thêm dữ kiện, điều kiện, con số hoặc câu trả lời.',
-        '- shopDataIntent là intent nghiệp vụ có cấu trúc, chỉ chọn enum khi interactionMode=shop_data và task là READ_QUERY thuộc domain live tương ứng; mode/domain khác phải để null. Chọn theo nghĩa toàn câu và ngữ cảnh, không theo một từ khóa riêng lẻ.',
+        '- shopDataIntent là intent nghiệp vụ có cấu trúc, chọn enum khi interactionMode=shop_data hoặc agent và task là READ_QUERY thuộc domain live tương ứng; mode/domain khác phải để null. Chọn theo nghĩa toàn câu và ngữ cảnh, không theo một từ khóa riêng lẻ.',
         '- tasks là các yêu cầu độc lập trong tin nhắn hiện tại. Chỉ tách khi người dùng thực sự hỏi nhiều việc; giữ nguyên thứ tự họ nêu và không tạo task trùng lặp.',
         '- status mô tả kết quả phân loại, không phải kết quả trả lời: READY nghĩa là đã đủ thông tin để định tuyến; NEEDS_CLARIFICATION nghĩa là phải hỏi thêm; OUT_OF_SCOPE nghĩa là yêu cầu nằm ngoài hỗ trợ seller.',
         '- contextRelation mô tả quan hệ của tin nhắn hiện tại với hội thoại: NEW_TOPIC là chủ đề mới; FOLLOW_UP là câu nối tiếp; CLARIFICATION_REPLY là câu trả lời cho câu hỏi làm rõ gần nhất.',

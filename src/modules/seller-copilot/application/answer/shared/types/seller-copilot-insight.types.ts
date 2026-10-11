@@ -65,8 +65,13 @@ export interface SellerCopilotProductVariantInsight {
 
 export interface SellerCopilotProductCatalogItemInsight {
     productId: string;
+    isShopLinked: boolean;
     name: string;
     description: string | null;
+    fullDescription?: string | null;
+    shortDescription?: string | null;
+    imageCount?: number;
+    hasThumbnail?: boolean;
     thumbnailUrl: string | null;
     status: string;
     totalSold: number;
@@ -162,8 +167,11 @@ export type SellerCopilotInsight =
     | {
           type: 'LOW_STOCK';
           productId: string;
+          variantId: string;
           name: string;
           thumbnailUrl: string | null;
           stock: number;
           variantName?: string;
+          sku: string;
+          sellerSku: string | null;
       };

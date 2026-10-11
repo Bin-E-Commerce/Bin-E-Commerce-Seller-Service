@@ -177,10 +177,13 @@ export function buildSellerCopilotInsights(input: {
                 ...matchingStock.items.map((item) => ({
                     type: 'LOW_STOCK' as const,
                     productId: item.productId,
+                    variantId: item.variantId,
                     name: item.productName,
                     thumbnailUrl: item.thumbnailUrl,
                     stock: item.stock,
                     variantName: item.variantName,
+                    sku: item.sku,
+                    sellerSku: item.sellerSku,
                 })),
             );
             continue;

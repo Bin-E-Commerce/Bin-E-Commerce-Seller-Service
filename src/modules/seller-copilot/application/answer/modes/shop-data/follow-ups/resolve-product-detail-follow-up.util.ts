@@ -9,6 +9,7 @@ import type {
 function getRecentProductInsight(
     recentMessages: SellerCopilotMessageRecord[],
     modeSessionId: string,
+    interactionMode: 'shop_data' | 'agent',
 ): { productId: string; name: string } | null {
     const latestMessage = [...recentMessages]
         .reverse()
@@ -16,7 +17,7 @@ function getRecentProductInsight(
             (message) =>
                 message.role !== 'system' &&
                 message.metadata?.modeSessionId === modeSessionId &&
-                message.metadata?.interactionMode === 'shop_data',
+                message.metadata?.interactionMode === interactionMode,
         );
 
     // Chỉ câu assistant gần nhất là antecedent hợp lệ; không nhảy qua chủ đề mới để dùng nhầm một sản phẩm cũ.
@@ -52,6 +53,7 @@ export function resolveProductDetailFollowUp(input: {
     plan: SellerQuestionPlan;
     recentMessages: SellerCopilotMessageRecord[];
     modeSessionId: string;
+    interactionMode: 'shop_data' | 'agent';
 }): SellerQuestionPlan {
     const previousTask = input.plan.tasks[0];
 
@@ -72,6 +74,7 @@ export function resolveProductDetailFollowUp(input: {
     const product = getRecentProductInsight(
         input.recentMessages,
         input.modeSessionId,
+        input.interactionMode,
     );
     if (!product) return input.plan;
 

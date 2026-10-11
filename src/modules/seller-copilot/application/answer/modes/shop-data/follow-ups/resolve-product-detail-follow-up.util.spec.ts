@@ -48,6 +48,7 @@ describe('resolveProductDetailFollowUp', () => {
             plan,
             recentMessages: [previousMessage],
             modeSessionId: 'session-1',
+            interactionMode: 'shop_data',
         });
 
         // Assert
@@ -68,6 +69,7 @@ describe('resolveProductDetailFollowUp', () => {
             plan,
             recentMessages: [previousMessage],
             modeSessionId: 'other-session',
+            interactionMode: 'shop_data',
         });
 
         // Assert
@@ -81,6 +83,7 @@ describe('resolveProductDetailFollowUp', () => {
             plan: { ...plan, tasks: [...plan.tasks, ...plan.tasks] },
             recentMessages: [previousMessage],
             modeSessionId: 'session-1',
+            interactionMode: 'shop_data',
         });
 
         // Assert
@@ -98,9 +101,33 @@ describe('resolveProductDetailFollowUp', () => {
             plan: newTopicPlan,
             recentMessages: [previousMessage],
             modeSessionId: 'session-1',
+            interactionMode: 'shop_data',
         });
 
         expect(result).toBe(newTopicPlan);
         expect(result.tasks[0]).not.toHaveProperty('productId');
+    });
+
+    // Agent chỉ kế thừa product ID từ insight của chính mode/session, không đọc nhầm lịch sử Dữ liệu shop.
+    it('resolves an Agent product follow-up from its own structured insight', () => {
+        const agentMessage: SellerCopilotMessageRecord = {
+            ...previousMessage,
+            metadata: {
+                ...previousMessage.metadata,
+                interactionMode: 'agent',
+            },
+        };
+
+        const result = resolveProductDetailFollowUp({
+            plan,
+            recentMessages: [agentMessage],
+            modeSessionId: 'session-1',
+            interactionMode: 'agent',
+        });
+
+        expect(result.tasks[0]).toMatchObject({
+            productId: 'product-1',
+            shopDataIntent: 'product_detail',
+        });
     });
 });

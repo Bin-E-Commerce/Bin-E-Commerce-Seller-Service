@@ -8,6 +8,8 @@ const AI_UNAVAILABLE_MESSAGE =
     'Hiện tại trợ lý AI chưa sẵn sàng. Bạn quay lại sau giúp mình nhé 🙂';
 const CHAT_PLANNER_UNAVAILABLE_MESSAGE =
     'Mình chưa phân loại được câu hỏi lúc này. Nếu bạn muốn xem doanh thu, sản phẩm, tồn kho, đơn hàng hoặc hồ sơ shop, hãy chuyển sang mode Dữ liệu shop rồi gửi lại nhé. Câu hỏi về chính sách/hướng dẫn thì chọn Tài liệu; yêu cầu thao tác trên shop thì chọn AI Agent 🙂.';
+const AGENT_PLANNER_UNAVAILABLE_MESSAGE =
+    'Mình chưa thể phân loại yêu cầu vì dịch vụ AI đang gặp sự cố. Dữ liệu shop chưa được truy vấn và chưa có thay đổi nào được thực hiện; bạn thử lại sau nhé.';
 const OUT_OF_SCOPE_MESSAGE =
     'Mình tập trung hỗ trợ việc quản lý shop như sản phẩm, đơn hàng, doanh thu, tồn kho và chính sách seller nhé 🙂';
 const SMALL_TALK_MESSAGE = 'Mình đây 🙂 Bạn cần mình hỗ trợ gì về shop?';
@@ -26,6 +28,9 @@ export function buildSellerCopilotInitialReply(
         plan.status === 'PLANNER_INVALID_RESPONSE'
     ) {
         if (interactionMode === 'chat') return CHAT_PLANNER_UNAVAILABLE_MESSAGE;
+        if (interactionMode === 'agent') {
+            return AGENT_PLANNER_UNAVAILABLE_MESSAGE;
+        }
 
         // Giữ nguyên thông báo kỹ thuật ở các mode khác vì họ đã chủ động chọn mode xử lý.
         return AI_UNAVAILABLE_MESSAGE;
@@ -55,6 +60,7 @@ export function buildSellerCopilotInitialReply(
 export function logSellerCopilotPlanSummary(
     logger: Logger,
     plan: SellerQuestionPlan,
+    requestId?: string,
 ): void {
     // Domain được dedupe và null bị loại; chỉ telemetry về quyết định route được giữ lại.
     const domains = [
@@ -68,6 +74,7 @@ export function logSellerCopilotPlanSummary(
     logger.log(
         JSON.stringify({
             event: 'seller_question_classified',
+            ...(requestId ? { requestId } : {}),
             status: plan.status,
             contextRelation: plan.contextRelation,
             taskCount: plan.tasks.length,

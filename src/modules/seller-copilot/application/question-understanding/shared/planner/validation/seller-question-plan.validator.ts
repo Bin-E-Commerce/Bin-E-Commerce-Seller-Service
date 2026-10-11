@@ -110,6 +110,22 @@ export function validateSellerQuestionPlan(
         tasks.push(task);
     }
 
+    // Agent chỉ được đọc hồ sơ/live và tối đa đề xuất một thay đổi thuộc sản phẩm trong một lượt.
+    // Chặn cả route tài liệu lẫn nhiều lệnh ghi ngay tại ranh giới planner, trước khi service nào được gọi.
+    if (interactionMode === 'agent') {
+        const changeTasks = tasks.filter(
+            (task) => task.requestType === 'CHANGE_REQUEST',
+        );
+        if (
+            changeTasks.length > 1 ||
+            changeTasks.some(
+                (task) => task.domain !== 'seller-products-inventory',
+            )
+        ) {
+            return null;
+        }
+    }
+
     // READY phải có yêu cầu trong phạm vi; danh sách rỗng hoặc toàn ngoài phạm vi
     // mâu thuẫn với trạng thái này.
     if (
@@ -187,7 +203,7 @@ function validateTask(
         return null;
     }
 
-    // Mode shop_data yêu cầu intent cụ thể trên ba domain live; các mode khác không được gài intent để đổi luồng.
+    // Hai mode đọc dữ liệu yêu cầu intent trên domain live; Agent không được gài intent vào request ghi.
     if (
         !isShopDataIntentAllowed({
             interactionMode,
@@ -239,7 +255,12 @@ function isShopDataIntentAllowed(input: {
             ? SHOP_DATA_INTENTS_BY_DOMAIN[input.domain]
             : undefined;
 
-    if (input.interactionMode !== 'shop_data') return input.intent == null;
+    if (
+        input.interactionMode !== 'shop_data' &&
+        input.interactionMode !== 'agent'
+    ) {
+        return input.intent == null;
+    }
     if (!domainIntents) return input.intent == null;
     if (input.requestType !== 'READ_QUERY') return input.intent == null;
 
@@ -279,7 +300,7 @@ function hasExactKeys(
     );
 }
 
-// Chỉ mode shop_data bắt buộc field mới; các mode cũ được phép có/không có null intent nhưng không nhận field lạ.
+// Hai mode dữ liệu bắt buộc field intent; mode còn lại chấp nhận contract cũ để tương thích planner đã triển khai.
 function hasExactTaskKeys(
     value: Record<string, unknown>,
     interactionMode: 'chat' | 'shop_data' | 'knowledge' | 'agent',
@@ -294,6 +315,8 @@ function hasExactTaskKeys(
 
     return (
         hasExactKeys(value, currentKeys) ||
-        (interactionMode !== 'shop_data' && hasExactKeys(value, legacyKeys))
+        (interactionMode !== 'shop_data' &&
+            interactionMode !== 'agent' &&
+            hasExactKeys(value, legacyKeys))
     );
 }

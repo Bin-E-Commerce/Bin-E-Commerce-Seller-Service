@@ -248,4 +248,87 @@ describe('validateSellerQuestionPlan', () => {
             ),
         ).toBeNull();
     });
+
+    // Agent đọc dùng chung intent/domain live như Dữ liệu shop nhưng hồ sơ không cần shopDataIntent.
+    it('accepts live and profile read tasks in Agent mode', () => {
+        const response = {
+            status: 'READY',
+            contextRelation: 'NEW_TOPIC',
+            tasks: [
+                {
+                    requestType: 'READ_QUERY',
+                    domain: 'seller-revenue',
+                    resolvedQuestion:
+                        'Doanh thu 30 ngày gần nhất là bao nhiêu?',
+                    shopDataIntent: 'revenue_total',
+                },
+                {
+                    requestType: 'READ_QUERY',
+                    domain: 'seller-profile',
+                    resolvedQuestion: 'Tên shop hiện tại là gì?',
+                    shopDataIntent: null,
+                },
+            ],
+            clarificationQuestion: null,
+        };
+
+        const result = validateSellerQuestionPlan(response, registry, 'agent');
+
+        expect(result?.tasks.map((task) => task.shopDataIntent)).toEqual([
+            'revenue_total',
+            undefined,
+        ]);
+    });
+
+    // Một lượt Agent được phép đọc nhiều ý rồi đề xuất đúng một thay đổi sản phẩm; không mở thêm quyền ghi domain khác.
+    it('accepts multiple reads with one product change and rejects extra writes', () => {
+        const task = {
+            requestType: 'READ_QUERY',
+            domain: 'seller-products-inventory',
+            resolvedQuestion: 'SKU BG-26-M hiện có giá bao nhiêu?',
+            shopDataIntent: 'product_detail',
+        };
+        const oneChange = {
+            requestType: 'CHANGE_REQUEST',
+            domain: 'seller-products-inventory',
+            resolvedQuestion: 'Đổi giá SKU BG-26-M thành 199000 đồng.',
+            shopDataIntent: null,
+        };
+        const accepted = {
+            status: 'READY',
+            contextRelation: 'NEW_TOPIC',
+            tasks: [task, oneChange],
+            clarificationQuestion: null,
+        };
+        const multipleWrites = {
+            ...accepted,
+            tasks: [
+                oneChange,
+                {
+                    ...oneChange,
+                    resolvedQuestion: 'Tăng tồn kho SKU BG-26-M lên 20.',
+                },
+            ],
+        };
+        const unsupportedWrite = {
+            ...accepted,
+            tasks: [
+                {
+                    ...oneChange,
+                    domain: 'seller-orders',
+                    resolvedQuestion: 'Xác nhận đơn hàng đang chờ.',
+                },
+            ],
+        };
+
+        expect(
+            validateSellerQuestionPlan(accepted, registry, 'agent'),
+        ).not.toBeNull();
+        expect(
+            validateSellerQuestionPlan(multipleWrites, registry, 'agent'),
+        ).toBeNull();
+        expect(
+            validateSellerQuestionPlan(unsupportedWrite, registry, 'agent'),
+        ).toBeNull();
+    });
 });

@@ -422,19 +422,32 @@ function collectGroupResults(
     }
 }
 
-// Map plan sang một trong năm cổng sản phẩm; agent chỉ hợp lệ khi mode agent đi cùng yêu cầu sửa tồn kho.
+// Map plan sang cổng thực thi; Agent có thể đọc hồ sơ/live, handoff knowledge hoặc đề xuất ghi sản phẩm.
 // Các domain hồ sơ/live được nhận diện tường minh; domain nghiệp vụ còn lại được xem là knowledge.
-// Cổng agent xét trước chat để một yêu cầu cập nhật không bị chấm nhầm thành trò chuyện thông thường.
 function deriveRouteCategory(
     testCase: SellerQuestionEvaluationCase,
     plan: SellerQuestionPlan,
 ): string {
     const [task] = plan.tasks;
     if (testCase.interactionMode === 'agent') {
-        return task?.requestType === 'CHANGE_REQUEST' &&
+        if (
+            task?.requestType === 'CHANGE_REQUEST' &&
             task.domain === 'seller-products-inventory'
-            ? 'AGENT_INVENTORY'
-            : 'UNMATCHED_AGENT_REQUEST';
+        ) {
+            return 'AGENT_INVENTORY';
+        }
+        if (task?.requestType === 'READ_QUERY') {
+            if (task.domain === 'seller-profile') return 'PROFILE';
+            if (
+                task.domain === 'seller-revenue' ||
+                task.domain === 'seller-orders' ||
+                task.domain === 'seller-products-inventory'
+            ) {
+                return 'LIVE_DATA';
+            }
+            if (task.domain) return 'KNOWLEDGE';
+        }
+        return 'UNMATCHED_AGENT_REQUEST';
     }
     if (task?.requestType === 'SMALL_TALK') return 'CONVERSATION';
     if (task?.requestType !== 'READ_QUERY') return 'UNMATCHED_CHAT_REQUEST';

@@ -30,7 +30,10 @@ export function resolveProductStockAlerts(
             })
             .map((variant) => ({
                 productId: product.productId,
+                variantId: variant.variantId,
                 productName: product.name,
+                sku: variant.sku,
+                sellerSku: variant.sellerSku,
                 thumbnailUrl:
                     variant.thumbnailUrl ?? product.thumbnailUrl ?? null,
                 stock: variant.available,
