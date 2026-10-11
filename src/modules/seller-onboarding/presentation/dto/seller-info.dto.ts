@@ -1,3 +1,4 @@
+// DTO pháp lý người bán; giữ mã định danh dạng chuỗi để bảo toàn số 0 đầu.
 import {
     IsEmail,
     IsEnum,
@@ -6,10 +7,35 @@ import {
     Length,
     Matches,
     MaxLength,
+    Validate,
+    ValidatorConstraint,
     ValidateIf,
+} from 'class-validator';
+import type {
+    ValidationArguments,
+    ValidatorConstraintInterface,
 } from 'class-validator';
 import { SellerProfileType } from '@/database/shared/enums/seller-profile-type.enum';
 
+const PERSON_NAME_PATTERN = /^[\p{L}\p{M}]+(?:[ .'-][\p{L}\p{M}]+)*$/u;
+
+// Chỉ áp quy tắc tên người cho cá nhân; tên pháp nhân có thể chứa chữ số hợp lệ.
+@ValidatorConstraint({ name: 'individualLegalName', async: false })
+class IndividualLegalNameConstraint implements ValidatorConstraintInterface {
+// Tên cá nhân chỉ nhận chữ và dấu phân cách thông dụng; tên pháp nhân tự do hơn.
+    validate(value: unknown, args: ValidationArguments): boolean {
+        const profileType = (args.object as SellerInfoDto).profileType;
+        if (profileType === SellerProfileType.BUSINESS) return true;
+        return typeof value === 'string' && PERSON_NAME_PATTERN.test(value);
+    }
+
+    // Trả thông báo gắn với field legalName để FE hiển thị đúng vị trí.
+    defaultMessage(): string {
+        return 'Họ tên cá nhân không được chứa chữ số.';
+    }
+}
+
+// Xác thực danh tính, liên hệ và giấy tờ tương ứng với loại hồ sơ đã chọn.
 export class SellerInfoDto {
     @IsOptional()
     @IsEnum(SellerProfileType)
@@ -18,6 +44,7 @@ export class SellerInfoDto {
     @IsOptional()
     @IsString()
     @Length(2, 180)
+    @Validate(IndividualLegalNameConstraint)
     legalName?: string;
 
     // Draft chỉ validate CCCD khi FE đang gửi hồ sơ cá nhân và có giá trị; tính bắt buộc được kiểm tra lúc submit.
@@ -47,6 +74,9 @@ export class SellerInfoDto {
     @IsOptional()
     @IsString()
     @Length(2, 160)
+    @Matches(PERSON_NAME_PATTERN, {
+        message: 'Tên người đại diện không được chứa chữ số',
+    })
     representativeName?: string;
 
     @IsOptional()
@@ -63,6 +93,7 @@ export class SellerInfoDto {
 
     @IsOptional()
     @IsEmail()
+    @MaxLength(254)
     email?: string;
 
     // Shape tài liệu còn linh hoạt theo profileType; validator application sẽ kiểm tra đúng key/url bắt buộc khi submit.

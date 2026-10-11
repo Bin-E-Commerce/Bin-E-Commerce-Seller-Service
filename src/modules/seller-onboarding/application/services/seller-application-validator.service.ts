@@ -16,13 +16,18 @@ import { Not, Repository } from 'typeorm';
 import { SellerApplication } from '@/database/seller-onboarding/entities/seller-application.entity';
 import { SellerApplicationStatus } from '@/database/seller-onboarding/enums/seller-application-status.enum';
 import { SellerProfileType } from '@/database/shared/enums/seller-profile-type.enum';
+import { PayoutAccountType } from '@/database/shared/enums/payout-account-type.enum';
 import { toNullableString } from '@/modules/seller-onboarding/application/utils/seller-application-string.util';
+
+const PERSON_NAME_PATTERN = /^[\p{L}\p{M}]+(?:[ .'-][\p{L}\p{M}]+)*$/u;
+const PHONE_PATTERN = /^(0|\+84)\d{9,10}$/;
 
 interface ExternalCategoryResponse {
     id: string;
     isActive: boolean;
 }
 
+// Kiểm tra hợp lệ nghiệp vụ của bản nháp trước khi chuyển trạng thái sang chờ duyệt.
 @Injectable()
 export class SellerApplicationValidatorService {
     private readonly catalogBaseUrl: string;
@@ -78,7 +83,9 @@ export class SellerApplicationValidatorService {
             throw new ConflictException('Đường dẫn shop đã được sử dụng.');
     }
 
-    // Kiểm tra dữ liệu bắt buộc nội bộ trước rồi mới gọi catalog; mã GHN được kiểm tra hình dạng tại Seller.
+    // Kiểm tra điều khoản và các field bắt buộc trước để trả đúng lỗi thiếu dữ liệu.
+    // Sau đó kiểm tra định dạng snapshot đã lưu, kể cả section request hiện tại không gửi.
+    // Chỉ gọi Catalog khi dữ liệu nội bộ hợp lệ để tránh request downstream không cần thiết.
     async assertApplicationReady(
         application: SellerApplication,
         acceptedTerms: boolean,
@@ -94,7 +101,78 @@ export class SellerApplicationValidatorService {
                 missingFields,
             });
         }
+
+        const invalidFields = this.getInvalidInputFields(application);
+        if (invalidFields.length > 0) {
+            throw new BadRequestException({
+                message:
+                    'Một số thông tin không đúng định dạng. Vui lòng kiểm tra lại.',
+                invalidFields,
+            });
+        }
+
         await this.assertCategoryExists(application.mainCategoryId as string);
+    }
+
+    // Rà định dạng các giá trị quan trọng trên entity sau khi merge DTO với bản nháp.
+    // Những mã định danh/điện thoại/tài khoản phải đúng pattern; các mã số được giữ ở dạng string.
+    // Rule không chữ số chỉ áp dụng tên người, không áp vào tên shop hay pháp nhân doanh nghiệp.
+    private getInvalidInputFields(application: SellerApplication): string[] {
+        const invalidFields: string[] = [];
+        // Thu thập đường dẫn field thay vì dừng ở lỗi đầu tiên để response chỉ đủ các ô cần sửa.
+        const addWhenInvalid = (field: string, isValid: boolean) => {
+            if (!isValid) invalidFields.push(field);
+        };
+
+        addWhenInvalid(
+            'seller.representativeName',
+            PERSON_NAME_PATTERN.test(application.representativeName ?? ''),
+        );
+        addWhenInvalid(
+            'seller.phone',
+            PHONE_PATTERN.test(application.contactPhone ?? ''),
+        );
+        addWhenInvalid(
+            'pickupAddress.contactName',
+            PERSON_NAME_PATTERN.test(application.pickupContactName ?? ''),
+        );
+        addWhenInvalid(
+            'pickupAddress.phone',
+            PHONE_PATTERN.test(application.pickupPhone ?? ''),
+        );
+        addWhenInvalid(
+            'payout.accountNumber',
+            /^\d{6,30}$/.test(application.bankAccountNumber ?? ''),
+        );
+
+        // Mã định danh phải đúng loại hồ sơ; số ở đầu được giữ vì các trường này lưu dưới dạng chuỗi.
+        if (application.profileType === SellerProfileType.BUSINESS) {
+            addWhenInvalid(
+                'seller.taxCode',
+                /^(\d{10}|\d{13})$/.test(application.taxCode ?? ''),
+            );
+        } else {
+            addWhenInvalid(
+                'seller.legalName',
+                PERSON_NAME_PATTERN.test(application.legalName ?? ''),
+            );
+            addWhenInvalid(
+                'seller.citizenId',
+                /^(\d{9}|\d{12})$/.test(application.citizenId ?? ''),
+            );
+        }
+
+        // Tên pháp nhân có thể chứa số, còn chủ tài khoản cá nhân phải là họ tên không có chữ số.
+        if (application.bankAccountType === PayoutAccountType.PERSONAL) {
+            addWhenInvalid(
+                'payout.accountHolderName',
+                PERSON_NAME_PATTERN.test(
+                    application.bankAccountHolderName ?? '',
+                ),
+            );
+        }
+
+        return invalidFields;
     }
 
     // Gom các field bắt buộc thành field path để frontend hiển thị lỗi đúng section của form.

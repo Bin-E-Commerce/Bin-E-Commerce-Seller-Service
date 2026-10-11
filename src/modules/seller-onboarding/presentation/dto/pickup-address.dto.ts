@@ -1,3 +1,4 @@
+// DTO địa chỉ kho; mã tỉnh/quận là số, còn tên và địa chỉ là chuỗi.
 import {
     IsInt,
     IsOptional,
@@ -9,10 +10,16 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
+const PERSON_NAME_PATTERN = /^[\p{L}\p{M}]+(?:[ .'-][\p{L}\p{M}]+)*$/u;
+
+// Xác thực địa chỉ GHN và người phụ trách lấy hàng trước khi service cập nhật hồ sơ.
 export class PickupAddressDto {
     @IsOptional()
     @IsString()
     @Length(2, 160)
+    @Matches(PERSON_NAME_PATTERN, {
+        message: 'Tên người phụ trách không được chứa chữ số',
+    })
     contactName?: string;
 
     @IsOptional()
