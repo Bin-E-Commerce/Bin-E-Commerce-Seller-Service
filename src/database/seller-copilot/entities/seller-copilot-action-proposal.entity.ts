@@ -6,7 +6,7 @@ import {
     Index,
     PrimaryGeneratedColumn,
 } from 'typeorm';
-import type { SellerCopilotInventoryProposalPayload } from '@/modules/seller-copilot/application/modes/agent/types/seller-copilot-action.types';
+import type { SellerCopilotActionProposalPayload } from '@/modules/seller-copilot/application/modes/agent/types/seller-copilot-action.types';
 
 @Entity('seller_copilot_action_proposals')
 @Index(['ownerUserId', 'shopId', 'status', 'expiresAt'])
@@ -23,11 +23,14 @@ export class SellerCopilotActionProposal {
     @Column({ name: 'shop_id', type: 'uuid' })
     shopId: string;
 
+    @Column({ name: 'batch_id', type: 'uuid', nullable: true })
+    batchId: string | null;
+
     @Column({ type: 'varchar', length: 40 })
     status: 'pending' | 'processing' | 'completed' | 'failed';
 
     @Column({ type: 'jsonb' })
-    payload: SellerCopilotInventoryProposalPayload;
+    payload: SellerCopilotActionProposalPayload;
 
     @Column({ name: 'expires_at', type: 'timestamptz' })
     expiresAt: Date;

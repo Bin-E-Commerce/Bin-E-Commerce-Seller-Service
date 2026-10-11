@@ -294,6 +294,7 @@ export class TypeOrmSellerCopilotRepository implements SellerCopilotRepositoryPo
         conversationId: string;
         ownerUserId: string;
         shopId: string;
+        batchId?: string | null;
         payload: SellerCopilotActionProposalRecord['payload'];
         expiresAt: Date;
     }): Promise<SellerCopilotActionProposalRecord> {
@@ -303,6 +304,7 @@ export class TypeOrmSellerCopilotRepository implements SellerCopilotRepositoryPo
         const proposal = await repository.save(
             repository.create({
                 ...input,
+                batchId: input.batchId ?? null,
                 status: 'pending',
                 result: null,
                 completedAt: null,
@@ -337,6 +339,68 @@ export class TypeOrmSellerCopilotRepository implements SellerCopilotRepositoryPo
 
             proposal.status = 'processing';
             return this.toActionProposalRecord(await repository.save(proposal));
+        });
+    }
+
+    // Sửa target tồn kho khi proposal pending/còn hạn và thuộc tenant; row lock ngăn sửa đua với confirm.
+    // Chấp nhận cả đề xuất chỉnh SKU trực tiếp lẫn low-stock batch, nhưng chỉ payload SET_INVENTORY được thay đổi.
+    async reviseInventoryProposal(
+        scope: SellerCopilotScope,
+        proposalId: string,
+        nextAvailable: number,
+    ): Promise<SellerCopilotActionProposalRecord | null> {
+        return this.dataSource.transaction(async (manager) => {
+            const repository = manager.getRepository(
+                SellerCopilotActionProposal,
+            );
+            const proposal = await repository.findOne({
+                where: { ...scope, id: proposalId },
+                lock: { mode: 'pessimistic_write' },
+            });
+            if (
+                !proposal ||
+                proposal.status !== 'pending' ||
+                proposal.expiresAt.getTime() <= Date.now() ||
+                proposal.payload.kind !== 'SET_INVENTORY' ||
+                nextAvailable + (proposal.payload.reserved ?? 0) > 2_147_483_647
+            )
+                return null;
+            proposal.payload = { ...proposal.payload, nextAvailable };
+            const saved = await repository.save(proposal);
+            const messageRepository =
+                manager.getRepository(SellerCopilotMessage);
+            const actionMessage = await messageRepository
+                .createQueryBuilder('message')
+                .innerJoin(
+                    SellerCopilotConversation,
+                    'conversation',
+                    'conversation.id = message.conversation_id',
+                )
+                .where('message.role = :role', { role: 'assistant' })
+                .andWhere('conversation.id = :conversationId', {
+                    conversationId: proposal.conversationId,
+                })
+                .andWhere(
+                    "(message.metadata -> 'actionProposal' ->> 'proposalId' = :proposalId OR message.metadata -> 'actionProposals' @> :proposalRef::jsonb)",
+                    {
+                        proposalId,
+                        proposalRef: JSON.stringify([{ proposalId }]),
+                    },
+                )
+                .setLock('pessimistic_write')
+                .getOne();
+            if (actionMessage?.metadata) {
+                const legacyProposal = actionMessage.metadata.actionProposal;
+                if (legacyProposal?.proposalId === proposalId)
+                    legacyProposal.payload = saved.payload;
+                for (const item of actionMessage.metadata.actionProposals ??
+                    []) {
+                    if (item.proposalId === proposalId)
+                        item.payload = saved.payload;
+                }
+                await messageRepository.save(actionMessage);
+            }
+            return this.toActionProposalRecord(saved);
         });
     }
 
@@ -379,16 +443,35 @@ export class TypeOrmSellerCopilotRepository implements SellerCopilotRepositoryPo
                     conversationId: proposal.conversationId,
                 })
                 .andWhere(
-                    "message.metadata -> 'actionProposal' ->> 'proposalId' = :proposalId",
-                    { proposalId },
+                    "(message.metadata -> 'actionProposal' ->> 'proposalId' = :proposalId OR message.metadata -> 'actionProposals' @> :proposalRef::jsonb)",
+                    {
+                        proposalId,
+                        proposalRef: JSON.stringify([{ proposalId }]),
+                    },
                 )
                 .setLock('pessimistic_write')
                 .getOne();
-            if (actionMessage?.metadata?.actionProposal) {
+            if (actionMessage?.metadata) {
                 // Nếu message đã bị xóa/metadata cũ thì vẫn giữ proposal result; không tạo message mới ngoài luồng chat.
-                actionMessage.metadata.actionProposal.status = status;
-                actionMessage.metadata.actionProposal.result = result;
-                await messageRepository.save(actionMessage);
+                const legacyProposal = actionMessage.metadata.actionProposal;
+                if (legacyProposal?.proposalId === proposalId) {
+                    legacyProposal.status = status;
+                    legacyProposal.result = result;
+                }
+                const proposals = actionMessage.metadata.actionProposals;
+                const matchingProposal = proposals?.find(
+                    (item) => item.proposalId === proposalId,
+                );
+                if (matchingProposal) {
+                    matchingProposal.status = status;
+                    matchingProposal.result = result;
+                }
+                if (
+                    legacyProposal?.proposalId === proposalId ||
+                    matchingProposal
+                ) {
+                    await messageRepository.save(actionMessage);
+                }
             }
         });
     }
@@ -402,6 +485,7 @@ export class TypeOrmSellerCopilotRepository implements SellerCopilotRepositoryPo
             conversationId: proposal.conversationId,
             ownerUserId: proposal.ownerUserId,
             shopId: proposal.shopId,
+            batchId: proposal.batchId,
             status: proposal.status,
             payload: proposal.payload,
             expiresAt: proposal.expiresAt,

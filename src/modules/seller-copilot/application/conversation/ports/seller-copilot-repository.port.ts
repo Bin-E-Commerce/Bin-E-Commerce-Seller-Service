@@ -2,7 +2,7 @@
 import type { SellerKnowledgeCitation } from '@/modules/seller-knowledge/application/ports/seller-knowledge-retrieval.port';
 import type {
     SellerCopilotActionProposalRecord,
-    SellerCopilotInventoryProposalPayload,
+    SellerCopilotActionProposalPayload,
 } from '@/modules/seller-copilot/application/modes/agent/types/seller-copilot-action.types';
 import type {
     SellerCopilotAnswerStatus,
@@ -44,11 +44,20 @@ export type SellerCopilotMessageRecord = {
         timelineEvent?: 'mode_changed';
         actionProposal?: {
             proposalId: string;
-            payload: SellerCopilotInventoryProposalPayload;
+            batchId?: string | null;
+            payload: SellerCopilotActionProposalPayload;
             expiresAt: string;
             status?: 'pending' | 'completed' | 'failed';
             result?: Record<string, unknown>;
         };
+        actionProposals?: Array<{
+            proposalId: string;
+            batchId: string;
+            payload: SellerCopilotActionProposalPayload;
+            expiresAt: string;
+            status?: 'pending' | 'completed' | 'failed';
+            result?: Record<string, unknown>;
+        }>;
     } | null;
     createdAt: Date;
 };
@@ -94,9 +103,16 @@ export interface SellerCopilotRepositoryPort {
             insights?: SellerCopilotInsight[];
             actionProposal?: {
                 proposalId: string;
-                payload: SellerCopilotInventoryProposalPayload;
+                batchId?: string | null;
+                payload: SellerCopilotActionProposalPayload;
                 expiresAt: string;
             };
+            actionProposals?: Array<{
+                proposalId: string;
+                batchId: string;
+                payload: SellerCopilotActionProposalPayload;
+                expiresAt: string;
+            }>;
             dataSources?: Array<{
                 kind: 'shop_data' | 'live_data' | 'seller_profile';
                 label: string;
@@ -178,7 +194,8 @@ export interface SellerCopilotRepositoryPort {
         conversationId: string;
         ownerUserId: string;
         shopId: string;
-        payload: SellerCopilotInventoryProposalPayload;
+        batchId?: string | null;
+        payload: SellerCopilotActionProposalPayload;
         expiresAt: Date;
     }): Promise<SellerCopilotActionProposalRecord>;
 
@@ -186,6 +203,13 @@ export interface SellerCopilotRepositoryPort {
     consumeActionProposal(
         scope: SellerCopilotScope,
         proposalId: string,
+    ): Promise<SellerCopilotActionProposalRecord | null>;
+
+    // Chỉ sửa target của proposal tồn kho còn hạn và pending trong đúng tenant; row lock tuần tự hóa với thao tác xác nhận.
+    reviseInventoryProposal(
+        scope: SellerCopilotScope,
+        proposalId: string,
+        nextAvailable: number,
     ): Promise<SellerCopilotActionProposalRecord | null>;
 
     // Chuyển processing sang terminal và lưu result; không cho request lặp đảo completed/failed về pending.

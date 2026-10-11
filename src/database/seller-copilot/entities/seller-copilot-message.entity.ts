@@ -6,7 +6,7 @@ import {
     PrimaryGeneratedColumn,
 } from 'typeorm';
 import type { SellerKnowledgeCitation } from '@/modules/seller-knowledge/application/ports/seller-knowledge-retrieval.port';
-import type { SellerCopilotInventoryProposalPayload } from '@/modules/seller-copilot/application/modes/agent/types/seller-copilot-action.types';
+import type { SellerCopilotActionProposalPayload } from '@/modules/seller-copilot/application/modes/agent/types/seller-copilot-action.types';
 import type {
     SellerCopilotAnswerStatus,
     SellerCopilotAnswerStatusReason,
@@ -44,11 +44,20 @@ export class SellerCopilotMessage {
         timelineEvent?: 'mode_changed';
         actionProposal?: {
             proposalId: string;
-            payload: SellerCopilotInventoryProposalPayload;
+            batchId?: string | null;
+            payload: SellerCopilotActionProposalPayload;
             expiresAt: string;
             status?: 'pending' | 'completed' | 'failed';
             result?: Record<string, unknown>;
         };
+        actionProposals?: Array<{
+            proposalId: string;
+            batchId: string;
+            payload: SellerCopilotActionProposalPayload;
+            expiresAt: string;
+            status?: 'pending' | 'completed' | 'failed';
+            result?: Record<string, unknown>;
+        }>;
     } | null;
 
     @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })

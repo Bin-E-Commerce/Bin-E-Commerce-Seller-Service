@@ -1,4 +1,4 @@
-// Contract tác vụ tồn kho dùng giữa chat, proposal persistence và Product Service client.
+// Contract proposal đóng cho các tác vụ sản phẩm; proposal là preview, không phải quyền ghi dữ liệu.
 export interface SellerCopilotInventoryProposalPayload {
     kind: 'SET_INVENTORY';
     productId: string;
@@ -7,15 +7,61 @@ export interface SellerCopilotInventoryProposalPayload {
     variantName: string;
     expectedAvailable: number;
     nextAvailable: number;
+    lowStockThreshold?: number;
+    reserved?: number;
+    recommendationReason?: 'LOW_STOCK';
 }
+
+export interface SellerCopilotLowStockProposalPayload extends SellerCopilotInventoryProposalPayload {
+    kind: 'SET_INVENTORY';
+    lowStockThreshold: number;
+    reserved: number;
+    recommendationReason: 'LOW_STOCK';
+}
+
+export interface SellerCopilotVariantPriceProposalPayload {
+    kind: 'SET_VARIANT_PRICE';
+    productId: string;
+    productName: string;
+    variantId: string;
+    variantName: string;
+    expectedPrice: number;
+    nextPrice: number;
+    minimumPrice?: number;
+    priceRecommendation?: {
+        kind: 'SLOW_MOVING_CLEARANCE';
+        available: number;
+        quantitySold: number;
+        periodDays: 7 | 30 | 90;
+        requestedDiscountPercent: number;
+        effectiveDiscountPercent: number;
+    };
+}
+
+export interface SellerCopilotProductContentProposalPayload {
+    kind: 'UPDATE_PRODUCT_CONTENT';
+    productId: string;
+    productName: string;
+    expectedName?: string;
+    nextName?: string;
+    expectedDescription?: string | null;
+    nextDescription?: string;
+}
+
+export type SellerCopilotActionProposalPayload =
+    | SellerCopilotInventoryProposalPayload
+    | SellerCopilotLowStockProposalPayload
+    | SellerCopilotVariantPriceProposalPayload
+    | SellerCopilotProductContentProposalPayload;
 
 export interface SellerCopilotActionProposalRecord {
     id: string;
     conversationId: string;
     ownerUserId: string;
     shopId: string;
+    batchId: string | null;
     status: 'pending' | 'processing' | 'completed' | 'failed';
-    payload: SellerCopilotInventoryProposalPayload;
+    payload: SellerCopilotActionProposalPayload;
     expiresAt: Date;
 }
 
