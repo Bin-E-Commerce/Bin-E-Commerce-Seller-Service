@@ -6,7 +6,22 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { SellerInventorySearchResult } from '@/modules/seller-copilot/application/modes/agent/types/seller-copilot-action.types';
+import type {
+    SellerCopilotProductContentProposalPayload,
+    SellerCopilotVariantPriceProposalPayload,
+} from '@/modules/seller-copilot/application/modes/agent/types/seller-copilot-action.types';
 import type { SellerCopilotProductCatalogSnapshot } from '@/modules/seller-copilot/application/answer/shared/types/seller-copilot-insight.types';
+
+export interface SellerActiveVariantRecord {
+    productId: string;
+    productName: string;
+    variantId: string;
+    variantName: string;
+    sku: string;
+    sellerSku: string | null;
+    price: number;
+    available: number;
+}
 
 // Adapter service-to-service cho truy vấn candidate và cập nhật tồn khả dụng.
 // Shared token chỉ chứng minh request nội bộ; Product Service vẫn xác minh seller, shop ownership, permission và số tồn mong đợi.
@@ -58,27 +73,164 @@ export class SellerInventoryAgentClient {
         shopId: string,
         ownerUserId: string,
     ): Promise<SellerCopilotProductCatalogSnapshot> {
-        // Shop và owner đều đến từ scope đã xác thực; owner bổ sung khả năng đọc sản phẩm legacy chỉ thiếu seller_shop_id.
-        const query = new URLSearchParams({ ownerUserId });
+        const items: SellerCopilotProductCatalogSnapshot['items'] = [];
+        let offset = 0;
+        let totalCount = 0;
+        let hasMore = true;
+
+        // Mỗi page bị giới hạn ở Product Service; offset chỉ tăng theo số dòng nhận được để không bỏ sót bản ghi.
+        while (hasMore) {
+            const query = new URLSearchParams({
+                ownerUserId,
+                offset: String(offset),
+            });
+            const response = await fetch(
+                `${this.productServiceUrl}/api/v1/internal/products/shops/${shopId}/catalog?${query}`,
+                {
+                    headers: {
+                        accept: 'application/json',
+                        'x-internal-service-token': this.internalServiceToken,
+                    },
+                    signal: AbortSignal.timeout(5_000),
+                },
+            ).catch(() => null);
+
+            // Lỗi ở bất kỳ page nào làm snapshot không đầy đủ; fail toàn bộ để Agent không tuyên bố đã rà hết shop.
+            if (!response?.ok) {
+                throw new BadGatewayException(
+                    'Product Service chưa thể tải đầy đủ danh sách sản phẩm của shop.',
+                );
+            }
+
+            const page =
+                (await response.json()) as SellerCopilotProductCatalogSnapshot;
+            if (page.items.length === 0 && page.hasMore) {
+                throw new BadGatewayException(
+                    'Product Service trả trang catalog không hợp lệ.',
+                );
+            }
+            items.push(...page.items);
+            totalCount = page.totalCount;
+            hasMore = page.hasMore;
+            offset += page.items.length;
+        }
+
+        return { items, totalCount, hasMore: false };
+    }
+
+    // Đọc đúng một trang variant đang bán; caller quản lý offset để đối chiếu sales mà không tải cả catalog vào một response.
+    async getActiveVariantPage(input: {
+        shopId: string;
+        ownerUserId: string;
+        offset: number;
+        limit: number;
+    }): Promise<{ items: SellerActiveVariantRecord[]; hasMore: boolean }> {
+        const query = new URLSearchParams({
+            ownerUserId: input.ownerUserId,
+            offset: String(input.offset),
+            limit: String(input.limit),
+        });
         const response = await fetch(
-            `${this.productServiceUrl}/api/v1/internal/products/shops/${shopId}/catalog?${query}`,
+            `${this.productServiceUrl}/api/v1/internal/products/shops/${input.shopId}/inventory/active-variants?${query}`,
             {
                 headers: {
                     accept: 'application/json',
                     'x-internal-service-token': this.internalServiceToken,
                 },
-                signal: AbortSignal.timeout(5_000),
+                signal: AbortSignal.timeout(8_000),
             },
         ).catch(() => null);
-
-        // Không trả snapshot giả khi downstream lỗi; caller cần biết nguồn catalog không thể dùng.
         if (!response?.ok) {
             throw new BadGatewayException(
-                'Product Service chưa thể tải danh sách sản phẩm của shop.',
+                'Product Service chưa thể tải đầy đủ biến thể đang bán của shop.',
             );
         }
+        const page = (await response.json()) as {
+            items: SellerActiveVariantRecord[];
+            hasMore: boolean;
+        };
+        // Không để row lỗi cấu trúc lọt vào bộ lọc; đặc biệt tồn/giá không hợp lệ không được suy diễn thành candidate.
+        if (
+            !Array.isArray(page.items) ||
+            typeof page.hasMore !== 'boolean' ||
+            (page.items.length === 0 && page.hasMore) ||
+            page.items.some(
+                (variant) =>
+                    typeof variant.productId !== 'string' ||
+                    typeof variant.productName !== 'string' ||
+                    typeof variant.variantId !== 'string' ||
+                    typeof variant.variantName !== 'string' ||
+                    typeof variant.sku !== 'string' ||
+                    (variant.sellerSku !== null &&
+                        typeof variant.sellerSku !== 'string') ||
+                    !Number.isFinite(variant.price) ||
+                    variant.price < 100 ||
+                    !Number.isSafeInteger(variant.available) ||
+                    variant.available < 0,
+            )
+        ) {
+            throw new BadGatewayException(
+                'Product Service trả trang biến thể không hợp lệ.',
+            );
+        }
+        return page;
+    }
 
-        return (await response.json()) as SellerCopilotProductCatalogSnapshot;
+    // Đọc toàn bộ biến thể dưới ngưỡng theo trang; mỗi trang đều được Product Service giới hạn và scope theo owner/shop.
+    async getLowStockVariants(shopId: string, ownerUserId: string) {
+        const items: Array<{
+            productId: string;
+            productName: string;
+            variantId: string;
+            variantName: string;
+            sku: string;
+            sellerSku: string | null;
+            available: number;
+            reserved: number;
+            lowStockThreshold: number;
+        }> = [];
+        let offset = 0;
+        let hasMore = true;
+        while (hasMore) {
+            const query = new URLSearchParams({
+                ownerUserId,
+                offset: String(offset),
+                limit: '100',
+            });
+            const response = await fetch(
+                `${this.productServiceUrl}/api/v1/internal/products/shops/${shopId}/inventory/low-stock?${query}`,
+                {
+                    headers: {
+                        accept: 'application/json',
+                        'x-internal-service-token': this.internalServiceToken,
+                    },
+                    signal: AbortSignal.timeout(8_000),
+                },
+            ).catch(() => null);
+            if (!response?.ok) {
+                throw new BadGatewayException(
+                    'Product Service chưa thể rà soát đầy đủ tồn kho của shop.',
+                );
+            }
+            const page = (await response.json()) as {
+                items: typeof items;
+                hasMore: boolean;
+            };
+            if (
+                !Array.isArray(page.items) ||
+                (page.items.length === 0 && page.hasMore)
+            ) {
+                throw new BadGatewayException(
+                    'Product Service trả trang tồn kho không hợp lệ.',
+                );
+            }
+            items.push(...page.items);
+            offset += page.items.length;
+            hasMore = page.hasMore;
+            // Chỉ cần biết shop vượt giới hạn batch để hỏi seller lọc; dừng sớm sau 50+ kết quả để tránh tải snapshot quá lớn.
+            if (items.length > 50) return items;
+        }
+        return items;
     }
 
     // Gửi preview với identity/permission do API Gateway xác thực; Product Service vẫn kiểm tra lại mọi điều kiện ghi.
@@ -128,5 +280,87 @@ export class SellerInventoryAgentClient {
             available: number;
             reserved: number;
         };
+    }
+
+    // Ghi giá cho đúng biến thể với expectedPrice để Product Service từ chối preview đã lỗi thời.
+    async setVariantPrice(
+        input: SellerCopilotVariantPriceProposalPayload & {
+            shopId: string;
+            ownerUserId: string;
+            email: string;
+            permissions: string[];
+        },
+    ): Promise<{ variantId: string; price: number }> {
+        return this.patchAction(
+            `/api/v1/internal/products/shops/${input.shopId}/variants/${input.variantId}/price`,
+            input,
+            {
+                expectedPrice: input.expectedPrice,
+                nextPrice: input.nextPrice,
+                ...(input.minimumPrice !== undefined
+                    ? { minimumPrice: input.minimumPrice }
+                    : {}),
+            },
+            'Không thể cập nhật giá lúc này; hãy tạo đề xuất mới nếu giá đã thay đổi.',
+        );
+    }
+
+    // Cập nhật chỉ tên/mô tả theo expected values; không gửi toàn bộ product graph từ phía Copilot.
+    async updateProductContent(
+        input: SellerCopilotProductContentProposalPayload & {
+            shopId: string;
+            ownerUserId: string;
+            email: string;
+            permissions: string[];
+        },
+    ): Promise<{
+        productId: string;
+        name: string;
+        description: string | null;
+    }> {
+        return this.patchAction(
+            `/api/v1/internal/products/shops/${input.shopId}/products/${input.productId}/agent-content`,
+            input,
+            {
+                expectedName: input.expectedName,
+                nextName: input.nextName,
+                expectedDescription: input.expectedDescription,
+                nextDescription: input.nextDescription,
+            },
+            'Không thể cập nhật nội dung lúc này; hãy kiểm tra thông tin sản phẩm rồi tạo đề xuất mới.',
+        );
+    }
+
+    // Chuẩn hóa header identity và mapping lỗi cho mọi mutation nội bộ; status 409 yêu cầu người bán xem preview mới.
+    private async patchAction<TResult>(
+        path: string,
+        input: {
+            ownerUserId: string;
+            email: string;
+            permissions: string[];
+        },
+        body: Record<string, unknown>,
+        failureMessage: string,
+    ): Promise<TResult> {
+        const response = await fetch(`${this.productServiceUrl}${path}`, {
+            method: 'PATCH',
+            headers: {
+                accept: 'application/json',
+                'content-type': 'application/json',
+                'x-internal-service-token': this.internalServiceToken,
+                'x-user-id': input.ownerUserId,
+                'x-user-email': input.email,
+                'x-user-permissions': input.permissions.join(','),
+            },
+            body: JSON.stringify(body),
+            signal: AbortSignal.timeout(8_000),
+        }).catch(() => null);
+        if (response?.status === 409) {
+            throw new ConflictException(
+                'Dữ liệu vừa thay đổi. Hãy tải lại và tạo đề xuất mới.',
+            );
+        }
+        if (!response?.ok) throw new BadGatewayException(failureMessage);
+        return (await response.json()) as TResult;
     }
 }

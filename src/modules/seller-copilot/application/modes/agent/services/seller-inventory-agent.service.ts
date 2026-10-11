@@ -4,7 +4,9 @@ import { SELLER_COPILOT_REPOSITORY } from '@/modules/seller-copilot/application/
 import { SellerInventoryAgentClient } from '@/modules/seller-copilot/application/modes/agent/clients/seller-inventory-agent.client';
 import type { SellerCopilotRepositoryPort } from '@/modules/seller-copilot/application/conversation/ports/seller-copilot-repository.port';
 import type { SellerCopilotInventoryProposalPayload } from '@/modules/seller-copilot/application/modes/agent/types/seller-copilot-action.types';
+import type { SellerInventoryTargetReference } from '@/modules/seller-copilot/application/modes/agent/types/seller-inventory-command.types';
 import type { SellerCopilotProductCatalogSnapshot } from '@/modules/seller-copilot/application/answer/shared/types/seller-copilot-insight.types';
+import { parseSellerInventoryCommand } from '@/modules/seller-copilot/application/modes/agent/utils/parse-seller-inventory-command.util';
 
 const PROPOSAL_TTL_MS = 10 * 60 * 1000;
 
@@ -41,6 +43,7 @@ export class SellerInventoryAgentService {
         shopId: string;
         conversationId: string;
         message: string;
+        target?: SellerInventoryTargetReference;
     }): Promise<
         | { kind: 'clarification'; message: string }
         | {
@@ -51,7 +54,7 @@ export class SellerInventoryAgentService {
           }
     > {
         // Parser phải xác định rõ cả phép toán lẫn số lượng; nếu không, tuyệt đối không suy ra một giá trị mặc định để ghi.
-        const command = parseInventoryCommand(input.message);
+        const command = parseSellerInventoryCommand(input.message);
         if (!command) {
             return {
                 kind: 'clarification',
@@ -59,8 +62,8 @@ export class SellerInventoryAgentService {
                     'Bạn muốn đặt tồn khả dụng thành số nào, hay tăng/giảm thêm bao nhiêu sản phẩm? Hãy ghi rõ tên hoặc SKU sản phẩm nhé.',
             };
         }
-        // Tách riêng trường hợp thiếu đối tượng để yêu cầu người bán bổ sung SKU/tên thay vì tìm kiếm toàn catalog.
-        if (!command.productQuery) {
+        // Đại từ chỉ được dùng khi caller đã nối target từ insight trong đúng phiên; nếu không phải nêu tên/SKU.
+        if (!command.productQuery && !input.target) {
             return {
                 kind: 'clarification',
                 message:
@@ -68,26 +71,41 @@ export class SellerInventoryAgentService {
             };
         }
 
-        // Chỉ dùng kết quả tìm kiếm từ shop đã resolve; lựa chọn mơ hồ được chuyển thành câu hỏi xác nhận, không chọn top hit.
-        const matches = await this.searchProducts(
-            input.shopId,
-            command.productQuery,
-        );
-        const candidate = selectCandidate(matches, input.message);
+        // Target theo ngữ cảnh tìm bằng SKU rồi đối chiếu cả hai ID; không chọn một kết quả fuzzy khác nếu SKU lệch.
+        const searchQuery = input.target
+            ? input.target.sellerSku || input.target.sku
+            : command.productQuery;
+        if (!searchQuery.trim()) {
+            return {
+                kind: 'clarification',
+                message:
+                    'Biến thể vừa nhắc tới chưa có SKU để xác minh. Bạn gửi giúp mình SKU của sản phẩm nhé.',
+            };
+        }
+        const matches = await this.searchProducts(input.shopId, searchQuery);
+        const candidate = input.target
+            ? (matches.find(
+                  (item) =>
+                      item.productId === input.target?.productId &&
+                      item.variantId === input.target?.variantId,
+              ) ?? null)
+            : selectCandidate(matches, input.message);
         if (!candidate) {
             return {
                 kind: 'clarification',
-                message: matches.length
-                    ? `Mình tìm thấy nhiều sản phẩm/biến thể phù hợp:\n${matches
-                          .slice(0, 5)
-                          .map(
-                              (item, index) =>
-                                  `${index + 1}. ${item.productName} — ${item.variantName} (SKU ${item.sellerSku ?? item.sku}, còn ${item.available})`,
-                          )
-                          .join(
-                              '\n',
-                          )}\nBạn chọn đúng biến thể hoặc gửi SKU giúp mình nhé.`
-                    : 'Mình chưa tìm thấy sản phẩm phù hợp trong shop. Bạn kiểm tra tên sản phẩm hoặc gửi SKU nhé.',
+                message: input.target
+                    ? 'Mình chưa xác minh được đúng biến thể vừa nhắc tới trong tồn kho hiện tại. Bạn gửi SKU hoặc tên biến thể giúp mình nhé.'
+                    : matches.length
+                      ? `Mình tìm thấy nhiều sản phẩm/biến thể phù hợp:\n${matches
+                            .slice(0, 5)
+                            .map(
+                                (item, index) =>
+                                    `${index + 1}. ${item.productName} — ${item.variantName} (SKU ${item.sellerSku ?? item.sku}, còn ${item.available})`,
+                            )
+                            .join(
+                                '\n',
+                            )}\nBạn chọn đúng biến thể hoặc gửi SKU giúp mình nhé.`
+                      : 'Mình chưa tìm thấy sản phẩm phù hợp trong shop. Bạn kiểm tra tên sản phẩm hoặc gửi SKU nhé.',
             };
         }
 
@@ -147,104 +165,6 @@ export class SellerInventoryAgentService {
             expiresAt,
         };
     }
-}
-
-// Tách quantity khỏi phần nhận diện sản phẩm và chỉ chấp nhận phép tính có nghĩa rõ ràng trong câu seller.
-function parseInventoryCommand(message: string): {
-    productQuery: string;
-    operation: 'set' | 'increase' | 'decrease';
-    quantity: number;
-} | null {
-    // Giữ nguyên chuỗi gốc để số nằm trong SKU/tên vẫn có thể được dùng nhận diện sau khi tách quantity.
-    const normalized = message.trim();
-    // Tách loại thao tác theo cụm động từ rõ nghĩa; không dựa vào một con số đứng riêng vì có thể là mã sản phẩm.
-    const increaseMatch = normalized.match(
-        /(?:^|\s)(?:tăng|cộng)\s+(?:thêm\s+)?(\d+)(?!\d)/iu,
-    );
-    const decreaseMatch = normalized.match(
-        /(?:^|\s)(?:giảm\s+(?:(?:bớt|thêm)\s+)?|trừ\s+(?:đi\s+)?)(\d+)(?!\d)/iu,
-    );
-    const explicitSetMatch = normalized.match(
-        /(?:^|\s)(?:đặt|cập nhật|chỉnh|đưa)(?=\s).*?(?:lên|về|thành|còn|xuống|bằng)\s*(\d+)(?!\d)/iu,
-    );
-    // Match ưu tiên phép tăng/giảm trước set; nếu không có một trong ba cấu trúc được hỗ trợ thì từ chối phân tích.
-    const operationMatch = increaseMatch ?? decreaseMatch ?? explicitSetMatch;
-    // Number phải là safe integer và không âm; token thiếu/overflow trả null để use case hỏi lại.
-    const parsedQuantity = Number(operationMatch?.[1]);
-    if (!Number.isSafeInteger(parsedQuantity) || parsedQuantity < 0)
-        return null;
-
-    // Operation khớp với nhóm regex đã bắt; nhánh cuối bảo vệ trường hợp parser bị sửa nhưng match không nhất quán.
-    let operation: 'set' | 'increase' | 'decrease';
-    if (increaseMatch) {
-        operation = 'increase';
-    } else if (decreaseMatch) {
-        operation = 'decrease';
-    } else if (explicitSetMatch) {
-        operation = 'set';
-    } else {
-        return null;
-    }
-
-    // Chỉ bỏ số lượng đã gắn với động từ thao tác; các chữ số còn lại như SKU/mã sản phẩm phải được giữ để định danh.
-    // Chỉ xóa đúng token quantity đã match; các số còn lại vẫn thuộc tên/SKU và phải sống sót trong productQuery.
-    const quantityIndex = operationMatch?.index ?? -1;
-    const quantityToken = operationMatch?.[1] ?? '';
-    const quantityStart =
-        quantityIndex + operationMatch?.[0].lastIndexOf(quantityToken)!;
-    const withoutQuantity =
-        quantityStart >= 0
-            ? `${normalized.slice(0, quantityStart)} ${normalized.slice(quantityStart + quantityToken.length)}`
-            : normalized;
-    // Bỏ từ mệnh lệnh/ngữ pháp để phần còn lại dùng làm query; allowlist này không xóa chữ số hoặc token định danh.
-    const commandWords = new Set([
-        'tồn',
-        'kho',
-        'khả',
-        'dụng',
-        'số',
-        'lượng',
-        'sản',
-        'phẩm',
-        'variant',
-        'sku',
-        'cập',
-        'nhật',
-        'chỉnh',
-        'đưa',
-        'đặt',
-        'tăng',
-        'giảm',
-        'cộng',
-        'thêm',
-        'bớt',
-        'trừ',
-        'lên',
-        'về',
-        'thành',
-        'còn',
-        'xuống',
-        'bằng',
-        'giúp',
-        'mình',
-        'tôi',
-        'nhé',
-        'nha',
-        'đi',
-    ]);
-    const productQuery = withoutQuantity
-        .replace(/@bingpt/giu, ' ')
-        .replace(/[.,!?;:()[\]{}]/gu, ' ')
-        .split(/\s+/u)
-        .filter((word) => !commandWords.has(word.toLocaleLowerCase('vi')))
-        .join(' ')
-        .trim();
-
-    return {
-        productQuery,
-        operation,
-        quantity: parsedQuantity,
-    };
 }
 
 // Chỉ tự chọn khi có đúng một kết quả hoặc một SKU khớp nguyên văn; tên sản phẩm chung với nhiều variant phải hỏi lại.

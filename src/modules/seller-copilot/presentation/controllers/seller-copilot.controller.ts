@@ -34,6 +34,8 @@ import {
     SellerCopilotRenameConversationDto,
     SellerCopilotModeSessionDto,
 } from '@/modules/seller-copilot/presentation/dto/seller-copilot.dto';
+import { ConfirmSellerCopilotActionsDto } from '@/modules/seller-copilot/presentation/dto/confirm-seller-copilot-actions.dto';
+import { ReviseSellerInventoryProposalDto } from '@/modules/seller-copilot/presentation/dto/revise-seller-inventory-proposal.dto';
 
 @Controller('seller/ai/copilot')
 // HTTP adapter chỉ lo ownership preflight, vòng đời kết nối SSE và map transport; nghiệp vụ chat nằm ở application services.
@@ -48,6 +50,40 @@ export class SellerCopilotController {
         private readonly confirmInventoryAction: ConfirmSellerInventoryActionUseCase,
         private readonly modeSessions: ConversationModeSessionService,
     ) {}
+
+    // Batch API giữ lại từng kết quả; application xác nhận mỗi proposal độc lập nên lỗi một dòng không rollback dòng khác.
+    @Post('actions/confirm-batch')
+    @HttpCode(HttpStatus.OK)
+    confirmActionBatch(
+        @Headers('x-user-id') ownerUserId: string,
+        @Headers('x-user-email') email: string,
+        @Headers('x-user-permissions') permissionsHeader: string,
+        @Body() body: ConfirmSellerCopilotActionsDto,
+    ) {
+        return this.confirmInventoryAction.confirmBatch({
+            ownerUserId,
+            proposalIds: body.proposalIds,
+            email,
+            permissions: permissionsHeader
+                .split(',')
+                .map((permission) => permission.trim())
+                .filter(Boolean),
+        });
+    }
+
+    // Chỉnh target của proposal tồn kho đang chờ; repository xác minh trạng thái, hạn dùng và tenant trước khi lưu.
+    @Patch('actions/:proposalId')
+    reviseInventoryProposal(
+        @Headers('x-user-id') ownerUserId: string,
+        @Param('proposalId', new ParseUUIDPipe()) proposalId: string,
+        @Body() body: ReviseSellerInventoryProposalDto,
+    ) {
+        return this.confirmInventoryAction.reviseInventoryProposal({
+            ownerUserId,
+            proposalId,
+            nextAvailable: body.nextAvailable,
+        });
+    }
 
     // Tạo phiên mode mới trong conversation hiện tại; tenant được resolve từ identity Gateway, không từ payload.
     // Service trả cùng session nếu request lặp cho mode đang hoạt động, tránh tạo divider trùng khi client retry.

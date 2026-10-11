@@ -7,7 +7,11 @@ import { ConfirmSellerInventoryActionUseCase } from '@/modules/seller-copilot/ap
 
 describe('ConfirmSellerInventoryActionUseCase', () => {
     let access: { resolveActiveShop: jest.Mock };
-    let repository: { consumeActionProposal: jest.Mock; completeActionProposal: jest.Mock };
+    let repository: {
+        consumeActionProposal: jest.Mock;
+        completeActionProposal: jest.Mock;
+        reviseInventoryProposal: jest.Mock;
+    };
     let client: { setAvailable: jest.Mock };
     let target: ConfirmSellerInventoryActionUseCase;
     const proposal = {
@@ -39,6 +43,7 @@ describe('ConfirmSellerInventoryActionUseCase', () => {
         repository = {
             consumeActionProposal: jest.fn().mockResolvedValue(proposal),
             completeActionProposal: jest.fn().mockResolvedValue(undefined),
+            reviseInventoryProposal: jest.fn().mockResolvedValue(proposal),
         };
         client = {
             setAvailable: jest.fn().mockResolvedValue({
@@ -79,9 +84,12 @@ describe('ConfirmSellerInventoryActionUseCase', () => {
             { ownerUserId: 'owner-1', shopId: 'shop-1' },
             'proposal-1',
             'completed',
-            expect.objectContaining({ available: 12 }),
+            expect.objectContaining({ availableQuantity: 12 }),
         );
-        expect(result).toMatchObject({ status: 'completed', availableQuantity: 12 });
+        expect(result).toMatchObject({
+            status: 'completed',
+            availableQuantity: 12,
+        });
     });
 
     // Không tồn tại, hết hạn hoặc đã dùng proposal đều phải chặn trước external write.
@@ -99,5 +107,44 @@ describe('ConfirmSellerInventoryActionUseCase', () => {
 
         expect(client.setAvailable).not.toHaveBeenCalled();
         expect(repository.completeActionProposal).not.toHaveBeenCalled();
+    });
+
+    // Direct SKU proposals không mang LOW_STOCK reason nhưng vẫn phải cho seller sửa mức tồn trước khi xác nhận.
+    it('revises the target on a direct inventory proposal in the authenticated shop', async () => {
+        repository.reviseInventoryProposal.mockResolvedValue({
+            ...proposal,
+            payload: { ...proposal.payload, nextAvailable: 20 },
+        });
+        const result = await target.reviseInventoryProposal({
+            ownerUserId: 'owner-1',
+            proposalId: 'proposal-1',
+            nextAvailable: 20,
+        });
+
+        expect(repository.reviseInventoryProposal).toHaveBeenCalledWith(
+            { ownerUserId: 'owner-1', shopId: 'shop-1' },
+            'proposal-1',
+            20,
+        );
+        expect(result).toMatchObject({
+            proposalId: 'proposal-1',
+            nextAvailable: 20,
+        });
+    });
+
+    // Từ chối input sai trước khi đọc shop/repository để API không lưu target âm, lẻ hoặc vượt integer 32-bit.
+    it('rejects an invalid revised target before repository access', async () => {
+        await expect(
+            target.reviseInventoryProposal({
+                ownerUserId: 'owner-1',
+                proposalId: 'proposal-1',
+                nextAvailable: 1.5,
+            }),
+        ).rejects.toThrow(
+            'Mức tồn đề xuất phải là số nguyên không âm trong giới hạn hệ thống.',
+        );
+
+        expect(repository.reviseInventoryProposal).not.toHaveBeenCalled();
+        expect(access.resolveActiveShop).not.toHaveBeenCalled();
     });
 });
