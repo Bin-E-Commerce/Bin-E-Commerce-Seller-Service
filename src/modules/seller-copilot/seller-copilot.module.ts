@@ -13,6 +13,9 @@ import { ConversationHistoryService } from '@/modules/seller-copilot/application
 import { ConversationPersistenceService } from '@/modules/seller-copilot/application/conversation/persistence/conversation-persistence.service';
 import { ConversationModeSessionService } from '@/modules/seller-copilot/application/conversation/mode-session/conversation-mode-session.service';
 import { StreamSellerCopilotUseCase } from '@/modules/seller-copilot/application/conversation/streaming/stream-seller-copilot.use-case';
+import { LoadSellerCopilotContextService } from '@/modules/seller-copilot/application/conversation/streaming/services/load-seller-copilot-context.service';
+import { GenerateGroundedSellerAnswerService } from '@/modules/seller-copilot/application/conversation/streaming/services/generate-grounded-seller-answer.service';
+import { PrepareSellerCopilotChatUseCase } from '@/modules/seller-copilot/application/conversation/streaming/prepare-seller-copilot-chat.use-case';
 import { TypeOrmSellerCopilotRepository } from '@/modules/seller-copilot/infrastructure/repositories/typeorm-seller-copilot.repository';
 import { SellerCopilotController } from '@/modules/seller-copilot/presentation/controllers/seller-copilot.controller';
 import { SELLER_QUESTION_PLANNER } from '@/modules/seller-copilot/application/question-understanding/shared/planner/contracts/seller-question-planner.port';
@@ -23,7 +26,9 @@ import { SELLER_COPILOT_ANSWER } from '@/modules/seller-copilot/application/answ
 import { OpenAiSellerCopilotAnswerClient } from '@/modules/seller-copilot/infrastructure/clients/openai-seller-copilot-answer.client';
 import { SellerDashboardModule } from '@/modules/seller-dashboard/seller-dashboard.module';
 import { SellerInventoryAgentClient } from '@/modules/seller-copilot/application/modes/agent/clients/seller-inventory-agent.client';
+import { SellerOrderSalesClient } from '@/modules/seller-copilot/application/modes/agent/clients/seller-order-sales.client';
 import { SellerInventoryAgentService } from '@/modules/seller-copilot/application/modes/agent/services/seller-inventory-agent.service';
+import { SellerProductAgentService } from '@/modules/seller-copilot/application/modes/agent/services/seller-product-agent.service';
 import { ConfirmSellerInventoryActionUseCase } from '@/modules/seller-copilot/application/modes/agent/actions/confirm-seller-inventory-action.use-case';
 
 // Ghép planner, retrieval knowledge và answer generator; retrieval vẫn chỉ xử lý dữ liệu knowledge đã xuất bản.
@@ -43,6 +48,9 @@ import { ConfirmSellerInventoryActionUseCase } from '@/modules/seller-copilot/ap
     controllers: [SellerCopilotController],
     providers: [
         StreamSellerCopilotUseCase,
+        PrepareSellerCopilotChatUseCase,
+        LoadSellerCopilotContextService,
+        GenerateGroundedSellerAnswerService,
         ConfirmSellerInventoryActionUseCase,
         SellerCopilotAccessService,
         ConversationHistoryService,
@@ -50,7 +58,9 @@ import { ConfirmSellerInventoryActionUseCase } from '@/modules/seller-copilot/ap
         ConversationModeSessionService,
         SellerQuestionUnderstandingService,
         SellerInventoryAgentClient,
+        SellerOrderSalesClient,
         SellerInventoryAgentService,
+        SellerProductAgentService,
         OpenAiSellerCopilotAnswerClient,
         {
             provide: SELLER_COPILOT_ANSWER,

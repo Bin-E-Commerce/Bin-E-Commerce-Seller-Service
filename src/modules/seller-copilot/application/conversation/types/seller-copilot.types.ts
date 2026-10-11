@@ -12,10 +12,14 @@ export type SellerCopilotAnswerStatus =
     | 'partial'
     | 'in_development'
     | 'unsupported'
-    | 'provider_error';
+    | 'provider_error'
+    | 'source_unavailable';
 // Lý do backend abstain được lưu riêng để quan sát lỗi retrieval và lỗi grounding mà không đổi trạng thái UI.
 export type SellerCopilotAnswerStatusReason =
-    'no_retrieval_results' | 'insufficient_evidence' | 'provider_error';
+    | 'no_retrieval_results'
+    | 'insufficient_evidence'
+    | 'provider_error'
+    | 'source_unavailable';
 
 // Bản lịch sử trung lập của conversation, dùng chung cho planner và answer mà không buộc hai phần phụ thuộc nhau.
 export interface SellerCopilotHistoryMessage {
@@ -70,6 +74,15 @@ export type SellerCopilotEvent =
               nextAvailable: number;
           };
           expiresAt: string;
+      }
+    | {
+          type: 'action_batch_proposed';
+          batchId: string;
+          proposals: Array<{
+              proposalId: string;
+              payload: import('@/modules/seller-copilot/application/modes/agent/types/seller-copilot-action.types').SellerCopilotActionProposalPayload;
+              expiresAt: string;
+          }>;
       }
     | {
           type: 'action_result';

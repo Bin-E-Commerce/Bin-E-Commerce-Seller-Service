@@ -1,109 +1,48 @@
 // Điều phối chat Seller Copilot từ xác thực tenant tới phân loại, truy xuất, tạo câu trả lời và lưu citation.
 // Use case không truy vấn database trực tiếp; scope tenant và persistence luôn đi qua các service/port tương ứng.
-import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import {
     SELLER_COPILOT_REPOSITORY,
     type SellerCopilotRepositoryPort,
 } from '@/modules/seller-copilot/application/conversation/ports/seller-copilot-repository.port';
-import { SellerCopilotAccessService } from '@/modules/seller-copilot/application/conversation/access/seller-copilot-access.service';
-import { ConversationModeSessionService } from '@/modules/seller-copilot/application/conversation/mode-session/conversation-mode-session.service';
 import { buildSellerCopilotQuestionHistory } from '@/modules/seller-copilot/application/conversation/history/build-seller-copilot-question-history.util';
 import { SellerQuestionUnderstandingService } from '@/modules/seller-copilot/application/question-understanding/shared/planner/seller-question-understanding.service';
-import { buildSellerCopilotConversationTitle } from '@/modules/seller-copilot/application/conversation/utils/conversation-title.util';
 import type {
     SellerCopilotEvent,
     SellerCopilotRequest,
 } from '@/modules/seller-copilot/application/conversation/types/seller-copilot.types';
-import { buildSellerQuestionContext } from '@/modules/seller-copilot/application/question-understanding/shared/context/seller-question-context.util';
-import { resolveSellerCopilotRange } from '@/modules/seller-copilot/application/conversation/utils/resolve-seller-copilot-range.util';
-import {
-    SELLER_COPILOT_ANSWER,
-    type SellerCopilotAnswerPort,
-} from '@/modules/seller-copilot/application/answer/shared/ports/seller-copilot-answer.port';
-import { SellerKnowledgeRetrievalService } from '@/modules/seller-knowledge/application/services/seller-knowledge-retrieval.service';
-import type {
-    SellerKnowledgeCitation,
-    SellerKnowledgeSearchHit,
-} from '@/modules/seller-knowledge/application/ports/seller-knowledge-retrieval.port';
-import { SellerDashboardService } from '@/modules/seller-dashboard/application/services/seller-dashboard.service';
-import { AuthUserClient } from '@/modules/shop-profile/application/clients/auth-user.client';
 import { SellerInventoryAgentService } from '@/modules/seller-copilot/application/modes/agent/services/seller-inventory-agent.service';
-import { buildSellerCopilotInsights } from '@/modules/seller-copilot/application/answer/modes/shop-data/insights/build-seller-copilot-insights.util';
-import { buildShopDataAnswerContext } from '@/modules/seller-copilot/application/answer/modes/shop-data/context/build-shop-data-context.util';
+import { SellerProductAgentService } from '@/modules/seller-copilot/application/modes/agent/services/seller-product-agent.service';
 import { resolveShopDataPresentation } from '@/modules/seller-copilot/application/answer/modes/shop-data/presentation/resolve-shop-data-presentation.util';
 import { resolveProductDetailFollowUp } from '@/modules/seller-copilot/application/answer/modes/shop-data/follow-ups/resolve-product-detail-follow-up.util';
-import {
-    mapSellerCopilotCitations,
-    selectSellerCopilotEvidence,
-} from '@/modules/seller-copilot/application/answer/shared/utils/seller-copilot-evidence.util';
+import { resolveAgentSkuPriceFollowUp } from '@/modules/seller-copilot/application/answer/modes/agent/follow-ups/resolve-agent-sku-price-follow-up.util';
+import { resolveAgentInventoryFollowUp } from '@/modules/seller-copilot/application/answer/modes/agent/follow-ups/resolve-agent-inventory-follow-up.util';
+import { resolveAgentClearanceFollowUp } from '@/modules/seller-copilot/application/answer/modes/agent/follow-ups/resolve-agent-clearance-follow-up.util';
 import {
     resolveChatModeHandoff,
     resolveKnowledgeModeHandoff,
 } from '@/modules/seller-copilot/application/answer/modes/chat/resolve-chat-mode-handoff.util';
 import {
     buildSellerCopilotInitialReply,
-    logSellerCopilotAbstention,
     logSellerCopilotPlanSummary,
 } from '@/modules/seller-copilot/application/answer/shared/utils/seller-copilot-plan.util';
 import { routeSellerCopilotTasks } from '@/modules/seller-copilot/application/answer/shared/utils/route-seller-copilot-tasks.util';
-import type {
-    SellerCopilotDataSourceType,
-    SellerCopilotInsight,
-    SellerCopilotVisualizationType,
-} from '@/modules/seller-copilot/application/answer/shared/types/seller-copilot-insight.types';
 import {
     SELLER_QUESTION_CAPABILITY_REGISTRY,
     type SellerQuestionCapabilityRegistryProvider,
 } from '@/modules/seller-copilot/application/question-understanding/shared/registry/seller-question-capability-registry.types';
-
-// Scope tenant và conversation đã được xác minh trước khi controller gửi SSE headers.
-export interface PreparedSellerCopilotChat {
-    ownerUserId: string;
-    ownerEmail: string;
-    ownerPermissions: string[];
-    shopId: string;
-    conversationId: string;
-    modeSessionId: string;
-    shopProfile: {
-        name: string;
-        slug: string;
-        description: string | null;
-        businessModel: string;
-        status: string;
-        logoUrl?: string | null;
-        contactEmail: string;
-        contactPhone: string;
-    };
-}
+import type { PreparedSellerCopilotChat } from '@/modules/seller-copilot/application/conversation/streaming/types/prepared-seller-copilot-chat.types';
+import { LoadSellerCopilotContextService } from '@/modules/seller-copilot/application/conversation/streaming/services/load-seller-copilot-context.service';
+import { GenerateGroundedSellerAnswerService } from '@/modules/seller-copilot/application/conversation/streaming/services/generate-grounded-seller-answer.service';
+import { PrepareSellerCopilotChatUseCase } from '@/modules/seller-copilot/application/conversation/streaming/prepare-seller-copilot-chat.use-case';
+import type { GeneratedSellerCopilotAnswer } from '@/modules/seller-copilot/application/conversation/streaming/types/generated-seller-copilot-answer.types';
 
 const COPILOT_TEMPORARILY_UNAVAILABLE_MESSAGE =
     'BinGPT đang được nâng cấp để hỗ trợ bạn tốt hơn. Bạn quay lại sau giúp mình nhé 🙂';
-const COPILOT_NO_PUBLISHED_KNOWLEDGE_MESSAGE =
-    'Hiện tại mình chưa tìm thấy tài liệu phù hợp để trả lời câu hỏi này. Bạn có thể liên hệ quản trị viên của shop để được hỗ trợ thêm nhé 🙂.';
 const COPILOT_ACTION_NOT_SUPPORTED_MESSAGE =
     'Mình có thể tra cứu chính sách và hướng dẫn đã xuất bản, nhưng hiện chưa thể thay đổi dữ liệu hoặc thực hiện thao tác thay bạn.';
-const COPILOT_ANSWER_FAILED_MESSAGE =
-    'Mình chưa thể xác minh câu trả lời từ tài liệu lúc này. Bạn thử gửi lại câu hỏi sau nhé.';
 const QUESTION_HISTORY_FETCH_LIMIT = 16;
-const VISUALIZATION_DOMAIN: Record<SellerCopilotVisualizationType, string> = {
-    revenue_trend: 'seller-revenue',
-    top_products: 'seller-products-inventory',
-    sold_products: 'seller-products-inventory',
-    products_without_revenue: 'seller-products-inventory',
-    product_catalog: 'seller-products-inventory',
-    low_stock: 'seller-products-inventory',
-    out_of_stock: 'seller-products-inventory',
-    stock_summary: 'seller-products-inventory',
-    seller_profile: 'seller-profile',
-    order_details: 'seller-orders',
-    completed_orders: 'seller-orders',
-    completed_order_list: 'seller-orders',
-    return_orders: 'seller-orders',
-    actionable_orders: 'seller-orders',
-    cancelled_orders: 'seller-orders',
-    delivered_orders: 'seller-orders',
-};
 
 // Điều phối một lượt chat: xác thực tenant, nạp lịch sử an toàn, phân loại, truy xuất evidence và phát SSE có citation.
 // Use case không truy vấn persistence trực tiếp; mọi message, knowledge và answer đều đi qua service/port ứng dụng.
@@ -114,19 +53,16 @@ export class StreamSellerCopilotUseCase {
 
     // Các dependency là application services/ports để use case không phụ thuộc HTTP client hoặc ORM.
     constructor(
-        private readonly access: SellerCopilotAccessService,
+        private readonly prepareChat: PrepareSellerCopilotChatUseCase,
         private readonly understanding: SellerQuestionUnderstandingService,
-        private readonly knowledgeRetrieval: SellerKnowledgeRetrievalService,
-        private readonly dashboard: SellerDashboardService,
-        private readonly authUser: AuthUserClient,
         private readonly inventoryAgent: SellerInventoryAgentService,
+        private readonly productAgent: SellerProductAgentService,
+        private readonly contextLoader: LoadSellerCopilotContextService,
+        private readonly answerGenerator: GenerateGroundedSellerAnswerService,
         @Inject(SELLER_QUESTION_CAPABILITY_REGISTRY)
         private readonly registryProvider: SellerQuestionCapabilityRegistryProvider,
-        @Inject(SELLER_COPILOT_ANSWER)
-        private readonly answerClient: SellerCopilotAnswerPort,
         @Inject(SELLER_COPILOT_REPOSITORY)
         private readonly repository: SellerCopilotRepositoryPort,
-        private readonly modeSessions: ConversationModeSessionService,
     ) {}
 
     // Xác thực tenant và kiểm tra conversation trước khi mở SSE để lỗi quyền/ID sai vẫn giữ HTTP status chuẩn.
@@ -136,40 +72,8 @@ export class StreamSellerCopilotUseCase {
         request: SellerCopilotRequest,
         userContext: { email?: string; permissions?: string[] } = {},
     ): Promise<PreparedSellerCopilotChat> {
-        const shop = await this.access.resolveActiveShop(ownerUserId);
-
-        const conversation = await this.getOrCreateConversation(
-            shop.ownerUserId,
-            shop.id,
-            request.conversationId,
-            request.message,
-        );
-        // Gắn request vào phiên mode thuộc conversation đã xác thực; session ID từ client chỉ được dùng sau khi service kiểm tra.
-        // Nhờ vậy history ở execute có thể bị chặn tại ranh giới đổi mode, kể cả khi người dùng mở lại conversation cũ.
-        const modeSession = await this.modeSessions.resolveForChat({
-            conversationId: conversation.id,
-            interactionMode: request.interactionMode ?? 'chat',
-            requestedModeSessionId: request.modeSessionId,
-        });
-
-        return {
-            ownerUserId: shop.ownerUserId,
-            ownerEmail: userContext.email ?? '',
-            ownerPermissions: userContext.permissions ?? [],
-            shopId: shop.id,
-            conversationId: conversation.id,
-            modeSessionId: modeSession.modeSessionId,
-            shopProfile: {
-                name: shop.name,
-                logoUrl: shop.logoUrl,
-                slug: shop.slug,
-                description: shop.description,
-                businessModel: shop.businessModel,
-                status: shop.status,
-                contactEmail: shop.contactEmail,
-                contactPhone: shop.contactPhone,
-            },
-        };
+        // Giữ nguyên API prepare mà controller/tests đang gọi; xử lý xác thực và tạo scope đã tách sang use case riêng.
+        return this.prepareChat.execute(ownerUserId, request, userContext);
     }
 
     // Xác minh tenant trước, sau đó xử lý mode Chat/Shop trực tiếp hoặc chỉ gọi planner cho Knowledge/Agent.
@@ -194,6 +98,21 @@ export class StreamSellerCopilotUseCase {
         );
 
         const interactionMode = request.interactionMode ?? 'chat';
+        const clearanceFollowUp =
+            interactionMode === 'agent'
+                ? resolveAgentClearanceFollowUp({
+                      recentMessages,
+                      modeSessionId: preparedChat.modeSessionId,
+                      question: request.message,
+                  })
+                : { message: request.message, contextMessages: [] };
+        const explicitAgentAction =
+            interactionMode === 'agent'
+                ? detectAgentAction(request.message) ??
+                  (clearanceFollowUp.contextMessages.length > 0
+                      ? 'slow_moving_price'
+                      : null)
+                : null;
         const history = buildSellerCopilotQuestionHistory(
             recentMessages,
             preparedChat.modeSessionId,
@@ -246,20 +165,40 @@ export class StreamSellerCopilotUseCase {
             signal,
         });
         // Đại từ chỉ sản phẩm được nối với insight backend gần nhất trong cùng phiên; route vẫn qua registry trước khi gọi Product Service.
-        const plan =
-            interactionMode === 'shop_data'
+        const followUpPlan =
+            interactionMode === 'shop_data' || interactionMode === 'agent'
                 ? resolveProductDetailFollowUp({
                       plan: generatedPlan,
                       recentMessages,
                       modeSessionId: preparedChat.modeSessionId,
+                      interactionMode,
                   })
                 : generatedPlan;
+        const plan =
+            interactionMode === 'agent'
+                ? resolveAgentSkuPriceFollowUp({
+                      plan: followUpPlan,
+                      recentMessages,
+                      modeSessionId: preparedChat.modeSessionId,
+                      question: request.message,
+                  })
+                : followUpPlan;
+        // Chỉ nối “sản phẩm này/đó” khi planner xác nhận đúng một lệnh tồn kho và insight gần nhất có ID/SKU duy nhất.
+        const inventoryFollowUp =
+            interactionMode === 'agent'
+                ? resolveAgentInventoryFollowUp({
+                      plan,
+                      recentMessages,
+                      modeSessionId: preparedChat.modeSessionId,
+                      question: request.message,
+                  })
+                : { kind: 'not_applicable' as const };
 
         // Provider có thể trả kết quả đúng lúc browser vừa bấm Dừng; không ghi thêm câu trả lời cho lượt đã hủy.
         signal?.throwIfAborted();
 
         if (interactionMode === 'knowledge' || interactionMode === 'agent') {
-            logSellerCopilotPlanSummary(this.logger, plan);
+            logSellerCopilotPlanSummary(this.logger, plan, requestId);
         }
 
         // Các tác vụ thay đổi phải qua agent mode riêng; mode đọc và trò chuyện không được biến lời nói thành lệnh.
@@ -291,18 +230,19 @@ export class StreamSellerCopilotUseCase {
         let assistantReply =
             chatModeHandoff ??
             buildSellerCopilotInitialReply(plan, interactionMode);
-        let citations: SellerKnowledgeCitation[] = [];
-        let dataSources: Array<{
-            kind: 'shop_data' | 'live_data' | 'seller_profile';
-            label: string;
-        }> = [];
-        let insights: SellerCopilotInsight[] = [];
-        let answerStatus: 'unsupported' | 'provider_error' | undefined;
-        let answerStatusReason:
-            | 'no_retrieval_results'
-            | 'insufficient_evidence'
-            | 'provider_error'
-            | undefined;
+        let citations: GeneratedSellerCopilotAnswer['citations'] = [];
+        let dataSources: GeneratedSellerCopilotAnswer['dataSources'] = [];
+        let insights: GeneratedSellerCopilotAnswer['insights'] = [];
+        let answerStatus: GeneratedSellerCopilotAnswer['answerStatus'];
+        let answerStatusReason: GeneratedSellerCopilotAnswer['answerStatusReason'];
+        if (
+            plan.status === 'PLANNER_UNAVAILABLE' ||
+            plan.status === 'PLANNER_INVALID_RESPONSE'
+        ) {
+            // Lỗi planner là lỗi dịch vụ, không được hiển thị như kết quả shop rỗng hay câu trả lời thiếu dữ liệu.
+            answerStatus = 'provider_error';
+            answerStatusReason = 'provider_error';
+        }
         let assistantResponseStreamed = false;
         let actionProposalMetadata:
             | NonNullable<
@@ -311,11 +251,22 @@ export class StreamSellerCopilotUseCase {
                   >[0]['metadata']
               >['actionProposal']
             | undefined;
+        let actionProposalsMetadata: NonNullable<
+            Parameters<
+                SellerCopilotRepositoryPort['saveMessage']
+            >[0]['metadata']
+        >['actionProposals'];
         if (plan.status === 'READY' && !chatModeHandoff) {
-            // Mutation được xét riêng trước các task đọc để một request hỗn hợp không vô tình chạy phần ghi như truy vấn thường.
-            const hasMutationRequest = plan.tasks.some(
-                (task) => task.requestType === 'CHANGE_REQUEST',
-            );
+            // Chỉ plan READY đã xác thực CHANGE_REQUEST mới mở nhánh preview; @command chỉ chọn loại preview, không cấp quyền ghi.
+            // @xả-hàng là lựa chọn tác vụ tường minh; vẫn chỉ tạo preview và service sẽ từ chối nếu thiếu tiêu chí.
+            const explicitClearanceAction =
+                interactionMode === 'agent' &&
+                explicitAgentAction === 'slow_moving_price';
+            const hasMutationRequest =
+                explicitClearanceAction ||
+                plan.tasks.some(
+                    (task) => task.requestType === 'CHANGE_REQUEST',
+                );
             const rawAnswerTasks = plan.tasks.filter(
                 (task) =>
                     task.requestType === 'READ_QUERY' ||
@@ -323,7 +274,7 @@ export class StreamSellerCopilotUseCase {
                     task.requestType === 'SMALL_TALK',
             );
             const shopDataPresentation =
-                interactionMode === 'shop_data'
+                interactionMode === 'shop_data' || interactionMode === 'agent'
                     ? resolveShopDataPresentation({
                           tasks: rawAnswerTasks,
                       })
@@ -332,696 +283,286 @@ export class StreamSellerCopilotUseCase {
 
             // Mọi write phải đến từ agent mode và domain allowlist; chat thường không được biến lời nói thành lệnh.
             if (hasMutationRequest) {
-                const registry =
-                    await this.registryProvider.getActiveRegistry();
-                const inventoryDomain = registry.domains.find(
-                    (domain) => domain.code === 'seller-products-inventory',
-                );
-                const inventoryChanges = plan.tasks.filter(
-                    (task) =>
-                        task.requestType === 'CHANGE_REQUEST' &&
-                        task.domain === 'seller-products-inventory',
-                );
-                // Nếu plan chứa thêm một lệnh ghi domain khác, từ chối toàn bộ thay vì thực thi một phần rồi bỏ phần còn lại.
-                const hasUnsupportedChange = plan.tasks.some(
-                    (task) =>
-                        task.requestType === 'CHANGE_REQUEST' &&
-                        task.domain !== 'seller-products-inventory',
-                );
+                let readAnswerReply: string | null = null;
+                let readAnswerStreamed = false;
+                let readBlocked = false;
 
-                if (
-                    interactionMode !== 'agent' ||
-                    inventoryDomain?.kind !== 'live-data' ||
-                    hasUnsupportedChange ||
-                    inventoryChanges.length !== 1
-                ) {
-                    // Chỉ một mutation tồn kho duy nhất, agent mode và domain đang bật live-data mới qua được chốt này.
-                    assistantReply = COPILOT_ACTION_NOT_SUPPORTED_MESSAGE;
-                } else {
-                    yield {
-                        type: 'status',
-                        phase: 'action_preview',
-                        message:
-                            'Đang tìm sản phẩm và chuẩn bị thay đổi tồn kho…',
-                    };
-                    const preparedAction = await this.inventoryAgent.prepare({
-                        ownerUserId: preparedChat.ownerUserId,
-                        shopId: preparedChat.shopId,
-                        conversationId: preparedChat.conversationId,
-                        message: request.message,
+                // Nếu người bán hỏi dữ liệu trước khi yêu cầu đổi, hoàn tất câu trả lời live trước khi chuẩn bị preview.
+                // Truy vấn inventory/sales của xả hàng được service chuyên biệt thực hiện cùng một bộ lọc nhất quán;
+                // bỏ câu trả lời đọc chung để planner không trả danh sách gần đúng thay cho preview đã kiểm tra.
+                const agentReadTasks = explicitClearanceAction
+                    ? answerTasks.filter(
+                          (task) =>
+                              task.requestType === 'READ_QUERY' &&
+                              task.domain !== 'seller-products-inventory' &&
+                              task.domain !== 'seller-orders',
+                      )
+                    : answerTasks.filter(
+                          (task) => task.requestType === 'READ_QUERY',
+                      );
+                if (interactionMode === 'agent' && agentReadTasks.length) {
+                    const readResult = yield* this.answerReadTasks({
+                        preparedChat,
+                        request,
+                        interactionMode,
+                        plan,
+                        answerTasks: agentReadTasks,
+                        history,
+                        shopDataPresentation,
+                        initialReply: assistantReply,
+                        requestId,
+                        signal,
                     });
-                    if (preparedAction.kind === 'clarification') {
-                        // Thiếu SKU/số lượng hoặc target không duy nhất: trả câu hỏi làm rõ, không lưu proposal để tránh xác nhận sai.
-                        assistantReply = preparedAction.message;
-                    } else {
-                        // Proposal là preview bất biến có hạn dùng; client chỉ nhận dữ liệu cần hiển thị và ID opaque để xác nhận sau.
-                        const { proposalId, payload, expiresAt } =
-                            preparedAction;
-                        actionProposalMetadata = {
-                            proposalId,
-                            payload,
-                            expiresAt: expiresAt.toISOString(),
-                        };
-                        assistantReply =
-                            'Mình đã chuẩn bị thay đổi tồn kho. Kiểm tra thông tin bên dưới rồi xác nhận để áp dụng.';
-                        yield {
-                            type: 'action_proposed',
-                            proposalId,
-                            action: {
-                                kind: 'SET_INVENTORY',
-                                productId: payload.productId,
-                                productName: payload.productName,
-                                variantId: payload.variantId,
-                                variantName: payload.variantName,
-                                currentAvailable: payload.expectedAvailable,
-                                nextAvailable: payload.nextAvailable,
-                            },
-                            expiresAt: expiresAt.toISOString(),
-                        };
-                    }
+                    assistantReply = readResult.assistantReply;
+                    readAnswerReply = readResult.assistantReply;
+                    readAnswerStreamed = readResult.assistantResponseStreamed;
+                    readBlocked = readResult.blocked;
+                    citations = readResult.citations;
+                    dataSources = readResult.dataSources;
+                    insights = readResult.insights;
+                    answerStatus = readResult.answerStatus;
+                    answerStatusReason = readResult.answerStatusReason;
+                    assistantResponseStreamed =
+                        readResult.assistantResponseStreamed;
                 }
-            } else if (interactionMode === 'agent') {
-                // Agent chỉ hỗ trợ mutation tồn kho; truy vấn đọc trong mode này không được âm thầm chạy như chat/knowledge.
-                assistantReply = COPILOT_ACTION_NOT_SUPPORTED_MESSAGE;
-            } else if (answerTasks.length) {
-                // Task Chat bình thường là SMALL_TALK; mọi task nghiệp vụ đã bị chặn ở handoff trước khi đến bước này.
-                const registry =
-                    interactionMode === 'chat'
-                        ? { domains: [] }
-                        : await this.registryProvider.getActiveRegistry();
-                const domainKinds = new Map(
-                    registry.domains.map((domain) => [
-                        domain.code,
-                        domain.kind,
-                    ]),
-                );
-                // Route helper gom task theo capability đã đăng ký; domain không có trong registry sẽ bị fail-closed.
-                const routing = routeSellerCopilotTasks({
-                    plan,
-                    answerTasks,
-                    domainKinds,
-                    interactionMode,
-                    originalQuestion: request.message,
-                });
-                const {
-                    hasProductQuestion,
-                    hasOrderQuestion,
-                    hasProfileQuestion,
-                    knowledgeTasks,
-                    originalQuestion,
-                    canRetryWithOriginalQuestion,
-                    liveTasks,
-                    profileTasks,
-                    unresolvedTasks,
-                    wrongSourceTasks,
-                } = routing;
-                let originalQuestionWasRetried = false;
 
-                // Registry là nguồn chân thật cho loại nguồn; domain lạ dừng an toàn thay vì rơi mặc định vào Qdrant.
-                const knowledgeModeHandoff =
-                    interactionMode === 'knowledge'
-                        ? resolveKnowledgeModeHandoff(
-                              routing.routedTasks,
-                              domainKinds,
-                          )
-                        : null;
-                if (knowledgeModeHandoff) {
-                    // Không trả fallback “chưa có tài liệu” cho câu đã nhận diện là dữ liệu shop; hướng người bán sang đúng mode.
-                    assistantReply = knowledgeModeHandoff;
-                } else if (unresolvedTasks.length || wrongSourceTasks.length) {
-                    // Domain lạ hoặc mode Knowledge trỏ nhầm nguồn phải dừng trước khi gọi bất kỳ nguồn dữ liệu nào.
-                    assistantReply = COPILOT_TEMPORARILY_UNAVAILABLE_MESSAGE;
+                if (readBlocked) {
+                    // Câu hỏi sai nguồn hoặc chưa route an toàn thì không được phép tạo proposal đi kèm.
                 } else {
-                    const evidenceGroups: SellerKnowledgeSearchHit[][] = [];
-                    const contextData: Record<string, unknown> = {};
-                    const dashboardRange = resolveSellerCopilotRange(
-                        [
-                            request.message,
-                            ...answerTasks.map((task) => task.resolvedQuestion),
-                        ].join(' '),
-                        request.range,
+                    const registry =
+                        await this.registryProvider.getActiveRegistry();
+                    const inventoryDomain = registry.domains.find(
+                        (domain) => domain.code === 'seller-products-inventory',
                     );
-                    if (
-                        interactionMode === 'shop_data' &&
-                        liveTasks.length > 0 &&
-                        dashboardRange === null
-                    ) {
-                        // Không thay kỳ không hỗ trợ bằng 30 ngày mặc định; nếu làm vậy câu trả lời có thể đúng số nhưng sai ý định.
-                        assistantReply =
-                            'Bạn cho mình biết tháng/năm cần xem hoặc chọn 7, 30, 90 ngày gần nhất nhé. Mình sẽ đối chiếu đúng kỳ bạn muốn.';
-                        contextData.rangeClarification = true;
-                    }
-                    const needsProductCatalog =
-                        shopDataPresentation?.productPresentations.some(
-                            (presentation) =>
-                                presentation === 'catalog' ||
-                                presentation === 'detail' ||
-                                presentation === 'low-stock' ||
-                                presentation === 'no-revenue-list',
-                        ) ?? false;
-                    let shopSnapshot:
-                        | Awaited<
-                              ReturnType<SellerDashboardService['getOverview']>
-                          >
-                        | undefined;
-                    let productCatalog:
-                        | Awaited<
-                              ReturnType<
-                                  SellerInventoryAgentService['getProductCatalog']
-                              >
-                          >
-                        | undefined;
-                    let accountProfile:
-                        | Awaited<
-                              ReturnType<AuthUserClient['getCopilotProfile']>
-                          >
-                        | undefined;
-
-                    // Chỉ nạp nguồn planner đã chọn; Promise.allSettled vẫn cho phép trả lời từ một nguồn nếu nguồn còn lại trong câu nhiều ý bị lỗi.
-                    if (
-                        interactionMode === 'shop_data' &&
-                        (liveTasks.length > 0 || hasProfileQuestion) &&
-                        (!liveTasks.length || dashboardRange !== null)
-                    ) {
-                        yield {
-                            type: 'status',
-                            phase: 'live_data',
-                            message: 'Đang tải hồ sơ và dữ liệu shop…',
-                        };
-                        const [
-                            dashboardResult,
-                            profileResult,
-                            productCatalogResult,
-                        ] = await Promise.allSettled([
-                            liveTasks.length && dashboardRange
-                                ? this.dashboard.getOverview(
-                                      preparedChat.ownerUserId,
-                                      dashboardRange,
-                                  )
-                                : Promise.resolve(undefined),
-                            hasProfileQuestion
-                                ? this.authUser.getCopilotProfile(
-                                      preparedChat.ownerUserId,
-                                  )
-                                : Promise.resolve(undefined),
-                            needsProductCatalog
-                                ? this.inventoryAgent.getProductCatalog(
-                                      preparedChat.shopId,
-                                      preparedChat.ownerUserId,
-                                  )
-                                : Promise.resolve(undefined),
-                        ]);
-                        if (dashboardResult.status === 'fulfilled') {
-                            // Nguồn bị bỏ qua có giá trị undefined; chỉ snapshot thật mới được đưa vào context live.
-                            shopSnapshot = dashboardResult.value;
-                        } else {
-                            contextData.unavailableSources = [
-                                'Dữ liệu live của shop',
-                            ];
-                        }
-
-                        if (
-                            productCatalogResult.status === 'fulfilled' &&
-                            productCatalogResult.value
-                        ) {
-                            // Catalog chỉ được nạp khi planner chọn seller-products-inventory; request chạy song song với dashboard/profile.
-                            productCatalog = productCatalogResult.value;
-                            // Follow-up “sản phẩm này” chỉ trả đúng ID lấy từ insight backend; không để catalog card bung cả danh sách.
-                            const referencedProductId = answerTasks.find(
-                                (task) => task.productId,
-                            )?.productId;
-                            if (referencedProductId) {
-                                const referencedProducts =
-                                    productCatalog.items.filter(
-                                        (product) =>
-                                            product.productId ===
-                                            referencedProductId,
-                                    );
-                                productCatalog = {
-                                    ...productCatalog,
-                                    items: referencedProducts,
-                                    totalCount: referencedProducts.length,
-                                    hasMore: false,
-                                };
-                            }
-                            // Catalog chỉ vào prompt cho câu hỏi danh sách/chi tiết/tồn thấp; count và doanh số dùng aggregate riêng.
-                            contextData.productCatalog = productCatalog;
-                            if (shopSnapshot) {
-                                const thumbnailByProductId = new Map(
-                                    productCatalog.items.map((product) => [
-                                        product.productId,
-                                        product.thumbnailUrl,
-                                    ]),
-                                );
-                                shopSnapshot = {
-                                    ...shopSnapshot,
-                                    topProducts: shopSnapshot.topProducts.map(
-                                        (product) => ({
-                                            ...product,
-                                            thumbnailUrl:
-                                                product.thumbnailUrl ??
-                                                thumbnailByProductId.get(
-                                                    product.productId,
-                                                ) ??
-                                                null,
-                                        }),
-                                    ),
-                                };
-                            }
-                        } else if (needsProductCatalog) {
-                            // Thiếu catalog thì không giả làm danh sách đầy đủ; các nguồn khác trong câu nhiều ý vẫn có thể trả lời.
-                            contextData.unavailableSources = [
-                                ...((contextData.unavailableSources as
-                                    string[] | undefined) ?? []),
-                                'Danh sách sản phẩm và phân loại',
-                            ];
-                        }
-                        if (profileResult.status === 'fulfilled') {
-                            // Profile có thể undefined khi planner không route tới seller-profile; không nạp thông tin cá nhân ngoài ý hỏi.
-                            accountProfile = profileResult.value;
-                        } else {
-                            contextData.unavailableSources = [
-                                ...((contextData.unavailableSources as
-                                    string[] | undefined) ?? []),
-                                'Hồ sơ tài khoản/shop',
-                            ];
-                        }
-                    }
-
-                    if (knowledgeTasks.length) {
-                        // Song song hóa retrieval theo từng task; evidenceGroups giữ biên task để bước hợp nhất phân bổ cơ hội cho mỗi ý.
-                        yield {
-                            type: 'status',
-                            phase: 'retrieval',
-                            message: 'Đang tìm trong tài liệu đã xuất bản…',
-                        };
-                        // Chỉ task domain kind=knowledge được gọi Qdrant; lịch sử không đi vào retrieval như evidence.
-                        const retrieved = await Promise.all(
-                            knowledgeTasks.map(async (task) => {
-                                const primaryEvidence =
-                                    await this.knowledgeRetrieval.retrieve({
-                                        query: task.resolvedQuestion,
-                                        domainCodes: task.domain
-                                            ? [task.domain]
-                                            : [],
-                                        signal,
-                                    });
-
-                                // Chỉ câu hỏi chủ đề mới, một ý rõ ràng mới được thử lại bằng nguyên văn người dùng.
-                                // Với follow-up, nguyên văn có thể chỉ là đại từ (“còn cái đó?”), nên không dùng làm truy vấn dự phòng.
-                                if (
-                                    primaryEvidence.length ||
-                                    !canRetryWithOriginalQuestion ||
-                                    !originalQuestion ||
-                                    task.resolvedQuestion.trim() ===
-                                        originalQuestion
-                                ) {
-                                    return primaryEvidence;
-                                }
-
-                                const fallbackEvidence =
-                                    await this.knowledgeRetrieval.retrieve({
-                                        query: originalQuestion,
-                                        domainCodes: task.domain
-                                            ? [task.domain]
-                                            : [],
-                                        signal,
-                                    });
-                                originalQuestionWasRetried = true;
-                                this.logger.log(
-                                    JSON.stringify({
-                                        event: 'seller_knowledge_original_query_fallback',
-                                        requestId,
-                                        domain: task.domain,
-                                        resultCount: fallbackEvidence.length,
-                                    }),
-                                );
-                                return fallbackEvidence;
-                            }),
-                        );
-                        evidenceGroups.push(...retrieved);
-                    }
-
-                    if (
-                        liveTasks.length &&
-                        (interactionMode !== 'shop_data' || shopSnapshot)
-                    ) {
-                        // Với Shop Data dùng snapshot đã tải cùng profile; các mode khác chỉ gọi dashboard khi planner yêu cầu live domain.
-                        yield {
-                            type: 'status',
-                            phase: 'live_data',
-                            message: 'Đang tải số liệu mới nhất của shop…',
-                        };
-                        // Dashboard tự resolve shop từ owner đã xác thực; chỉ đưa các trường cần thiết vào context model.
-                        const snapshot =
-                            shopSnapshot ??
-                            (await this.dashboard.getOverview(
-                                preparedChat.ownerUserId,
-                                dashboardRange ?? '30d',
-                            ));
-                        contextData.liveData = buildShopDataAnswerContext(
-                            snapshot,
-                            {
-                                revenue: answerTasks.some(
-                                    (task) => task.domain === 'seller-revenue',
-                                ),
-                                orders: hasOrderQuestion,
-                                products: hasProductQuestion,
-                            },
-                            shopDataPresentation
-                                ? {
-                                      tasks: shopDataPresentation.tasks,
-                                      orders: shopDataPresentation.orderPresentations,
-                                      products:
-                                          shopDataPresentation.productPresentations,
-                                  }
-                                : undefined,
-                            productCatalog,
-                        );
-                        shopSnapshot = snapshot;
-                    }
-
-                    if (
-                        profileTasks.length &&
-                        (interactionMode !== 'shop_data' || accountProfile)
-                    ) {
-                        // Dùng profile đã nạp song song nếu có; nếu không, chỉ tải khi task phân loại thực sự cần hồ sơ.
-                        yield {
-                            type: 'status',
-                            phase: 'profile',
-                            message: 'Đang tải hồ sơ tài khoản và shop…',
-                        };
-                        // Auth Service chỉ trả allowlist hồ sơ cơ bản; shop lấy từ scope đã xác thực, không tải hồ sơ thuế/ngân hàng.
-                        const account =
-                            accountProfile ??
-                            (await this.authUser.getCopilotProfile(
-                                preparedChat.ownerUserId,
-                            ));
-                        contextData.profile = {
-                            account,
-                            shop: preparedChat.shopProfile,
-                        };
-                    }
-
-                    signal?.throwIfAborted();
-                    const evidence =
-                        selectSellerCopilotEvidence(evidenceGroups);
-                    const hasContextData = Boolean(
-                        contextData.liveData ||
-                        contextData.profile ||
-                        contextData.productCatalog,
+                    const inventoryChanges = plan.tasks.filter(
+                        (task) =>
+                            task.requestType === 'CHANGE_REQUEST' &&
+                            task.domain === 'seller-products-inventory',
                     );
-                    const hasContextPayload =
-                        Object.keys(contextData).length > 0;
-                    const hasUnansweredKnowledge =
-                        knowledgeTasks.length > 0 && evidence.length === 0;
+                    // Nếu plan chứa thêm một lệnh ghi domain khác, từ chối toàn bộ thay vì thực thi một phần rồi bỏ phần còn lại.
+                    const hasUnsupportedChange = plan.tasks.some(
+                        (task) =>
+                            task.requestType === 'CHANGE_REQUEST' &&
+                            task.domain !== 'seller-products-inventory',
+                    );
 
-                    // Truy vấn tài liệu thuần không có hit phải abstain; mixed query vẫn có thể trả phần live/profile đã xác minh.
-                    if (contextData.rangeClarification) {
-                        // Ưu tiên clarification thời gian; tuyệt đối không rơi tiếp xuống answer với snapshot kỳ mặc định.
-                        // Mốc thời gian chưa hỗ trợ đã được hỏi lại; tuyệt đối không lấy snapshot mặc định để trả sai kỳ.
-                    } else if (
-                        interactionMode === 'shop_data' &&
-                        !hasContextData
+                    if (
+                        interactionMode !== 'agent' ||
+                        inventoryDomain?.kind !== 'live-data' ||
+                        hasUnsupportedChange ||
+                        (explicitClearanceAction
+                            ? inventoryChanges.length > 1
+                            : inventoryChanges.length !== 1)
                     ) {
-                        assistantReply =
-                            'Mình chưa tải được hồ sơ hoặc dữ liệu live của shop lúc này. Bạn thử lại sau nhé.';
-                    } else if (hasUnansweredKnowledge && !hasContextData) {
-                        // Khi không có nguồn nào khác làm rõ được câu hỏi, abstain thay vì để model trả lời dựa trên kiến thức nền.
-                        assistantReply = COPILOT_NO_PUBLISHED_KNOWLEDGE_MESSAGE;
-                        answerStatus = 'unsupported';
-                        answerStatusReason = 'no_retrieval_results';
-                        // Chỉ log mã nguyên nhân và số lượng evidence; không ghi câu hỏi hay nội dung tài liệu của shop.
-                        logSellerCopilotAbstention(
-                            this.logger,
-                            requestId,
-                            answerStatusReason,
-                            evidence.length,
-                        );
+                        // Chỉ một mutation tồn kho duy nhất, agent mode và domain đang bật live-data mới qua được chốt này.
+                        assistantReply = COPILOT_ACTION_NOT_SUPPORTED_MESSAGE;
                     } else {
                         yield {
                             type: 'status',
-                            phase: 'answer',
-                            message: 'Đang tổng hợp câu trả lời…',
+                            phase: 'action_preview',
+                            message: 'Đang chuẩn bị bản xem trước…',
                         };
-
-                        const questions = [
-                            ...(interactionMode === 'chat'
-                                ? [request.message.trim()]
-                                : answerTasks.map(
-                                      (task) => task.resolvedQuestion,
-                                  )),
-                            ...(hasUnansweredKnowledge
-                                ? [
-                                      'Lưu ý: chưa tìm được tài liệu phù hợp cho phần câu hỏi chính sách.',
-                                  ]
-                                : []),
-                        ];
-                        // Chỉ truyền task đã chuẩn hóa và evidence/context backend cấp; câu lịch sử không được coi là nguồn xác thực.
-                        let streamedAnswer = '';
-                        let answerEvidence = evidence;
-                        let answerSupported = false;
-                        let requestedDataSources: SellerCopilotDataSourceType[] =
-                            [];
-                        try {
-                            const answerContext = buildSellerQuestionContext({
-                                question: request.message,
-                                history,
-                            });
-                            for (let attempt = 0; attempt < 2; attempt += 1) {
-                                // Retry chỉ được phép sau lần grounding thất bại; stream token đầu tiên sẽ khóa retry để không phát hai câu trả lời nối nhau.
-                                // Mỗi lần chỉ phát token từ answer client; adapter hiện tại giữ câu trả lời đến khi grounding được xác nhận.
-                                for await (const part of this.answerClient.stream(
-                                    {
-                                        question: questions.join('\n'),
-                                        evidence: answerEvidence,
-                                        history: answerContext.history,
-                                        interactionMode,
-                                        contextData: hasContextPayload
-                                            ? JSON.stringify(contextData)
-                                            : undefined,
-                                        signal,
-                                    },
-                                )) {
-                                    if (part.type === 'delta') {
-                                        streamedAnswer += part.text;
-                                        assistantResponseStreamed = true;
-                                        yield {
-                                            type: 'token',
-                                            text: part.text,
-                                        };
-                                        continue;
-                                    }
-                                    assistantReply = part.answer;
-                                    answerSupported = part.supported;
-                                    requestedDataSources =
-                                        part.sourcesUsed ?? [];
-                                }
-
-                                // Không lặp nếu đã grounded, đã thử một lần, không phải câu hỏi mới đơn nghĩa hoặc đã lộ delta.
-                                // Retry chỉ thêm evidence bằng nguyên văn câu hỏi trong cùng domain; không đổi route hay nới quyền truy xuất.
-                                if (
-                                    answerSupported ||
-                                    attempt > 0 ||
-                                    !canRetryWithOriginalQuestion ||
-                                    originalQuestionWasRetried ||
-                                    streamedAnswer.trim()
-                                ) {
-                                    // Các điều kiện này ngăn retry ở follow-up, sau khi đã thử fallback, hoặc sau khi client đã nhận nội dung.
-                                    break;
-                                }
-
-                                yield {
-                                    type: 'status',
-                                    phase: 'retrieval',
-                                    message:
-                                        'Mình đang đối chiếu lại câu hỏi với tài liệu…',
-                                };
-                                const fallbackEvidence =
-                                    await this.knowledgeRetrieval.retrieve({
-                                        query: originalQuestion,
-                                        domainCodes: knowledgeTasks[0]?.domain
-                                            ? [knowledgeTasks[0].domain]
-                                            : [],
-                                        signal,
-                                    });
-                                originalQuestionWasRetried = true;
-                                const previousPointIds = new Set(
-                                    answerEvidence.map((hit) => hit.pointId),
-                                );
-                                const combinedEvidence =
-                                    selectSellerCopilotEvidence([
-                                        answerEvidence,
-                                        fallbackEvidence,
-                                    ]);
-                                const addedEvidenceCount =
-                                    combinedEvidence.filter(
-                                        (hit) =>
-                                            !previousPointIds.has(hit.pointId),
-                                    ).length;
-                                this.logger.log(
-                                    JSON.stringify({
-                                        event: 'seller_knowledge_grounding_retry',
-                                        requestId,
-                                        domain: knowledgeTasks[0]?.domain,
-                                        resultCount: fallbackEvidence.length,
-                                        addedEvidenceCount,
-                                    }),
-                                );
-
-                                // Nếu kết quả cũ lặp lại hoặc truy vấn gốc không có hit mới thì dừng, tránh gọi answer model lần hai vô ích.
-                                if (!addedEvidenceCount) break;
-                                // Hợp nhất mới chỉ được gán khi thật sự có hit mới, tránh gọi provider answer lần hai với cùng evidence.
-                                answerEvidence = combinedEvidence;
-                            }
-
-                            answerStatus =
-                                answerSupported || interactionMode === 'chat'
-                                    ? undefined
-                                    : 'unsupported';
-                            // Planner quyết định domain được đọc; lựa chọn visual của model chỉ được chấp nhận trong đúng domain đó.
-                            // Với dữ liệu shop, backend chọn một visual theo intent đã route; không để model ghép table/card cùng domain.
-                            // Registry vẫn là chốt domain, còn nội dung/số liệu visual chỉ lấy từ snapshot đã tải ở lượt này.
-                            const allowedVisualizations =
-                                interactionMode === 'shop_data' &&
-                                shopDataPresentation
-                                    ? shopDataPresentation.visualizationTypes.filter(
-                                          (type) =>
-                                              answerTasks.some(
-                                                  (task) =>
-                                                      task.domain ===
-                                                      VISUALIZATION_DOMAIN[
-                                                          type
-                                                      ],
-                                              ),
+                        const actionInput = {
+                            ownerUserId: preparedChat.ownerUserId,
+                            shopId: preparedChat.shopId,
+                            conversationId: preparedChat.conversationId,
+                            message:
+                                inventoryFollowUp.kind === 'resolved' &&
+                                !plan.tasks.some(
+                                    (task) => task.requestType === 'READ_QUERY',
+                                )
+                                    ? request.message
+                                    : (inventoryChanges[0]?.resolvedQuestion ??
+                                      request.message),
+                        };
+                        if (inventoryFollowUp.kind === 'clarification') {
+                            // Không gọi service tạo proposal khi tham chiếu cũ mơ hồ; yêu cầu seller nêu đúng biến thể/SKU.
+                            assistantReply = inventoryFollowUp.message;
+                        } else {
+                            const preparedAction =
+                                explicitAgentAction === 'slow_moving_price'
+                                    ? await this.productAgent.prepareSlowMovingPriceChange(
+                                          {
+                                              ...actionInput,
+                                              message: clearanceFollowUp.message,
+                                              ...(clearanceFollowUp.contextMessages
+                                                  .length > 0
+                                                  ? {
+                                                        contextMessages:
+                                                            clearanceFollowUp.contextMessages,
+                                                    }
+                                                  : {}),
+                                          },
                                       )
-                                    : [];
-                            insights = answerSupported
-                                ? buildSellerCopilotInsights({
-                                      visualizationTypes: allowedVisualizations,
-                                      dashboard: shopSnapshot,
-                                      productCatalog,
-                                      account: accountProfile,
-                                      shop: preparedChat.shopProfile,
-                                  })
-                                : [];
-                            answerStatusReason =
-                                answerSupported || interactionMode === 'chat'
-                                    ? undefined
-                                    : 'insufficient_evidence';
-                            if (
-                                !answerSupported &&
-                                interactionMode !== 'chat'
+                                    : explicitAgentAction === 'price'
+                                    ? await this.productAgent.preparePriceChange(
+                                          actionInput,
+                                      )
+                                    : explicitAgentAction === 'content'
+                                      ? await this.productAgent.prepareContentChange(
+                                            actionInput,
+                                        )
+                                      : explicitAgentAction === 'low_stock'
+                                        ? await this.productAgent.prepareLowStock(
+                                              actionInput,
+                                          )
+                                        : await this.inventoryAgent.prepare({
+                                              ...actionInput,
+                                              ...(inventoryFollowUp.kind ===
+                                              'resolved'
+                                                  ? {
+                                                        target: inventoryFollowUp.target,
+                                                    }
+                                                  : {}),
+                                          });
+                            if (preparedAction.kind === 'clarification') {
+                                assistantReply = preparedAction.message;
+                            } else if (
+                                'proposal' in preparedAction ||
+                                'proposalId' in preparedAction
                             ) {
-                                // Unsupported bao gồm cả không có hit và hit không đủ căn cứ; lý do cụ thể được giữ trong metadata.
-                                // Có retrieval hit nhưng cả hai cách evidence đều chưa đủ; không gắn citation và ghi rõ stage abstain.
-                                logSellerCopilotAbstention(
-                                    this.logger,
-                                    requestId,
-                                    'insufficient_evidence',
-                                    answerEvidence.length,
-                                );
-                            }
-
-                            // Retrieval hit chưa chứng minh tài liệu trả lời được câu hỏi; chỉ phát citation sau khi answer xác nhận grounding.
-                            // Nếu model từ chối vì evidence không phù hợp, citations giữ rỗng để UI không gắn nguồn gây hiểu nhầm.
-                            if (answerSupported && answerEvidence.length) {
-                                citations =
-                                    mapSellerCopilotCitations(answerEvidence);
-                                yield { type: 'sources', items: citations };
-                            }
-                            // Chỉ gắn nguồn model xác nhận đã dùng và backend thực sự cấp cho lần trả lời này.
-                            // Nguồn không tải được hoặc chỉ xuất hiện tình cờ trong context không được biến thành provenance.
-                            dataSources = [];
-                            if (answerSupported) {
-                                for (const sourceType of requestedDataSources) {
-                                    // Model không thể gắn nhãn cho dashboard nếu context lần này không có snapshot đã tải thành công.
-                                    if (
-                                        sourceType === 'live_data' &&
-                                        contextData.liveData
-                                    ) {
-                                        dataSources.push({
-                                            kind: 'live_data',
-                                            label: 'Dữ liệu live của shop',
-                                        });
-                                        continue;
-                                    }
-
-                                    // Tương tự, hồ sơ chỉ được ghi nguồn khi account/shop thực sự có trong payload đã xác thực.
-                                    if (
-                                        sourceType === 'seller_profile' &&
-                                        contextData.profile
-                                    ) {
-                                        dataSources.push({
-                                            kind: 'seller_profile',
-                                            label: 'Hồ sơ tài khoản và shop',
-                                        });
-                                    }
-                                }
-                            }
-                            if (dataSources.length) {
+                                const proposal =
+                                    'proposal' in preparedAction
+                                        ? preparedAction.proposal
+                                        : 'proposalId' in preparedAction
+                                          ? {
+                                                id: preparedAction.proposalId,
+                                                payload: preparedAction.payload,
+                                                expiresAt:
+                                                    preparedAction.expiresAt,
+                                            }
+                                          : null;
+                                if (!proposal)
+                                    throw new Error(
+                                        'Proposal action không hợp lệ.',
+                                    );
+                                actionProposalMetadata = {
+                                    proposalId: proposal.id,
+                                    batchId:
+                                        'batchId' in preparedAction
+                                            ? preparedAction.batchId
+                                            : proposal.id,
+                                    payload: proposal.payload,
+                                    expiresAt: proposal.expiresAt.toISOString(),
+                                };
+                                actionProposalsMetadata = [
+                                    {
+                                        ...actionProposalMetadata,
+                                        batchId:
+                                            actionProposalMetadata.batchId ??
+                                            proposal.id,
+                                    },
+                                ];
+                                assistantReply =
+                                    'Mình đã chuẩn bị bản xem trước. Kiểm tra thông tin rồi xác nhận để áp dụng.';
                                 yield {
-                                    type: 'data_sources',
-                                    items: dataSources,
+                                    type: 'action_batch_proposed',
+                                    batchId:
+                                        actionProposalMetadata.batchId ??
+                                        proposal.id,
+                                    proposals: actionProposalsMetadata,
+                                };
+                                if (proposal.payload.kind === 'SET_INVENTORY') {
+                                    // Giữ event cũ cho client đã triển khai trước batch contract; UI mới ưu tiên actionProposals.
+                                    yield {
+                                        type: 'action_proposed',
+                                        proposalId: proposal.id,
+                                        action: {
+                                            kind: 'SET_INVENTORY',
+                                            productId:
+                                                proposal.payload.productId,
+                                            productName:
+                                                proposal.payload.productName,
+                                            variantId:
+                                                proposal.payload.variantId,
+                                            variantName:
+                                                proposal.payload.variantName,
+                                            currentAvailable:
+                                                proposal.payload
+                                                    .expectedAvailable,
+                                            nextAvailable:
+                                                proposal.payload.nextAvailable,
+                                        },
+                                        expiresAt:
+                                            proposal.expiresAt.toISOString(),
+                                    };
+                                }
+                            } else {
+                                actionProposalsMetadata =
+                                    preparedAction.proposals.map(
+                                        (proposal) => ({
+                                            proposalId: proposal.id,
+                                            batchId: preparedAction.batchId,
+                                            payload: proposal.payload,
+                                            expiresAt:
+                                                proposal.expiresAt.toISOString(),
+                                        }),
+                                    );
+                                const skippedCount =
+                                    'skippedCount' in preparedAction
+                                        ? preparedAction.skippedCount
+                                        : 0;
+                                const skippedVariants =
+                                    'skippedVariants' in preparedAction &&
+                                    Array.isArray(
+                                        preparedAction.skippedVariants,
+                                    )
+                                        ? preparedAction.skippedVariants
+                                        : [];
+                                const skippedMessage = skippedVariants.length
+                                    ? ` Đã bỏ qua: ${skippedVariants
+                                          .map(
+                                              ({ name, reason }) =>
+                                                  `${name}: ${reason}`,
+                                          )
+                                          .join(' · ')}`
+                                    : '';
+                                assistantReply = `Mình đã chuẩn bị ${actionProposalsMetadata.length} đề xuất${skippedCount ? `; ${skippedCount} dòng vượt giới hạn lưu kho nên chưa có đề xuất` : ''}.${skippedMessage} Chọn từng dòng hoặc xác nhận các dòng bạn đã chọn.`;
+                                yield {
+                                    type: 'action_batch_proposed',
+                                    batchId: preparedAction.batchId,
+                                    proposals: actionProposalsMetadata,
                                 };
                             }
-                            if (insights.length) {
-                                yield { type: 'insight', items: insights };
-                            }
-                        } catch (error) {
-                            if (signal?.aborted) {
-                                // Hủy do client là control flow, không biến thành lỗi provider hay phát fallback thay cho câu trả lời đang dở.
-                                // Giữ token đã gửi và đánh dấu incomplete; mode/session vẫn phải lưu để history không cắt nhầm phiên.
-                                if (streamedAnswer.trim()) {
-                                    await this.repository.saveMessage({
-                                        conversationId:
-                                            preparedChat.conversationId,
-                                        role: 'assistant',
-                                        content: streamedAnswer,
-                                        metadata: {
-                                            // Khi request bị hủy trước complete, chỉ giữ citation nếu đã có nguồn được xác nhận ở một luồng hợp lệ.
-                                            ...(citations.length
-                                                ? { citations }
-                                                : {}),
-                                            incomplete: true,
-                                            interactionMode,
-                                            modeSessionId:
-                                                preparedChat.modeSessionId,
-                                        },
-                                    });
-                                }
-                                signal.throwIfAborted();
-                            }
-                            this.logger.warn(
-                                JSON.stringify({
-                                    event: 'seller_copilot_answer_stream_failed',
-                                    requestId,
-                                    errorType:
-                                        error instanceof Error
-                                            ? error.name
-                                            : 'unknown_error',
-                                }),
-                            );
-                            // Provider lỗi sau khi stream một phần: thay toàn bộ nội dung ở UI và xóa citation/visual chưa được xác nhận.
-                            assistantReply = COPILOT_ANSWER_FAILED_MESSAGE;
-                            answerStatus = 'provider_error';
-                            answerStatusReason = 'provider_error';
-                            citations = [];
-                            insights = [];
-                            assistantResponseStreamed = true;
-                            yield { type: 'replace', text: assistantReply };
+                        }
+                    }
+                    if (readAnswerReply) {
+                        const actionReply = assistantReply;
+                        const separator = '\n\n';
+                        assistantReply = `${readAnswerReply}${separator}${actionReply}`;
+                        if (readAnswerStreamed) {
+                            // Phần câu trả lời live đã stream xong; nối hướng dẫn preview thành delta cuối để khớp nội dung lưu history.
                             yield {
-                                type: 'warning',
-                                code: 'ANSWER_PROVIDER_UNAVAILABLE',
-                                message:
-                                    'Không thể hoàn tất câu trả lời lúc này. Bạn có thể thử lại.',
+                                type: 'token',
+                                text: `${separator}${actionReply}`,
                             };
                         }
                     }
                 }
+            } else if (answerTasks.length) {
+                // Đọc và mutation dùng cùng pipeline đã xác thực domain; policy của mode quyết định nguồn có được phép gọi hay không.
+                const readResult = yield* this.answerReadTasks({
+                    preparedChat,
+                    request,
+                    interactionMode,
+                    plan,
+                    answerTasks,
+                    history,
+                    shopDataPresentation,
+                    initialReply: assistantReply,
+                    requestId,
+                    signal,
+                });
+                assistantReply = readResult.assistantReply;
+                citations = readResult.citations;
+                dataSources = readResult.dataSources;
+                insights = readResult.insights;
+                answerStatus = readResult.answerStatus;
+                answerStatusReason = readResult.answerStatusReason;
+                assistantResponseStreamed =
+                    readResult.assistantResponseStreamed;
             }
         }
-
         // Kiểm tra lần cuối sát điểm ghi để tránh lưu assistant nếu client vừa hủy trong lúc dựng phản hồi.
         signal?.throwIfAborted();
 
@@ -1040,6 +581,9 @@ export class StreamSellerCopilotUseCase {
                 modeSessionId: preparedChat.modeSessionId,
                 ...(actionProposalMetadata
                     ? { actionProposal: actionProposalMetadata }
+                    : {}),
+                ...(actionProposalsMetadata?.length
+                    ? { actionProposals: actionProposalsMetadata }
                     : {}),
             },
         });
@@ -1065,34 +609,151 @@ export class StreamSellerCopilotUseCase {
         };
     }
 
-    // Tin conversationId từ client chỉ sau khi repository xác nhận đồng thời owner và shop; ID lạ không được tiết lộ.
-    // Không có ID thì tạo hội thoại gắn với tenant do access service resolve, không dùng shopId từ request.
-    private async getOrCreateConversation(
-        ownerUserId: string,
-        shopId: string,
-        conversationId: string | undefined,
-        message: string,
-    ) {
-        // Nếu không có conversationId thì tạo hội thoại mới với title dựa trên message; repository trả về record mới.
-        if (!conversationId) {
-            return this.repository.createConversation({
-                ownerUserId,
-                shopId,
-                title: buildSellerCopilotConversationTitle(message),
-            });
-        }
-
-        // Nếu có conversationId thì tìm hội thoại trong tenant hiện tại; nếu không tìm thấy thì throw lỗi HTTP 404.
-        const conversation = await this.repository.findConversation(
-            { ownerUserId, shopId },
-            conversationId,
+    // Định tuyến, nạp context và tạo câu trả lời cho các task đọc; mutation không bao giờ đi qua helper này.
+    // Tài liệu trong Agent được trả về thành handoff rõ ràng, còn domain lạ dừng trước mọi I/O để fail closed.
+    private async *answerReadTasks(input: {
+        preparedChat: PreparedSellerCopilotChat;
+        request: SellerCopilotRequest;
+        interactionMode: NonNullable<SellerCopilotRequest['interactionMode']>;
+        plan: Parameters<typeof routeSellerCopilotTasks>[0]['plan'];
+        answerTasks: Parameters<
+            typeof routeSellerCopilotTasks
+        >[0]['answerTasks'];
+        history: ReturnType<typeof buildSellerCopilotQuestionHistory>;
+        shopDataPresentation: ReturnType<
+            typeof resolveShopDataPresentation
+        > | null;
+        initialReply: string;
+        requestId: string;
+        signal?: AbortSignal;
+    }): AsyncGenerator<
+        SellerCopilotEvent,
+        GeneratedSellerCopilotAnswer & { blocked: boolean }
+    > {
+        const registry =
+            input.interactionMode === 'chat'
+                ? { domains: [] }
+                : await this.registryProvider.getActiveRegistry();
+        const domainKinds = new Map(
+            registry.domains.map((domain) => [domain.code, domain.kind]),
         );
+        const routing = routeSellerCopilotTasks({
+            plan: input.plan,
+            answerTasks: input.answerTasks,
+            domainKinds,
+            interactionMode: input.interactionMode,
+            originalQuestion: input.request.message,
+        });
+        const defaultResult = (
+            assistantReply: string,
+            blocked: boolean,
+        ): GeneratedSellerCopilotAnswer & { blocked: boolean } => ({
+            assistantReply,
+            citations: [],
+            dataSources: [],
+            insights: [],
+            assistantResponseStreamed: false,
+            blocked,
+        });
 
-        // Nếu không tìm thấy hội thoại thì throw lỗi HTTP 404; không reveal thông tin hội thoại cho client.
-        if (!conversation) {
-            throw new NotFoundException('Conversation không tồn tại.');
+        // Knowledge chỉ được đọc trong mode Tài liệu; Agent báo đúng nơi chuyển đến và không trộn task với dữ liệu shop.
+        if (
+            input.interactionMode === 'agent' &&
+            routing.wrongSourceTasks.some(
+                (task) => domainKinds.get(task.domain ?? '') === 'knowledge',
+            )
+        ) {
+            return defaultResult(
+                'Câu hỏi này cần chính sách hoặc hướng dẫn từ tài liệu. Bạn chuyển sang mode Tài liệu rồi gửi lại nhé.',
+                true,
+            );
         }
 
-        return conversation;
+        const knowledgeModeHandoff =
+            input.interactionMode === 'knowledge'
+                ? resolveKnowledgeModeHandoff(routing.routedTasks, domainKinds)
+                : null;
+        if (knowledgeModeHandoff) {
+            return defaultResult(knowledgeModeHandoff, true);
+        }
+        if (routing.unresolvedTasks.length || routing.wrongSourceTasks.length) {
+            return defaultResult(COPILOT_TEMPORARILY_UNAVAILABLE_MESSAGE, true);
+        }
+
+        // Context loader chỉ nhận task đã route, và tự giới hạn mọi truy vấn theo tenant đã xác thực ở preparedChat.
+        const loadedContext = yield* this.contextLoader.load({
+            preparedChat: input.preparedChat,
+            request: input.request,
+            interactionMode: input.interactionMode,
+            answerTasks: input.answerTasks,
+            routing,
+            shopDataPresentation: input.shopDataPresentation,
+            requestId: input.requestId,
+            signal: input.signal,
+        });
+        let initialReply = input.initialReply;
+        if (loadedContext.contextData.rangeClarification) {
+            // Không âm thầm dùng kỳ mặc định nếu người bán nêu khoảng thời gian backend chưa hỗ trợ.
+            initialReply =
+                'Bạn cho mình biết tháng/năm cần xem hoặc chọn 7, 30, 90 ngày gần nhất nhé. Mình sẽ đối chiếu đúng kỳ bạn muốn.';
+        }
+
+        return {
+            ...(yield* this.answerGenerator.generate({
+                preparedChat: input.preparedChat,
+                request: input.request,
+                interactionMode: input.interactionMode,
+                answerTasks: input.answerTasks,
+                initialReply,
+                history: input.history,
+                context: loadedContext,
+                shopDataPresentation: input.shopDataPresentation,
+                requestId: input.requestId,
+                signal: input.signal,
+            })),
+            blocked: false,
+        };
     }
+}
+
+// @ command cho phép người bán chọn đúng luồng; câu tự nhiên chỉ được nhận khi có mẫu ý định và dữ liệu cần thiết rõ ràng.
+function detectAgentAction(
+    message: string,
+): 'low_stock' | 'inventory' | 'price' | 'content' | 'slow_moving_price' | null {
+    const normalized = message.normalize('NFC').trim().toLocaleLowerCase('vi');
+    const command = normalized.match(
+        /^@(tồn-kho|ton-kho|giá|xả-hàng|xa-hang)(?![\p{L}\p{N}_-])/u,
+    )?.[1];
+    if (command === 'xả-hàng' || command === 'xa-hang') {
+        return 'slow_moving_price';
+    }
+    if (command === 'giá') return 'price';
+    if (command === 'tồn-kho' || command === 'ton-kho') {
+        // Có @tồn-kho thì động từ thay đổi luôn đi vào luồng chỉnh một target;
+        // sau khi chọn biến thể, “lên N” cũng là target rõ dù không lặp động từ.
+        // Chỉ câu không có động từ hoặc mức đích mới được hiểu là rà toàn bộ hàng sắp hết.
+        return /(?:tăng|giảm|đặt|cập nhật|chỉnh)(?=\s)/u.test(normalized) ||
+            /(?:^|\s)(?:lên|về|thành|xuống|bằng)\s*\d+\s*[.!?]*$/u.test(
+                normalized,
+            )
+            ? 'inventory'
+            : 'low_stock';
+    }
+    if (
+        /(?:đổi|chỉnh|cập nhật) giá/u.test(normalized) &&
+        /(?:sku|thành|là)\b/u.test(normalized)
+    )
+        return 'price';
+    if (/(?:đổi|sửa|cập nhật) (?:tên|mô tả)/u.test(normalized))
+        return 'content';
+    if (/(?:sắp hết hàng|tồn kho thấp|bổ sung hàng)/u.test(normalized))
+        return 'low_stock';
+    if (
+        /(?:xả hàng|hàng tồn lâu|bán chậm|tồn kho.*(?:bán chậm|ít bán))/u.test(
+            normalized,
+        )
+    ) {
+        return 'slow_moving_price';
+    }
+    return null;
 }

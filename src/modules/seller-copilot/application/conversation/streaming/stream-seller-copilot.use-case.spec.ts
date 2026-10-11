@@ -6,6 +6,9 @@ import type {
     SellerCopilotRequest,
 } from '@/modules/seller-copilot/application/conversation/types/seller-copilot.types';
 import { StreamSellerCopilotUseCase } from '@/modules/seller-copilot/application/conversation/streaming/stream-seller-copilot.use-case';
+import { LoadSellerCopilotContextService } from '@/modules/seller-copilot/application/conversation/streaming/services/load-seller-copilot-context.service';
+import { GenerateGroundedSellerAnswerService } from '@/modules/seller-copilot/application/conversation/streaming/services/generate-grounded-seller-answer.service';
+import { PrepareSellerCopilotChatUseCase } from '@/modules/seller-copilot/application/conversation/streaming/prepare-seller-copilot-chat.use-case';
 import type { SellerCopilotAccessService } from '@/modules/seller-copilot/application/conversation/access/seller-copilot-access.service';
 import type { ConversationModeSessionService } from '@/modules/seller-copilot/application/conversation/mode-session/conversation-mode-session.service';
 import type { SellerQuestionUnderstandingService } from '@/modules/seller-copilot/application/question-understanding/shared/planner/seller-question-understanding.service';
@@ -14,6 +17,7 @@ import type { SellerCopilotAnswerPort } from '@/modules/seller-copilot/applicati
 import type { SellerDashboardService } from '@/modules/seller-dashboard/application/services/seller-dashboard.service';
 import type { AuthUserClient } from '@/modules/shop-profile/application/clients/auth-user.client';
 import type { SellerInventoryAgentService } from '@/modules/seller-copilot/application/modes/agent/services/seller-inventory-agent.service';
+import type { SellerProductAgentService } from '@/modules/seller-copilot/application/modes/agent/services/seller-product-agent.service';
 import type { SellerQuestionCapabilityRegistryProvider } from '@/modules/seller-copilot/application/question-understanding/shared/registry/seller-question-capability-registry.types';
 
 describe('StreamSellerCopilotUseCase', () => {
@@ -29,6 +33,13 @@ describe('StreamSellerCopilotUseCase', () => {
         searchProducts: jest.Mock;
         getProductCatalog: jest.Mock;
     };
+    let mockProductAgent: Pick<
+        SellerProductAgentService,
+        | 'preparePriceChange'
+        | 'prepareContentChange'
+        | 'prepareLowStock'
+        | 'prepareSlowMovingPriceChange'
+    >;
     let mockRegistry: { getActiveRegistry: jest.Mock };
     let mockRepository: {
         findConversation: jest.Mock;
@@ -76,6 +87,12 @@ describe('StreamSellerCopilotUseCase', () => {
             }),
             saveMessage: jest.fn().mockResolvedValue(undefined),
             findMessagesByConversation: jest.fn().mockResolvedValue([]),
+        };
+        mockProductAgent = {
+            preparePriceChange: jest.fn(),
+            prepareContentChange: jest.fn(),
+            prepareLowStock: jest.fn(),
+            prepareSlowMovingPriceChange: jest.fn(),
         };
         mockModeSessions = {
             resolveForChat: jest.fn().mockResolvedValue({
@@ -131,16 +148,27 @@ describe('StreamSellerCopilotUseCase', () => {
             }),
         };
         target = new StreamSellerCopilotUseCase(
-            mockAccess as unknown as SellerCopilotAccessService,
+            new PrepareSellerCopilotChatUseCase(
+                mockAccess as unknown as SellerCopilotAccessService,
+                mockRepository as unknown as SellerCopilotRepositoryPort,
+                mockModeSessions as unknown as ConversationModeSessionService,
+            ),
             mockUnderstanding as unknown as SellerQuestionUnderstandingService,
-            mockKnowledgeRetrieval as unknown as SellerKnowledgeRetrievalService,
-            mockDashboard as unknown as SellerDashboardService,
-            mockAuthUser as unknown as AuthUserClient,
             mockInventoryAgent as unknown as SellerInventoryAgentService,
+            mockProductAgent as unknown as SellerProductAgentService,
+            new LoadSellerCopilotContextService(
+                mockKnowledgeRetrieval as unknown as SellerKnowledgeRetrievalService,
+                mockDashboard as unknown as SellerDashboardService,
+                mockAuthUser as unknown as AuthUserClient,
+                mockInventoryAgent as unknown as SellerInventoryAgentService,
+            ),
+            new GenerateGroundedSellerAnswerService(
+                mockAnswer as unknown as SellerCopilotAnswerPort,
+                mockKnowledgeRetrieval as unknown as SellerKnowledgeRetrievalService,
+                mockRepository as unknown as SellerCopilotRepositoryPort,
+            ),
             mockRegistry as unknown as SellerQuestionCapabilityRegistryProvider,
-            mockAnswer as unknown as SellerCopilotAnswerPort,
             mockRepository as unknown as SellerCopilotRepositoryPort,
-            mockModeSessions as unknown as ConversationModeSessionService,
         );
     });
 
@@ -2026,7 +2054,7 @@ describe('StreamSellerCopilotUseCase', () => {
             events.some(
                 (event) =>
                     event.type === 'token' &&
-                    event.text.includes('chưa tải được hồ sơ'),
+                    /chưa tải được.*hồ sơ/iu.test(event.text),
             ),
         ).toBe(true);
     });
@@ -2072,10 +2100,10 @@ describe('StreamSellerCopilotUseCase', () => {
         ).toBe(true);
     });
 
-    // Chế độ @BinGPT chỉ tạo preview sau khi planner phân loại đúng lệnh; bước này không được ghi tồn kho.
+    // Chọn SKU kèm mức đích ở lượt làm rõ phải đi tới một target cụ thể, không rà hàng sắp hết toàn shop.
     it('prepares an agent inventory proposal without writing inventory', async () => {
         const request = {
-            message: '@BinGPT đặt tồn Áo xanh size M thành 12',
+            message: '@tồn-kho Áo xanh size M (SKU SKU-1, còn 7) lên 12',
             interactionMode: 'agent' as const,
         };
         const preparedChat = await prepareChat(request);
@@ -2097,6 +2125,7 @@ describe('StreamSellerCopilotUseCase', () => {
             kind: 'proposal',
             proposalId: 'proposal-1',
             payload: {
+                kind: 'SET_INVENTORY',
                 productId: 'product-1',
                 productName: 'Áo xanh',
                 variantId: 'variant-1',
@@ -2118,6 +2147,7 @@ describe('StreamSellerCopilotUseCase', () => {
             conversationId: 'conversation-1',
             message: request.message,
         });
+        expect(mockProductAgent.prepareLowStock).not.toHaveBeenCalled();
         expect(
             events.find((event) => event.type === 'action_proposed'),
         ).toMatchObject({
@@ -2132,5 +2162,347 @@ describe('StreamSellerCopilotUseCase', () => {
         expect(mockAnswer.stream).not.toHaveBeenCalled();
         expect(mockDashboard.getOverview).not.toHaveBeenCalled();
         expect(mockKnowledgeRetrieval.retrieve).not.toHaveBeenCalled();
+    });
+
+    // Lệnh riêng xả hàng phải route đúng bộ lọc chuyên biệt, không rơi về cập nhật giá SKU trực tiếp.
+    it('routes the @xả-hàng command to slow-moving price recommendations', async () => {
+        const request = {
+            message:
+                '@xả-hàng tồn ít nhất 10, bán tối đa 2 trong 30 ngày, giảm 10%, giá sàn 150.000đ',
+            interactionMode: 'agent' as const,
+        };
+        const preparedChat = await prepareChat(request);
+        mockUnderstanding.understand.mockResolvedValue({
+            status: 'READY',
+            contextRelation: 'NEW_TOPIC',
+            tasks: [
+                {
+                    requestType: 'CHANGE_REQUEST',
+                    domain: 'seller-products-inventory',
+                    resolvedQuestion: request.message,
+                },
+            ],
+            clarificationQuestion: null,
+            failureReason: null,
+        });
+        (mockProductAgent.prepareSlowMovingPriceChange as jest.Mock).mockResolvedValue({
+            kind: 'clarification',
+            message: 'Thiếu tiêu chí.',
+        });
+
+        for await (const _event of target.execute(preparedChat, request)) {
+            // Tiêu thụ stream để thực thi trọn nhánh điều phối.
+        }
+
+        expect(
+            mockProductAgent.prepareSlowMovingPriceChange,
+        ).toHaveBeenCalledWith({
+            ownerUserId: 'owner-1',
+            shopId: 'shop-1',
+            conversationId: 'conversation-1',
+            message: request.message,
+        });
+        expect(mockProductAgent.preparePriceChange).not.toHaveBeenCalled();
+        expect(mockInventoryAgent.prepare).not.toHaveBeenCalled();
+    });
+
+    // Nếu planner hiểu command rõ ràng thành READ_QUERY, Agent vẫn phải dùng bộ lọc xả hàng và không trả danh sách chưa xác minh.
+    it('routes explicit @xả-hàng to the specialized preview when planner labels it as a live read', async () => {
+        const request = {
+            message:
+                '@xả-hàng Tìm SKU đang bán, còn ít nhất 10 sản phẩm và bán tối đa 2 trong 30 ngày qua. Đề xuất giảm giá 10%, giá sau giảm không được thấp hơn 150.000đ. Tạo bản xem trước, chưa áp dụng.',
+            interactionMode: 'agent' as const,
+        };
+        const preparedChat = await prepareChat(request);
+        mockUnderstanding.understand.mockResolvedValue({
+            status: 'READY',
+            contextRelation: 'NEW_TOPIC',
+            tasks: [
+                {
+                    requestType: 'READ_QUERY',
+                    domain: 'seller-products-inventory',
+                    resolvedQuestion: request.message,
+                },
+            ],
+            clarificationQuestion: null,
+            failureReason: null,
+        });
+        (mockProductAgent.prepareSlowMovingPriceChange as jest.Mock).mockResolvedValue({
+            kind: 'clarification',
+            message: 'Đã nhận đủ điều kiện và bắt đầu lọc SKU.',
+        });
+
+        for await (const _event of target.execute(preparedChat, request)) {
+            // Tiêu thụ stream để kiểm tra định tuyến thực tế trong use case.
+        }
+
+        expect(
+            mockProductAgent.prepareSlowMovingPriceChange,
+        ).toHaveBeenCalledWith({
+            ownerUserId: 'owner-1',
+            shopId: 'shop-1',
+            conversationId: 'conversation-1',
+            message: request.message,
+        });
+        expect(mockAnswer.stream).not.toHaveBeenCalled();
+        expect(mockProductAgent.preparePriceChange).not.toHaveBeenCalled();
+        expect(mockInventoryAgent.prepare).not.toHaveBeenCalled();
+    });
+
+    // Câu trả lời “90 nha” sau khi Agent hỏi kỳ phải tiếp tục lệnh xả hàng trong cùng mode session.
+    it('routes a period-only reply with the prior clearance criteria in the same Agent session', async () => {
+        const request = {
+            message: '90 nha',
+            interactionMode: 'agent' as const,
+        };
+        const preparedChat = await prepareChat(request);
+        mockRepository.findMessagesByConversation.mockResolvedValue([
+            {
+                id: 'user-clearance',
+                conversationId: 'conversation-1',
+                role: 'user',
+                content:
+                    '@xả-hàng tồn ít nhất 20, bán tối đa 1 trong 60 ngày, giảm 10%, giá sàn 150.000đ',
+                metadata: {
+                    interactionMode: 'agent',
+                    modeSessionId: preparedChat.modeSessionId,
+                },
+                createdAt: new Date('2026-10-11T10:00:00.000Z'),
+            },
+            {
+                id: 'assistant-period-clarification',
+                conversationId: 'conversation-1',
+                role: 'assistant',
+                content:
+                    'Kỳ thống kê chỉ hỗ trợ 7, 30 hoặc 90 ngày. Bạn chọn một kỳ này giúp mình nhé.',
+                metadata: {
+                    interactionMode: 'agent',
+                    modeSessionId: preparedChat.modeSessionId,
+                },
+                createdAt: new Date('2026-10-11T10:01:00.000Z'),
+            },
+        ]);
+        mockUnderstanding.understand.mockResolvedValue({
+            status: 'READY',
+            contextRelation: 'FOLLOW_UP',
+            tasks: [],
+            clarificationQuestion: null,
+            failureReason: null,
+        });
+        (mockProductAgent.prepareSlowMovingPriceChange as jest.Mock).mockResolvedValue({
+            kind: 'clarification',
+            message: 'Đã nhận đủ tiêu chí.',
+        });
+
+        for await (const _event of target.execute(preparedChat, request)) {
+            // Tiêu thụ stream để kiểm tra backend định tuyến tiếp câu trả lời kỳ thống kê.
+        }
+
+        expect(
+            mockProductAgent.prepareSlowMovingPriceChange,
+        ).toHaveBeenCalledWith({
+            ownerUserId: 'owner-1',
+            shopId: 'shop-1',
+            conversationId: 'conversation-1',
+            message: 'trong 90 ngày',
+            contextMessages: [
+                '@xả-hàng tồn ít nhất 20, bán tối đa 1 trong 60 ngày, giảm 10%, giá sàn 150.000đ',
+            ],
+        });
+        expect(mockProductAgent.prepareLowStock).not.toHaveBeenCalled();
+        expect(mockInventoryAgent.prepare).not.toHaveBeenCalled();
+    });
+
+    // Đại từ chỉ biến thể được lấy từ LOW_STOCK card gần nhất của đúng Agent session rồi truyền xuống service theo ID.
+    it('passes the uniquely referenced low-stock variant to the inventory agent', async () => {
+        const request = {
+            message:
+                '@tồn-kho hãy tăng tồn kho của sản phẩm này lên 7 sản phẩm',
+            interactionMode: 'agent' as const,
+        };
+        const preparedChat = await prepareChat(request);
+        mockRepository.findMessagesByConversation.mockResolvedValue([
+            {
+                id: 'assistant-low-stock',
+                conversationId: 'conversation-1',
+                role: 'assistant',
+                content: 'Áo xanh size M đang hết hàng.',
+                metadata: {
+                    interactionMode: 'agent',
+                    modeSessionId: preparedChat.modeSessionId,
+                    insights: [
+                        {
+                            type: 'LOW_STOCK',
+                            productId: 'product-1',
+                            variantId: 'variant-1',
+                            name: 'Áo xanh',
+                            variantName: 'M',
+                            sku: 'SKU-1',
+                            sellerSku: 'SELLER-SKU-1',
+                            stock: 0,
+                            thumbnailUrl: null,
+                        },
+                    ],
+                },
+                createdAt: new Date('2026-10-08T10:00:00.000Z'),
+            },
+        ]);
+        mockUnderstanding.understand.mockResolvedValue({
+            status: 'READY',
+            contextRelation: 'FOLLOW_UP',
+            tasks: [
+                {
+                    requestType: 'CHANGE_REQUEST',
+                    domain: 'seller-products-inventory',
+                    resolvedQuestion: 'tăng tồn kho lên 7',
+                },
+            ],
+            clarificationQuestion: null,
+            failureReason: null,
+        });
+        mockInventoryAgent.prepare.mockResolvedValue({
+            kind: 'clarification',
+            message: 'Đã xác định đúng biến thể.',
+        });
+
+        for await (const _event of target.execute(preparedChat, request)) {
+            // Tiêu thụ stream để chạy toàn bộ nhánh điều phối.
+        }
+
+        expect(mockInventoryAgent.prepare).toHaveBeenCalledWith({
+            ownerUserId: 'owner-1',
+            shopId: 'shop-1',
+            conversationId: 'conversation-1',
+            message: request.message,
+            target: {
+                productId: 'product-1',
+                productName: 'Áo xanh',
+                variantId: 'variant-1',
+                variantName: 'M',
+                sku: 'SKU-1',
+                sellerSku: 'SELLER-SKU-1',
+            },
+        });
+    });
+
+    // Một lượt Agent có thể đọc doanh thu trước, sau đó tạo proposal giá; event và history giữ đủ cả hai kết quả.
+    it('answers a live read before proposing one product change in Agent mode', async () => {
+        const request = {
+            message:
+                '@giá Doanh thu shop 30 ngày qua bao nhiêu và đổi SKU đó thành 199.000đ?',
+            interactionMode: 'agent' as const,
+        };
+        const preparedChat = await prepareChat(request);
+        mockUnderstanding.understand.mockResolvedValue({
+            status: 'READY',
+            contextRelation: 'NEW_TOPIC',
+            tasks: [
+                {
+                    requestType: 'READ_QUERY',
+                    domain: 'seller-revenue',
+                    resolvedQuestion:
+                        'Doanh thu shop 30 ngày qua là bao nhiêu?',
+                    shopDataIntent: 'revenue_total',
+                },
+                {
+                    requestType: 'CHANGE_REQUEST',
+                    domain: 'seller-products-inventory',
+                    resolvedQuestion: 'Đổi giá SKU SKU-1 thành 199.000đ.',
+                    shopDataIntent: null,
+                },
+            ],
+            clarificationQuestion: null,
+            failureReason: null,
+        });
+        mockDashboard.getOverview.mockResolvedValue({
+            generatedAt: '2026-10-08T00:00:00.000Z',
+            timezone: 'Asia/Ho_Chi_Minh',
+            range: { from: '2026-09-08', to: '2026-10-08' },
+            kpis: {
+                grossRevenue: 555000,
+                grossRevenuePreviousPeriod: 400000,
+                grossRevenueChangePercent: 38.75,
+            },
+            revenueTrend: [
+                { date: '2026-10-07', grossRevenue: 555000, orderCount: 3 },
+            ],
+        });
+        mockAnswer.stream.mockImplementation(async function* () {
+            yield { type: 'delta', text: 'Doanh thu là 555.000 đồng.' };
+            yield {
+                type: 'complete',
+                answer: 'Doanh thu là 555.000 đồng.',
+                supported: true,
+                visualizations: ['revenue_trend'],
+                sourcesUsed: ['live_data'],
+            };
+        });
+        const expiresAt = new Date('2026-10-08T00:10:00.000Z');
+        (mockProductAgent.preparePriceChange as jest.Mock).mockResolvedValue({
+            kind: 'proposals',
+            batchId: 'batch-price-1',
+            proposals: [
+                {
+                    id: 'proposal-price-1',
+                    payload: {
+                        kind: 'SET_VARIANT_PRICE',
+                        productId: 'product-1',
+                        productName: 'Áo thể thao',
+                        variantId: 'variant-1',
+                        variantName: 'Đen / M',
+                        expectedPrice: 150000,
+                        nextPrice: 199000,
+                    },
+                    expiresAt,
+                },
+            ],
+        });
+        const events: SellerCopilotEvent[] = [];
+
+        for await (const event of target.execute(preparedChat, request)) {
+            events.push(event);
+        }
+
+        expect(mockDashboard.getOverview).toHaveBeenCalledWith(
+            'owner-1',
+            '30d',
+        );
+        expect(mockProductAgent.preparePriceChange).toHaveBeenCalledWith({
+            ownerUserId: 'owner-1',
+            shopId: 'shop-1',
+            conversationId: 'conversation-1',
+            message: 'Đổi giá SKU SKU-1 thành 199.000đ.',
+        });
+        expect(mockKnowledgeRetrieval.retrieve).not.toHaveBeenCalled();
+        expect(events.some((event) => event.type === 'data_sources')).toBe(
+            true,
+        );
+        expect(
+            events.find((event) => event.type === 'action_batch_proposed'),
+        ).toMatchObject({ batchId: 'batch-price-1' });
+        expect(events.filter((event) => event.type === 'token')).toEqual([
+            { type: 'token', text: 'Doanh thu là 555.000 đồng.' },
+            {
+                type: 'token',
+                text: '\n\nMình đã chuẩn bị 1 đề xuất. Chọn từng dòng hoặc xác nhận các dòng bạn đã chọn.',
+            },
+        ]);
+        expect(mockRepository.saveMessage).toHaveBeenLastCalledWith(
+            expect.objectContaining({
+                content: expect.stringContaining(
+                    'Doanh thu là 555.000 đồng.\n\nMình đã chuẩn bị 1 đề xuất',
+                ),
+                metadata: expect.objectContaining({
+                    dataSources: [
+                        { kind: 'live_data', label: 'Dữ liệu live của shop' },
+                    ],
+                    actionProposals: [
+                        expect.objectContaining({
+                            proposalId: 'proposal-price-1',
+                        }),
+                    ],
+                }),
+            }),
+        );
     });
 });
