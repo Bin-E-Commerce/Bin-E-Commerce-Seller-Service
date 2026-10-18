@@ -87,6 +87,22 @@ export class ShopProfileService {
         };
     }
 
+    // Trả thông tin ngân hàng chưa che chỉ cho chủ shop có quyền tài chính; Gateway không proxy route này ra ngoài.
+    async getPayoutAccount(currentUser: ShopUserContext) {
+        const user = this.access.ensureCanReadPayoutAccount(currentUser);
+        const shop = await this.ownership.findOwnedShopOrThrow(user.userId);
+        const compliance = await this.complianceProfiles.findByShopIdOrThrow(
+            shop.id,
+        );
+        return {
+            shopId: shop.id,
+            bankCode: compliance.bankCode,
+            bankName: compliance.bankName,
+            accountHolder: compliance.bankAccountHolderName,
+            accountNumber: compliance.bankAccountNumber,
+        };
+    }
+
     // Cập nhật ngay các trường công khai; slug, ngành hàng và dữ liệu compliance không xuất hiện trong DTO này.
     async updateMine(
         currentUser: ShopUserContext,

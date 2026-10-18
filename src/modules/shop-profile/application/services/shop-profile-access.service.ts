@@ -30,6 +30,15 @@ export class ShopProfileAccessService {
         );
     }
 
+    // Quyền finance cho phép chủ shop đọc đúng số tài khoản của mình để chốt snapshot khi gửi yêu cầu rút.
+    ensureCanReadPayoutAccount(currentUser: ShopUserContext): ShopUserContext {
+        return this.ensurePermission(
+            currentUser,
+            Permission.SELLER_FINANCE_READ,
+            'Bạn không có quyền xem tài khoản nhận tiền của shop.',
+        );
+    }
+
     // Tách quyền cập nhật khỏi quyền đọc để có thể cấp tài khoản nhân viên shop chỉ được xem trong tương lai.
     ensureCanUpdate(currentUser: ShopUserContext): ShopUserContext {
         return this.ensurePermission(

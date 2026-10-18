@@ -15,6 +15,14 @@ export class ShopProfileController {
         return this.shopProfileService.getMine(currentUser);
     }
 
+    // Chỉ Order Service gọi theo identity seller và permission finance; raw tài khoản không được thêm vào hồ sơ thông thường.
+    @Get('payout-account')
+    getPayoutAccount(@Headers() headers: Record<string, unknown>) {
+        const currentUser =
+            this.shopProfileService.buildCurrentUserFromHeaders(headers);
+        return this.shopProfileService.getPayoutAccount(currentUser);
+    }
+
     // Chỉ nhận whitelist trường công khai có thể chỉnh sửa và không cho frontend truyền ownerUserId hoặc trạng thái shop.
     @Patch()
     updateMine(
