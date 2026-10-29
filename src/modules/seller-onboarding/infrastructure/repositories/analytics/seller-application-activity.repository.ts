@@ -7,12 +7,10 @@ import type {
 } from '@/modules/seller-onboarding/application/contracts/seller-application-activity.repository';
 
 @Injectable()
-export class SellerApplicationActivityRepository
-    implements SellerApplicationActivityRepositoryPort
-{
+export class SellerApplicationActivityRepository implements SellerApplicationActivityRepositoryPort {
     constructor(private readonly dataSource: DataSource) {}
 
-    // submitted_at chỉ được gán khi gửi duyệt; ngày hiển thị dùng giờ Việt Nam còn bộ lọc giữ timestamp index-friendly.
+    // Nhóm/định dạng cùng ngày giờ Việt Nam; submitted_at chỉ có khi gửi duyệt và bộ lọc vẫn tận dụng index.
     async getSubmittedApplicationsDaily(
         from: string,
         to: string,
@@ -20,7 +18,7 @@ export class SellerApplicationActivityRepository
         return this.dataSource.query(
             `
                 SELECT
-                    TO_CHAR(application.submitted_at AT TIME ZONE 'Asia/Ho_Chi_Minh', 'YYYY-MM-DD') AS day,
+                    TO_CHAR((application.submitted_at AT TIME ZONE 'Asia/Ho_Chi_Minh')::date, 'YYYY-MM-DD') AS day,
                     COUNT(*)::int AS count
                 FROM seller_applications application
                 WHERE application.submitted_at IS NOT NULL
