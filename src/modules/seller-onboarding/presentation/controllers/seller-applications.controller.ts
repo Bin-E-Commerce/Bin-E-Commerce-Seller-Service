@@ -10,7 +10,9 @@ import {
     Query,
 } from '@nestjs/common';
 import { SellerApplicationsService } from '@/modules/seller-onboarding/application/services/seller-applications.service';
+import { SellerApplicationActivityService } from '@/modules/seller-onboarding/application/services/seller-application-activity.service';
 import { ListSellerApplicationsQueryDto } from '@/modules/seller-onboarding/presentation/dto/list-seller-applications-query.dto';
+import { SellerApplicationActivityQueryDto } from '@/modules/seller-onboarding/presentation/dto/seller-application-activity-query.dto';
 import { RejectSellerApplicationDto } from '@/modules/seller-onboarding/presentation/dto/reject-seller-application.dto';
 import { SaveSellerApplicationDto } from '@/modules/seller-onboarding/presentation/dto/save-seller-application.dto';
 
@@ -19,6 +21,7 @@ export class SellerApplicationsController {
     // Controller chỉ chuyển HTTP input thành application call; toàn bộ auth và business rule nằm trong provider bên dưới.
     constructor(
         private readonly sellerApplicationsService: SellerApplicationsService,
+        private readonly sellerApplicationActivityService: SellerApplicationActivityService,
     ) {}
 
     // Lấy hồ sơ seller của user đang đăng nhập để FE khôi phục nháp hoặc hiển thị trạng thái chờ duyệt.
@@ -38,6 +41,21 @@ export class SellerApplicationsController {
         const currentUser =
             this.sellerApplicationsService.buildCurrentUserFromHeaders(headers);
         return this.sellerApplicationsService.listForAdmin(currentUser, query);
+    }
+
+    // Trả số lượt gửi hồ sơ theo ngày sau khi kiểm tra permission staff như route danh sách admin.
+    @Get('admin/activity')
+    getActivityForAdmin(
+        @Headers() headers: Record<string, unknown>,
+        @Query() query: SellerApplicationActivityQueryDto,
+    ) {
+        const currentUser =
+            this.sellerApplicationsService.buildCurrentUserFromHeaders(headers);
+        return this.sellerApplicationActivityService.getSubmittedApplicationsDaily(
+            currentUser,
+            query.from,
+            query.to,
+        );
     }
 
     // Lấy đầy đủ một hồ sơ theo id để trang chi tiết admin không phải suy luận từ dữ liệu bảng phân trang.

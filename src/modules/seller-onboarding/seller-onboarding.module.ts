@@ -12,6 +12,9 @@ import { SellerApplicationsService } from '@/modules/seller-onboarding/applicati
 import { SellerApplicationValidatorService } from '@/modules/seller-onboarding/application/services/seller-application-validator.service';
 import { SellerApplicationCorrectionService } from '@/modules/seller-onboarding/application/services/seller-application-correction.service';
 import { SellerApplicationsController } from '@/modules/seller-onboarding/presentation/controllers/seller-applications.controller';
+import { SellerApplicationActivityService } from '@/modules/seller-onboarding/application/services/seller-application-activity.service';
+import { SellerApplicationActivityRepository } from '@/modules/seller-onboarding/infrastructure/repositories/analytics/seller-application-activity.repository';
+import { SELLER_APPLICATION_ACTIVITY_REPOSITORY } from '@/modules/seller-onboarding/application/contracts/seller-application-activity.repository';
 
 @Module({
     imports: [
@@ -27,6 +30,12 @@ import { SellerApplicationsController } from '@/modules/seller-onboarding/presen
     controllers: [SellerApplicationsController],
     providers: [
         SellerApplicationsService,
+        SellerApplicationActivityService,
+        SellerApplicationActivityRepository,
+        {
+            provide: SELLER_APPLICATION_ACTIVITY_REPOSITORY,
+            useExisting: SellerApplicationActivityRepository,
+        },
         SellerApplicationAuthService,
         SellerApplicationEventsService,
         SellerApplicationMapper,
