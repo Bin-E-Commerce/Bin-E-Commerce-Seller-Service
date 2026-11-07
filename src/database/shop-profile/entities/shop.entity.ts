@@ -72,6 +72,10 @@ export class Shop {
     })
     status: ShopStatus;
 
+    // Phân biệt shop tạm ngưng vì nợ ví với shop bị admin đóng hoặc khóa thủ công.
+    @Column({ name: 'finance_locked', type: 'boolean', default: false })
+    financeLocked: boolean;
+
     // Counter được cập nhật cùng transaction với quan hệ follow để header shop đọc nhanh và không phải COUNT mỗi request.
     @Column({ name: 'follower_count', type: 'int', default: 0 })
     followerCount: number;

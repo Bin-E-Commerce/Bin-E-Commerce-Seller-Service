@@ -19,8 +19,12 @@ import { ShopProfileChangeRequestController } from '@/modules/shop-profile/prese
 import { ShopProfileController } from '@/modules/shop-profile/presentation/controllers/shop-profile.controller';
 import { ShopShippingSettingsController } from '@/modules/shop-profile/presentation/controllers/shop-shipping-settings.controller';
 import { ShopShippingSettingsService } from '@/modules/shop-profile/application/services/shop-shipping-settings.service';
-import { InternalShopShippingController } from '@/modules/shop-profile/presentation/controllers/internal-shop-shipping.controller';
-import { InternalShopProfileController } from '@/modules/shop-profile/presentation/controllers/internal-shop-profile.controller';
+import { InternalShopShippingController } from '@/modules/shop-profile/presentation/controllers/internal/internal-shop-shipping.controller';
+import { InternalShopProfileController } from '@/modules/shop-profile/presentation/controllers/internal/internal-shop-profile.controller';
+import { InternalShopFinanceController } from '@/modules/shop-profile/presentation/controllers/internal/internal-shop-finance.controller';
+import { ShopFinanceLockService } from '@/modules/shop-profile/application/services/finance/shop-finance-lock.service';
+import { ShopFinanceLockRepository } from '@/modules/shop-profile/infrastructure/repositories/shop-finance-lock.repository';
+import { SHOP_FINANCE_LOCK_REPOSITORY } from '@/modules/shop-profile/application/contracts/shop-finance-lock.repository';
 import { ProductCatalogClient } from '@/modules/shop-profile/application/clients/product-catalog.client';
 import { AuthUserClient } from '@/modules/shop-profile/application/clients/auth-user.client';
 import { PublicShopService } from '@/modules/shop-profile/application/services/public-shop.service';
@@ -47,6 +51,7 @@ import { ShopFollow } from '@/database/shop-profile/entities/shop-follow.entity'
         ShopShippingSettingsController,
         InternalShopShippingController,
         InternalShopProfileController,
+        InternalShopFinanceController,
         PublicShopController,
     ],
     providers: [
@@ -60,6 +65,12 @@ import { ShopFollow } from '@/database/shop-profile/entities/shop-follow.entity'
         ProductCatalogClient,
         AuthUserClient,
         PublicShopService,
+        ShopFinanceLockService,
+        ShopFinanceLockRepository,
+        {
+            provide: SHOP_FINANCE_LOCK_REPOSITORY,
+            useExisting: ShopFinanceLockRepository,
+        },
     ],
     exports: [
         ShopOwnershipService,
