@@ -3,9 +3,9 @@ documentId: returns-refunds-policy
 title: Quy trình yêu cầu trả hàng và hoàn tiền
 domain: returns-refunds
 language: vi
-version: 2026.09.30
+version: 2026.11.08
 status: published
-effectiveFrom: 2026-09-30
+effectiveFrom: 2026-11-08
 effectiveTo:
 sourceType: internal-implementation
 sourceRef: order-service/returns
@@ -27,10 +27,11 @@ không tự xác nhận tiền đã được chuyển đến người mua.
 
 ## Điều kiện và cách gửi yêu cầu
 
-Người mua có thể tạo yêu cầu khi đơn đã giao (`DELIVERED`) hoặc hoàn tất
-(`COMPLETED`). Nếu đơn có `returnWindowUntil`, hệ thống từ chối yêu cầu sau mốc
-này. Nếu đơn không có mốc đó, kiểm tra thời hạn này không được áp dụng; không nên
-tự suy ra một số ngày chung cho mọi đơn.
+Người mua chỉ có thể tạo yêu cầu khi đơn đã giao (`DELIVERED`) và chưa xác nhận
+hoàn thành. Khi khách chuyển đơn sang `COMPLETED`, hệ thống không nhận yêu cầu
+hoàn mới nữa, kể cả khi `returnWindowUntil` còn ở tương lai. Với đơn
+`DELIVERED`, nếu có `returnWindowUntil`, hệ thống từ chối yêu cầu sau mốc này;
+nếu không có mốc đó, kiểm tra thời hạn không được áp dụng.
 
 Mỗi yêu cầu phải chọn ít nhất một sản phẩm thuộc đơn hàng và chỉ được gom sản
 phẩm của cùng một shop. Với các lý do hàng bị hỏng, giao sai, thiếu hàng hoặc
