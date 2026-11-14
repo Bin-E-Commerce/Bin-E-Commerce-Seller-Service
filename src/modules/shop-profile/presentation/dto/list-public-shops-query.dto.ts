@@ -2,11 +2,20 @@
 // DTO không chứa thông tin riêng tư; service chỉ dùng các field này để đọc shop đang hoạt động.
 
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+    IsInt,
+    IsOptional,
+    IsString,
+    Max,
+    MaxLength,
+    Min,
+} from 'class-validator';
 
 export class ListPublicShopsQueryDto {
+    // Giới hạn query để chi phí ILIKE không tăng theo chuỗi đầu vào tùy ý.
     @IsOptional()
     @IsString()
+    @MaxLength(120)
     search?: string;
 
     @IsOptional()

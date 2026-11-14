@@ -20,6 +20,11 @@ import { AuthUserClient } from '@/modules/shop-profile/application/clients/auth-
 
 const ONLINE_WINDOW_MS = 5 * 60 * 1000;
 
+// Dùng ! làm ký tự ESCAPE để `%` và `_` do người dùng nhập được tìm như ký tự thường.
+function escapeShopSearchPattern(value: string): string {
+    return value.replace(/[!%_]/g, '!$&');
+}
+
 // Application service gom read model shop và transaction follow, không để controller chứa nghiệp vụ.
 @Injectable()
 export class PublicShopService {
@@ -34,8 +39,11 @@ export class PublicShopService {
         private readonly authUserClient: AuthUserClient,
     ) {}
 
-    // Đọc danh sách shop active theo một query phân trang và một query pickup address batch.
-    // Không gọi auth-service theo từng shop vì màn hình khám phá không cần trạng thái online chính xác; điều này giữ endpoint nhẹ khi số shop tăng.
+    // Đọc shop active theo trang và tải pickup address theo lô để tránh N+1.
+    // Có query thì escape pattern và ưu tiên tên/slug chính xác, tiền tố,
+    // rồi mới đến mô tả/khu vực.
+    // Không có từ khóa thì giữ thứ tự shop mới; ID là tie-break ổn định cho mọi trang.
+    // Không gọi auth-service theo từng shop vì danh sách khám phá không cần trạng thái online chính xác.
     async listPublicShops(
         query: ListPublicShopsQueryDto,
     ): Promise<PublicShopListResponseDto> {
@@ -50,23 +58,51 @@ export class PublicShopService {
             .where('shop.status = :status', { status: ShopStatus.ACTIVE });
         const search = query.search?.trim();
 
-        // Một từ khóa được dò trên các trường public có ý nghĩa với customer: tên, slug, mô tả và khu vực nhận hàng mặc định.
-        // Join chỉ dùng cho bước lọc; response vẫn lấy pickup address theo batch query bên dưới để giữ shape và tránh N+1.
         if (search) {
+            // ! là ký tự ESCAPE trong bộ lọc và điểm xếp hạng.
+            // DTO chặn query dài hơn giới hạn trước khi gọi service.
+            const escapedSearch = escapeShopSearchPattern(search);
+            const searchPattern = `%${escapedSearch}%`;
+            const searchPrefix = `${escapedSearch}%`;
+
+            // Chỉ tìm trên trường public; pickup join dùng để lọc chứ không nhân bản shop trong response.
             builder.andWhere(
                 `(
-          shop.name ILIKE :search
-          OR shop.slug ILIKE :search
-          OR shop.description ILIKE :search
-          OR pickupAddress.ghnProvinceName ILIKE :search
-          OR pickupAddress.ghnDistrictName ILIKE :search
+          shop.name ILIKE :searchPattern ESCAPE '!'
+          OR shop.slug ILIKE :searchPattern ESCAPE '!'
+          OR shop.description ILIKE :searchPattern ESCAPE '!'
+          OR pickupAddress.ghnProvinceName ILIKE :searchPattern ESCAPE '!'
+          OR pickupAddress.ghnDistrictName ILIKE :searchPattern ESCAPE '!'
         )`,
-                { search: `%${search}%` },
+                { searchPattern, searchPrefix, searchExact: search },
             );
+
+            // Dùng SELECT alias để TypeORM giữ thứ tự trong truy vấn DISTINCT
+            // khi phân trang có JOIN.
+            builder.addSelect(
+                `CASE
+                    WHEN LOWER(shop.name) = LOWER(:searchExact) THEN 700
+                    WHEN LOWER(shop.slug) = LOWER(:searchExact) THEN 650
+                    WHEN shop.name ILIKE :searchPrefix ESCAPE '!' THEN 600
+                    WHEN shop.slug ILIKE :searchPrefix ESCAPE '!' THEN 550
+                    WHEN shop.name ILIKE :searchPattern ESCAPE '!' THEN 500
+                    WHEN shop.slug ILIKE :searchPattern ESCAPE '!' THEN 450
+                    WHEN shop.description ILIKE :searchPattern ESCAPE '!' THEN 350
+                    WHEN pickupAddress.ghnProvinceName ILIKE :searchPattern ESCAPE '!' THEN 250
+                    WHEN pickupAddress.ghnDistrictName ILIKE :searchPattern ESCAPE '!' THEN 240
+                    ELSE 0
+                END`,
+                'shop_search_rank',
+            );
+            // Khớp chính xác và tiền tố tên shop đứng trước khớp nội dung/khu vực.
+            builder.orderBy('shop_search_rank', 'DESC');
+        } else {
+            // Trang khám phá không có query nên tiếp tục ưu tiên shop mới tạo.
+            builder.orderBy('shop.createdAt', 'DESC');
         }
 
         const [shops, total] = await builder
-            .orderBy('shop.createdAt', 'DESC')
+            .addOrderBy('shop.createdAt', 'DESC')
             .addOrderBy('shop.id', 'ASC')
             .skip((query.page - 1) * query.pageSize)
             .take(query.pageSize)
