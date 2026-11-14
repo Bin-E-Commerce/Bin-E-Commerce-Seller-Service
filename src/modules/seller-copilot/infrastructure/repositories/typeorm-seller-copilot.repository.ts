@@ -1,7 +1,7 @@
 // Adapter TypeORM của Seller Copilot; toàn bộ query, join, pagination và mapping persistence nằm ở đây.
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, DataSource, Repository } from 'typeorm';
+import { Brackets, DataSource, EntityManager, In, Repository } from 'typeorm';
 import { SellerCopilotConversation } from '@/database/seller-copilot/entities/seller-copilot-conversation.entity';
 import { SellerCopilotFeedback } from '@/database/seller-copilot/entities/seller-copilot-feedback.entity';
 import { SellerCopilotMessage } from '@/database/seller-copilot/entities/seller-copilot-message.entity';
@@ -313,9 +313,9 @@ export class TypeOrmSellerCopilotRepository implements SellerCopilotRepositoryPo
         return this.toActionProposalRecord(proposal);
     }
 
-    // Khóa row trong transaction để hai xác nhận đồng thời không thể cùng tiêu thụ một proposal.
-    // Chỉ proposal pending, chưa hết hạn và đúng owner/shop mới chuyển sang processing; mọi trường hợp khác trả null.
-    // Trạng thái processing được commit trước external call để không giữ lock DB trong lúc chờ Product Service.
+    // Khóa row trong transaction để proposal chỉ được claim một lần; processing được tiếp tục và terminal trả lại kết quả cũ.
+    // Product Service compare-and-set cùng bước đối soát khiến retry cùng proposal không ghi đè trạng thái mới.
+    // Hạn TTL chỉ chặn proposal chưa xác nhận; kết quả terminal và thao tác đã bắt đầu vẫn đọc được sau khi mất response.
     async consumeActionProposal(
         scope: SellerCopilotScope,
         proposalId: string,
@@ -328,9 +328,24 @@ export class TypeOrmSellerCopilotRepository implements SellerCopilotRepositoryPo
                 where: { ...scope, id: proposalId },
                 lock: { mode: 'pessimistic_write' },
             });
-            // Tenant được áp ngay trong WHERE và row lock giữ trạng thái tới lúc chuyển pending→processing.
+            // Tenant được áp ngay trong WHERE; thao tác terminal hoặc pending đã hết hạn không được gọi downstream.
+            if (!proposal) return null;
             if (
-                !proposal ||
+                proposal.status === 'completed' ||
+                proposal.status === 'failed'
+            ) {
+                return this.toActionProposalRecord(proposal);
+            }
+            if (proposal.status === 'processing') {
+                await this.updateActionProposalMessageStatus(
+                    manager,
+                    proposal.conversationId,
+                    proposalId,
+                    'processing',
+                );
+                return this.toActionProposalRecord(proposal);
+            }
+            if (
                 proposal.status !== 'pending' ||
                 proposal.expiresAt.getTime() <= Date.now()
             ) {
@@ -338,8 +353,32 @@ export class TypeOrmSellerCopilotRepository implements SellerCopilotRepositoryPo
             }
 
             proposal.status = 'processing';
-            return this.toActionProposalRecord(await repository.save(proposal));
+            const saved = await repository.save(proposal);
+            // History được cập nhật cùng transaction để retry sau reload thấy đúng trạng thái proposal.
+            await this.updateActionProposalMessageStatus(
+                manager,
+                proposal.conversationId,
+                proposalId,
+                'processing',
+            );
+            return this.toActionProposalRecord(saved);
         });
+    }
+
+    // Xóa riêng các proposal pending của tenant khi stream bị hủy trước lúc preview được gửi cho browser.
+    async discardPendingActionProposals(
+        scope: SellerCopilotScope,
+        proposalIds: string[],
+    ): Promise<void> {
+        const uniqueIds = [...new Set(proposalIds)];
+        if (!uniqueIds.length) return;
+        await this.dataSource
+            .getRepository(SellerCopilotActionProposal)
+            .delete({
+                ...scope,
+                id: In(uniqueIds),
+                status: 'pending',
+            });
     }
 
     // Sửa target tồn kho khi proposal pending/còn hạn và thuộc tenant; row lock ngăn sửa đua với confirm.
@@ -406,14 +445,14 @@ export class TypeOrmSellerCopilotRepository implements SellerCopilotRepositoryPo
 
     // Hoàn tất proposal trong transaction, chỉ chấp nhận trạng thái processing để không ghi đè kết quả terminal.
     // Đồng thời cập nhật metadata message assistant để reload lịch sử hiển thị cùng trạng thái với proposal.
-    // Nếu proposal không còn processing, transaction thoát mà không sửa message để request lặp không đảo kết quả.
+    // Trả false nếu proposal đã terminal; caller không được báo kết quả mới khi trạng thái DB không đổi.
     async completeActionProposal(
         scope: SellerCopilotScope,
         proposalId: string,
         status: 'completed' | 'failed',
         result: Record<string, unknown>,
-    ): Promise<void> {
-        await this.dataSource.transaction(async (manager) => {
+    ): Promise<boolean> {
+        return this.dataSource.transaction(async (manager) => {
             const repository = manager.getRepository(
                 SellerCopilotActionProposal,
             );
@@ -421,59 +460,70 @@ export class TypeOrmSellerCopilotRepository implements SellerCopilotRepositoryPo
                 where: { ...scope, id: proposalId, status: 'processing' },
                 lock: { mode: 'pessimistic_write' },
             });
-            if (!proposal) return;
+            if (!proposal) return false;
             // Chỉ processing được kết thúc; proposal terminal hoặc ngoài scope không thể bị request lặp ghi đè.
             proposal.status = status;
             proposal.result = result;
             proposal.completedAt = new Date();
             await repository.save(proposal);
 
-            // Cập nhật metadata của assistant message cùng transaction để lịch sử hiển thị đúng trạng thái sau khi tải lại.
-            const messageRepository =
-                manager.getRepository(SellerCopilotMessage);
-            const actionMessage = await messageRepository
-                .createQueryBuilder('message')
-                .innerJoin(
-                    SellerCopilotConversation,
-                    'conversation',
-                    'conversation.id = message.conversation_id',
-                )
-                .where('message.role = :role', { role: 'assistant' })
-                .andWhere('conversation.id = :conversationId', {
-                    conversationId: proposal.conversationId,
-                })
-                .andWhere(
-                    "(message.metadata -> 'actionProposal' ->> 'proposalId' = :proposalId OR message.metadata -> 'actionProposals' @> :proposalRef::jsonb)",
-                    {
-                        proposalId,
-                        proposalRef: JSON.stringify([{ proposalId }]),
-                    },
-                )
-                .setLock('pessimistic_write')
-                .getOne();
-            if (actionMessage?.metadata) {
-                // Nếu message đã bị xóa/metadata cũ thì vẫn giữ proposal result; không tạo message mới ngoài luồng chat.
-                const legacyProposal = actionMessage.metadata.actionProposal;
-                if (legacyProposal?.proposalId === proposalId) {
-                    legacyProposal.status = status;
-                    legacyProposal.result = result;
-                }
-                const proposals = actionMessage.metadata.actionProposals;
-                const matchingProposal = proposals?.find(
-                    (item) => item.proposalId === proposalId,
-                );
-                if (matchingProposal) {
-                    matchingProposal.status = status;
-                    matchingProposal.result = result;
-                }
-                if (
-                    legacyProposal?.proposalId === proposalId ||
-                    matchingProposal
-                ) {
-                    await messageRepository.save(actionMessage);
-                }
-            }
+            // Cập nhật metadata trong cùng transaction để history không hiển thị trạng thái cũ.
+            await this.updateActionProposalMessageStatus(
+                manager,
+                proposal.conversationId,
+                proposalId,
+                status,
+                result,
+            );
+            return true;
         });
+    }
+
+    // Đồng bộ trạng thái proposal vào đúng assistant message trong tenant conversation để history có thể phục hồi action.
+    private async updateActionProposalMessageStatus(
+        manager: EntityManager,
+        conversationId: string,
+        proposalId: string,
+        status: 'processing' | 'completed' | 'failed',
+        result?: Record<string, unknown>,
+    ): Promise<void> {
+        const messageRepository = manager.getRepository(SellerCopilotMessage);
+        const actionMessage = await messageRepository
+            .createQueryBuilder('message')
+            .innerJoin(
+                SellerCopilotConversation,
+                'conversation',
+                'conversation.id = message.conversation_id',
+            )
+            .where('message.role = :role', { role: 'assistant' })
+            .andWhere('conversation.id = :conversationId', { conversationId })
+            .andWhere(
+                "(message.metadata -> 'actionProposal' ->> 'proposalId' = :proposalId OR message.metadata -> 'actionProposals' @> :proposalRef::jsonb)",
+                {
+                    proposalId,
+                    proposalRef: JSON.stringify([{ proposalId }]),
+                },
+            )
+            .setLock('pessimistic_write')
+            .getOne();
+        if (!actionMessage?.metadata) return;
+
+        let changed = false;
+        const legacyProposal = actionMessage.metadata.actionProposal;
+        if (legacyProposal?.proposalId === proposalId) {
+            legacyProposal.status = status;
+            if (result !== undefined) legacyProposal.result = result;
+            changed = true;
+        }
+        const matchingProposal = actionMessage.metadata.actionProposals?.find(
+            (item) => item.proposalId === proposalId,
+        );
+        if (matchingProposal) {
+            matchingProposal.status = status;
+            if (result !== undefined) matchingProposal.result = result;
+            changed = true;
+        }
+        if (changed) await messageRepository.save(actionMessage);
     }
 
     // Bỏ metadata TypeORM khỏi contract application để code nghiệp vụ không phụ thuộc entity/database.
@@ -489,6 +539,7 @@ export class TypeOrmSellerCopilotRepository implements SellerCopilotRepositoryPo
             status: proposal.status,
             payload: proposal.payload,
             expiresAt: proposal.expiresAt,
+            result: proposal.result,
         };
     }
 

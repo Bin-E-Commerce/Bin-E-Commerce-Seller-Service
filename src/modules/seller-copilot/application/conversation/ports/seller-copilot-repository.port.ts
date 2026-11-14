@@ -47,7 +47,7 @@ export type SellerCopilotMessageRecord = {
             batchId?: string | null;
             payload: SellerCopilotActionProposalPayload;
             expiresAt: string;
-            status?: 'pending' | 'completed' | 'failed';
+            status?: 'pending' | 'processing' | 'completed' | 'failed';
             result?: Record<string, unknown>;
         };
         actionProposals?: Array<{
@@ -55,7 +55,7 @@ export type SellerCopilotMessageRecord = {
             batchId: string;
             payload: SellerCopilotActionProposalPayload;
             expiresAt: string;
-            status?: 'pending' | 'completed' | 'failed';
+            status?: 'pending' | 'processing' | 'completed' | 'failed';
             result?: Record<string, unknown>;
         }>;
     } | null;
@@ -199,11 +199,17 @@ export interface SellerCopilotRepositoryPort {
         expiresAt: Date;
     }): Promise<SellerCopilotActionProposalRecord>;
 
-    // Atomically consume pending proposal chỉ khi owner/shop khớp và chưa hết hạn; null nghĩa không được gọi downstream.
+    // Chuyển pending sang processing; proposal processing được trả lại để phục hồi cùng compare-and-set sau timeout/crash.
     consumeActionProposal(
         scope: SellerCopilotScope,
         proposalId: string,
     ): Promise<SellerCopilotActionProposalRecord | null>;
+
+    // Xóa proposal pending chưa kịp phát preview sau khi client hủy stream; tenant và danh sách ID luôn được ràng buộc.
+    discardPendingActionProposals(
+        scope: SellerCopilotScope,
+        proposalIds: string[],
+    ): Promise<void>;
 
     // Chỉ sửa target của proposal tồn kho còn hạn và pending trong đúng tenant; row lock tuần tự hóa với thao tác xác nhận.
     reviseInventoryProposal(
@@ -212,13 +218,13 @@ export interface SellerCopilotRepositoryPort {
         nextAvailable: number,
     ): Promise<SellerCopilotActionProposalRecord | null>;
 
-    // Chuyển processing sang terminal và lưu result; không cho request lặp đảo completed/failed về pending.
+    // Chuyển processing sang terminal; false báo rằng request khác đã đóng proposal hoặc scope không còn hợp lệ.
     completeActionProposal(
         scope: SellerCopilotScope,
         proposalId: string,
         status: 'completed' | 'failed',
         result: Record<string, unknown>,
-    ): Promise<void>;
+    ): Promise<boolean>;
 
     // Kiểm tra message và conversation scope trong cùng truy vấn để không có khoảng hở giữa authorization và read.
     findMessageInScope(

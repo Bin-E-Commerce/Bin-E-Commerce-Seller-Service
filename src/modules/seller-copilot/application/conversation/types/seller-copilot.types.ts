@@ -87,7 +87,7 @@ export type SellerCopilotEvent =
     | {
           type: 'action_result';
           proposalId: string;
-          status: 'completed' | 'failed';
+          status: 'processing' | 'completed' | 'failed';
           message: string;
           availableQuantity?: number;
       }

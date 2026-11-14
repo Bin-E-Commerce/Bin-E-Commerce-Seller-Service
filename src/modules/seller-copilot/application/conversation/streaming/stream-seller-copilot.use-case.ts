@@ -14,6 +14,7 @@ import type {
 } from '@/modules/seller-copilot/application/conversation/types/seller-copilot.types';
 import { SellerInventoryAgentService } from '@/modules/seller-copilot/application/modes/agent/services/seller-inventory-agent.service';
 import { SellerProductAgentService } from '@/modules/seller-copilot/application/modes/agent/services/seller-product-agent.service';
+import { normalizeSellerCommandText } from '@/modules/seller-copilot/application/modes/agent/utils/normalize-seller-command-text.util';
 import { resolveShopDataPresentation } from '@/modules/seller-copilot/application/answer/modes/shop-data/presentation/resolve-shop-data-presentation.util';
 import { resolveProductDetailFollowUp } from '@/modules/seller-copilot/application/answer/modes/shop-data/follow-ups/resolve-product-detail-follow-up.util';
 import { resolveAgentSkuPriceFollowUp } from '@/modules/seller-copilot/application/answer/modes/agent/follow-ups/resolve-agent-sku-price-follow-up.util';
@@ -106,13 +107,6 @@ export class StreamSellerCopilotUseCase {
                       question: request.message,
                   })
                 : { message: request.message, contextMessages: [] };
-        const explicitAgentAction =
-            interactionMode === 'agent'
-                ? detectAgentAction(request.message) ??
-                  (clearanceFollowUp.contextMessages.length > 0
-                      ? 'slow_moving_price'
-                      : null)
-                : null;
         const history = buildSellerCopilotQuestionHistory(
             recentMessages,
             preparedChat.modeSessionId,
@@ -183,6 +177,28 @@ export class StreamSellerCopilotUseCase {
                       question: request.message,
                   })
                 : followUpPlan;
+        // Câu tự nhiên chỉ được phân loại theo task ghi đã tách; task đọc cùng lượt không được đổi loại thao tác.
+        const plannedChangeTask = plan.tasks.find(
+            (task) => task.requestType === 'CHANGE_REQUEST',
+        );
+        const explicitAgentCommand = isExplicitAgentActionCommand(
+            request.message,
+        );
+        const explicitAgentAction =
+            interactionMode === 'agent'
+                ? clearanceFollowUp.contextMessages.length > 0
+                    ? 'slow_moving_price'
+                    : detectAgentAction(
+                          explicitAgentCommand
+                              ? request.message
+                              : (plannedChangeTask?.resolvedQuestion ?? ''),
+                      )
+                : null;
+        // Từ ngữ “bán chậm/tồn lâu” có thể là câu hỏi đọc; chỉ command hoặc follow-up đã ràng buộc mới ép luồng xả hàng.
+        const explicitClearanceAction =
+            interactionMode === 'agent' &&
+            (isExplicitClearanceCommand(request.message) ||
+                clearanceFollowUp.contextMessages.length > 0);
         // Chỉ nối “sản phẩm này/đó” khi planner xác nhận đúng một lệnh tồn kho và insight gần nhất có ID/SKU duy nhất.
         const inventoryFollowUp =
             interactionMode === 'agent'
@@ -256,12 +272,11 @@ export class StreamSellerCopilotUseCase {
                 SellerCopilotRepositoryPort['saveMessage']
             >[0]['metadata']
         >['actionProposals'];
+        const actionProposalEvents: SellerCopilotEvent[] = [];
+        const createdActionProposalIds: string[] = [];
         if (plan.status === 'READY' && !chatModeHandoff) {
             // Chỉ plan READY đã xác thực CHANGE_REQUEST mới mở nhánh preview; @command chỉ chọn loại preview, không cấp quyền ghi.
             // @xả-hàng là lựa chọn tác vụ tường minh; vẫn chỉ tạo preview và service sẽ từ chối nếu thiếu tiêu chí.
-            const explicitClearanceAction =
-                interactionMode === 'agent' &&
-                explicitAgentAction === 'slow_moving_price';
             const hasMutationRequest =
                 explicitClearanceAction ||
                 plan.tasks.some(
@@ -384,9 +399,10 @@ export class StreamSellerCopilotUseCase {
                                     ? await this.productAgent.prepareSlowMovingPriceChange(
                                           {
                                               ...actionInput,
-                                              message: clearanceFollowUp.message,
-                                              ...(clearanceFollowUp.contextMessages
-                                                  .length > 0
+                                              message:
+                                                  clearanceFollowUp.message,
+                                              ...(clearanceFollowUp
+                                                  .contextMessages.length > 0
                                                   ? {
                                                         contextMessages:
                                                             clearanceFollowUp.contextMessages,
@@ -395,26 +411,50 @@ export class StreamSellerCopilotUseCase {
                                           },
                                       )
                                     : explicitAgentAction === 'price'
-                                    ? await this.productAgent.preparePriceChange(
-                                          actionInput,
-                                      )
-                                    : explicitAgentAction === 'content'
-                                      ? await this.productAgent.prepareContentChange(
+                                      ? await this.productAgent.preparePriceChange(
                                             actionInput,
                                         )
-                                      : explicitAgentAction === 'low_stock'
-                                        ? await this.productAgent.prepareLowStock(
+                                      : explicitAgentAction === 'content'
+                                        ? await this.productAgent.prepareContentChange(
                                               actionInput,
                                           )
-                                        : await this.inventoryAgent.prepare({
-                                              ...actionInput,
-                                              ...(inventoryFollowUp.kind ===
-                                              'resolved'
-                                                  ? {
-                                                        target: inventoryFollowUp.target,
-                                                    }
-                                                  : {}),
-                                          });
+                                        : explicitAgentAction === 'low_stock'
+                                          ? await this.productAgent.prepareLowStock(
+                                                actionInput,
+                                            )
+                                          : await this.inventoryAgent.prepare({
+                                                ...actionInput,
+                                                ...(inventoryFollowUp.kind ===
+                                                'resolved'
+                                                    ? {
+                                                          target: inventoryFollowUp.target,
+                                                      }
+                                                    : {}),
+                                            });
+                            const createdProposalIds =
+                                'proposals' in preparedAction
+                                    ? preparedAction.proposals.map(
+                                          (proposal) => proposal.id,
+                                      )
+                                    : 'proposal' in preparedAction
+                                      ? [preparedAction.proposal.id]
+                                      : 'proposalId' in preparedAction
+                                        ? [preparedAction.proposalId]
+                                        : [];
+                            createdActionProposalIds.push(
+                                ...createdProposalIds,
+                            );
+                            if (signal?.aborted && createdProposalIds.length) {
+                                // Chưa gửi preview nên chỉ proposal pending vừa tạo được dọn trong đúng tenant.
+                                await this.repository.discardPendingActionProposals(
+                                    {
+                                        ownerUserId: preparedChat.ownerUserId,
+                                        shopId: preparedChat.shopId,
+                                    },
+                                    createdProposalIds,
+                                );
+                                signal.throwIfAborted();
+                            }
                             if (preparedAction.kind === 'clarification') {
                                 assistantReply = preparedAction.message;
                             } else if (
@@ -455,16 +495,16 @@ export class StreamSellerCopilotUseCase {
                                 ];
                                 assistantReply =
                                     'Mình đã chuẩn bị bản xem trước. Kiểm tra thông tin rồi xác nhận để áp dụng.';
-                                yield {
+                                actionProposalEvents.push({
                                     type: 'action_batch_proposed',
                                     batchId:
                                         actionProposalMetadata.batchId ??
                                         proposal.id,
                                     proposals: actionProposalsMetadata,
-                                };
+                                });
                                 if (proposal.payload.kind === 'SET_INVENTORY') {
                                     // Giữ event cũ cho client đã triển khai trước batch contract; UI mới ưu tiên actionProposals.
-                                    yield {
+                                    actionProposalEvents.push({
                                         type: 'action_proposed',
                                         proposalId: proposal.id,
                                         action: {
@@ -485,7 +525,7 @@ export class StreamSellerCopilotUseCase {
                                         },
                                         expiresAt:
                                             proposal.expiresAt.toISOString(),
-                                    };
+                                    });
                                 }
                             } else {
                                 actionProposalsMetadata =
@@ -518,11 +558,11 @@ export class StreamSellerCopilotUseCase {
                                           .join(' · ')}`
                                     : '';
                                 assistantReply = `Mình đã chuẩn bị ${actionProposalsMetadata.length} đề xuất${skippedCount ? `; ${skippedCount} dòng vượt giới hạn lưu kho nên chưa có đề xuất` : ''}.${skippedMessage} Chọn từng dòng hoặc xác nhận các dòng bạn đã chọn.`;
-                                yield {
+                                actionProposalEvents.push({
                                     type: 'action_batch_proposed',
                                     batchId: preparedAction.batchId,
                                     proposals: actionProposalsMetadata,
-                                };
+                                });
                             }
                         }
                     }
@@ -563,30 +603,61 @@ export class StreamSellerCopilotUseCase {
                     readResult.assistantResponseStreamed;
             }
         }
-        // Kiểm tra lần cuối sát điểm ghi để tránh lưu assistant nếu client vừa hủy trong lúc dựng phản hồi.
-        signal?.throwIfAborted();
+        // Proposal chưa được lưu cùng message phải được dọn nếu client hủy đúng ở ranh giới cuối.
+        if (signal?.aborted) {
+            await this.repository.discardPendingActionProposals(
+                {
+                    ownerUserId: preparedChat.ownerUserId,
+                    shopId: preparedChat.shopId,
+                },
+                createdActionProposalIds,
+            );
+            signal.throwIfAborted();
+        }
 
         // Lưu đúng nội dung sẽ phát để refresh/reconnect hiển thị nhất quán; không lưu plan hay output phân loại vào hội thoại.
-        await this.repository.saveMessage({
-            conversationId: preparedChat.conversationId,
-            role: 'assistant',
-            content: assistantReply,
-            metadata: {
-                ...(citations.length ? { citations } : {}),
-                ...(dataSources.length ? { dataSources } : {}),
-                ...(insights.length ? { insights } : {}),
-                ...(answerStatus ? { answerStatus } : {}),
-                ...(answerStatusReason ? { answerStatusReason } : {}),
-                interactionMode,
-                modeSessionId: preparedChat.modeSessionId,
-                ...(actionProposalMetadata
-                    ? { actionProposal: actionProposalMetadata }
-                    : {}),
-                ...(actionProposalsMetadata?.length
-                    ? { actionProposals: actionProposalsMetadata }
-                    : {}),
-            },
-        });
+        try {
+            await this.repository.saveMessage({
+                conversationId: preparedChat.conversationId,
+                role: 'assistant',
+                content: assistantReply,
+                metadata: {
+                    ...(citations.length ? { citations } : {}),
+                    ...(dataSources.length ? { dataSources } : {}),
+                    ...(insights.length ? { insights } : {}),
+                    ...(answerStatus ? { answerStatus } : {}),
+                    ...(answerStatusReason ? { answerStatusReason } : {}),
+                    interactionMode,
+                    modeSessionId: preparedChat.modeSessionId,
+                    ...(actionProposalMetadata
+                        ? { actionProposal: actionProposalMetadata }
+                        : {}),
+                    ...(actionProposalsMetadata?.length
+                        ? { actionProposals: actionProposalsMetadata }
+                        : {}),
+                },
+            });
+        } catch (error) {
+            if (createdActionProposalIds.length) {
+                try {
+                    await this.repository.discardPendingActionProposals(
+                        {
+                            ownerUserId: preparedChat.ownerUserId,
+                            shopId: preparedChat.shopId,
+                        },
+                        createdActionProposalIds,
+                    );
+                } catch {
+                    // Giữ lỗi lưu message làm lỗi gốc; proposal vẫn tự hết hạn nếu cleanup cũng lỗi.
+                }
+            }
+            throw error;
+        }
+
+        // Lưu history trước khi gửi ID proposal để seller còn khôi phục được preview nếu socket ngắt ngay sau event.
+        for (const event of actionProposalEvents) {
+            yield event;
+        }
 
         // === BƯỚC 3: Phát event SSE theo contract hiện tại ===
         // Phát nội dung đã chọn từ plan để client hiển thị; token ở đây là một chunk hoàn chỉnh, không phải token model.
@@ -716,44 +787,62 @@ export class StreamSellerCopilotUseCase {
     }
 }
 
-// @ command cho phép người bán chọn đúng luồng; câu tự nhiên chỉ được nhận khi có mẫu ý định và dữ liệu cần thiết rõ ràng.
+// Nhận loại hành động từ command tường minh hoặc task CHANGE_REQUEST đã được planner tách khỏi câu hỏi đọc.
 function detectAgentAction(
     message: string,
-): 'low_stock' | 'inventory' | 'price' | 'content' | 'slow_moving_price' | null {
-    const normalized = message.normalize('NFC').trim().toLocaleLowerCase('vi');
+):
+    | 'low_stock'
+    | 'inventory'
+    | 'price'
+    | 'content'
+    | 'slow_moving_price'
+    | null {
+    const normalized = normalizeSellerCommandText(message).trim();
     const command = normalized.match(
-        /^@(tồn-kho|ton-kho|giá|xả-hàng|xa-hang)(?![\p{L}\p{N}_-])/u,
+        /^@(ton-kho|gia|xa-hang)(?![\p{L}\p{N}_-])/u,
     )?.[1];
-    if (command === 'xả-hàng' || command === 'xa-hang') {
+    if (command === 'xa-hang') {
         return 'slow_moving_price';
     }
-    if (command === 'giá') return 'price';
-    if (command === 'tồn-kho' || command === 'ton-kho') {
+    if (command === 'gia') return 'price';
+    if (command === 'ton-kho') {
         // Có @tồn-kho thì động từ thay đổi luôn đi vào luồng chỉnh một target;
         // sau khi chọn biến thể, “lên N” cũng là target rõ dù không lặp động từ.
         // Chỉ câu không có động từ hoặc mức đích mới được hiểu là rà toàn bộ hàng sắp hết.
-        return /(?:tăng|giảm|đặt|cập nhật|chỉnh)(?=\s)/u.test(normalized) ||
-            /(?:^|\s)(?:lên|về|thành|xuống|bằng)\s*\d+\s*[.!?]*$/u.test(
+        return /(?:tang|giam|dat|cap\s+nhat|chinh)(?=\s)/u.test(normalized) ||
+            /(?:^|\s)(?:len|ve|thanh|xuong|bang)\s*\d+\s*[.!?]*$/u.test(
                 normalized,
             )
             ? 'inventory'
             : 'low_stock';
     }
-    if (
-        /(?:đổi|chỉnh|cập nhật) giá/u.test(normalized) &&
-        /(?:sku|thành|là)\b/u.test(normalized)
-    )
+    // Planner đã xác nhận đây là CHANGE_REQUEST, nên chỉ cần cụm động từ + giá để nhận cả “giảm/tăng giá” tự nhiên.
+    if (/(?:doi|sua|chinh|cap\s+nhat|dat|tang|giam) gia/u.test(normalized))
         return 'price';
-    if (/(?:đổi|sửa|cập nhật) (?:tên|mô tả)/u.test(normalized))
+    if (/(?:doi|sua|chinh|cap\s+nhat) (?:ten|mo ta)/u.test(normalized))
         return 'content';
-    if (/(?:sắp hết hàng|tồn kho thấp|bổ sung hàng)/u.test(normalized))
+    if (/(?:sap het hang|ton kho thap|bo sung hang)/u.test(normalized))
         return 'low_stock';
     if (
-        /(?:xả hàng|hàng tồn lâu|bán chậm|tồn kho.*(?:bán chậm|ít bán))/u.test(
+        /(?:xa hang|hang ton lau|ban cham|ton kho.*(?:ban cham|it ban))/u.test(
             normalized,
         )
     ) {
         return 'slow_moving_price';
     }
     return null;
+}
+
+// Chỉ command có tiền tố @ được coi là lựa chọn thao tác tường minh; câu tự nhiên phải qua phân loại task trước.
+function isExplicitAgentActionCommand(message: string): boolean {
+    return /^@(ton-kho|gia|xa-hang)(?![\p{L}\p{N}_-])/u.test(
+        normalizeSellerCommandText(message).trim(),
+    );
+}
+
+// Chặn hiểu câu hỏi “hàng bán chậm nào?” thành lệnh xả hàng; chỉ tiền tố @ hoặc follow-up đã xác nhận mới ép action.
+function isExplicitClearanceCommand(message: string): boolean {
+    return /^@xa-hang(?![\p{L}\p{N}_-])/u.test(
+        normalizeSellerCommandText(message).trim(),
+    );
 }

@@ -1,3 +1,5 @@
+// Entity lưu message và metadata history của Seller Copilot; trạng thái action chỉ phản ánh proposal đã scope riêng.
+// Bảng này không lưu prompt nội bộ hoặc dữ liệu retrieval thô.
 import {
     Column,
     CreateDateColumn,
@@ -47,7 +49,7 @@ export class SellerCopilotMessage {
             batchId?: string | null;
             payload: SellerCopilotActionProposalPayload;
             expiresAt: string;
-            status?: 'pending' | 'completed' | 'failed';
+            status?: 'pending' | 'processing' | 'completed' | 'failed';
             result?: Record<string, unknown>;
         };
         actionProposals?: Array<{
@@ -55,7 +57,7 @@ export class SellerCopilotMessage {
             batchId: string;
             payload: SellerCopilotActionProposalPayload;
             expiresAt: string;
-            status?: 'pending' | 'completed' | 'failed';
+            status?: 'pending' | 'processing' | 'completed' | 'failed';
             result?: Record<string, unknown>;
         }>;
     } | null;
