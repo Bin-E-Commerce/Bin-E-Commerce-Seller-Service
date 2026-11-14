@@ -23,6 +23,7 @@ export interface SellerDashboardSnapshot {
         id: string;
         name: string;
         status: string;
+        financeLocked: boolean;
         logoUrl: string | null;
     };
     range: SellerDashboardDateRange;

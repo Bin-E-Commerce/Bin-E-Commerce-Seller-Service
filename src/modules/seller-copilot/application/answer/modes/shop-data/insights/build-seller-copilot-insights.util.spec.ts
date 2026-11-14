@@ -16,6 +16,7 @@ function createDashboardSnapshot(
             id: 'shop-1',
             name: 'Shop thử nghiệm',
             status: 'ACTIVE',
+            financeLocked: false,
             logoUrl: null,
         },
         range: {

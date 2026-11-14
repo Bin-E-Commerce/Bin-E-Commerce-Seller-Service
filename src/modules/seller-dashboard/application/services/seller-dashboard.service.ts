@@ -42,8 +42,10 @@ export class SellerDashboardService {
         if (!shop) {
             throw new NotFoundException('Shop chưa được kích hoạt.');
         }
-        // Chỉ shop ACTIVE mới được đọc snapshot vận hành; shop bị khóa không được gọi downstream.
-        if (shop.status !== ShopStatus.ACTIVE) {
+        // Cho shop bị khóa do công nợ xem số liệu của chính mình để xử lý nợ; shop bị admin tạm ngưng/đóng vẫn bị chặn.
+        const isFinanceSuspendedShop =
+            shop.status === ShopStatus.SUSPENDED && shop.financeLocked;
+        if (shop.status !== ShopStatus.ACTIVE && !isFinanceSuspendedShop) {
             throw new ForbiddenException(
                 'Shop chưa ở trạng thái hoạt động để xem dashboard.',
             );
@@ -65,6 +67,7 @@ export class SellerDashboardService {
             id: string;
             name: string;
             status: string;
+            financeLocked: boolean;
             logoUrl: string;
         },
         range: SellerDashboardRange,
@@ -87,6 +90,7 @@ export class SellerDashboardService {
                 id: shop.id,
                 name: shop.name,
                 status: shop.status,
+                financeLocked: shop.financeLocked,
                 logoUrl: shop.logoUrl?.trim() || null,
             },
             range: { ...dateRange, key: range },
