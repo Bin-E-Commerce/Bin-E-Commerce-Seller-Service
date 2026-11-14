@@ -1,5 +1,5 @@
-// Điều phối đề xuất giá và nội dung sản phẩm; không ghi Product Service trực tiếp.
-// Mọi mutation được lưu thành proposal gắn owner/shop/conversation rồi chờ xác nhận ở use case riêng.
+// Chuẩn bị preview tồn kho, giá và nội dung từ snapshot thuộc shop; không tự ghi dữ liệu sản phẩm.
+// Mọi proposal phải chỉ rõ đối tượng và giá trị đích để bước xác nhận có thể kiểm tra lại trạng thái hiện tại.
 import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { SELLER_COPILOT_REPOSITORY } from '@/modules/seller-copilot/application/conversation/ports/seller-copilot-repository.port';
@@ -15,6 +15,11 @@ import type {
     SellerSlowMovingPriceCandidate,
     SellerSlowMovingPriceCriteria,
 } from '@/modules/seller-copilot/application/modes/agent/types/seller-slow-moving-price.types';
+import {
+    messageContainsExactSellerSku,
+    messageContainsExactSellerVariant,
+} from '@/modules/seller-copilot/application/modes/agent/utils/match-seller-reference.util';
+import { normalizeSellerCommandText } from '@/modules/seller-copilot/application/modes/agent/utils/normalize-seller-command-text.util';
 
 const ACTION_PROPOSAL_TTL_MS = 10 * 60 * 1000;
 const MAX_ACTIONS_PER_BATCH = 50;
@@ -60,8 +65,7 @@ export class SellerProductAgentService {
                 message: `Có ${variants.length} biến thể cần xử lý. Để tránh tạo danh sách quá lớn, hãy lọc hoặc xử lý tối đa ${MAX_ACTIONS_PER_BATCH} biến thể mỗi lượt.`,
             };
         }
-        const batchId = randomUUID();
-        const proposals: SellerCopilotActionProposalRecord[] = [];
+        const payloads: SellerCopilotActionProposalPayload[] = [];
         for (const variant of variants) {
             const nextAvailable = variant.lowStockThreshold * 2;
             if (
@@ -82,15 +86,21 @@ export class SellerProductAgentService {
                 reserved: variant.reserved,
                 recommendationReason: 'LOW_STOCK' as const,
             };
-            proposals.push(await this.saveProposal(input, batchId, payload));
+            payloads.push(payload);
         }
-        if (!proposals.length) {
+        if (!payloads.length) {
             return {
                 kind: 'clarification',
                 message:
                     'Các mức tồn đề xuất vượt giới hạn lưu trữ hiện tại nên chưa thể tạo preview.',
             };
         }
+        const batchId = randomUUID();
+        const proposals = await this.saveProposalBatch(
+            input,
+            batchId,
+            payloads,
+        );
         return {
             kind: 'proposals',
             batchId,
@@ -126,31 +136,64 @@ export class SellerProductAgentService {
             input.shopId,
             input.ownerUserId,
         );
-        const mentionedSkus = catalog.items
-            .filter((product) => product.isShopLinked)
-            .flatMap((product) =>
-                product.variants
-                    .filter((variant) =>
-                        [variant.sku, variant.sellerSku]
-                            .filter(Boolean)
-                            .some((sku) =>
-                                input.message
-                                    .toLocaleLowerCase('vi')
-                                    .includes(
-                                        (sku as string).toLocaleLowerCase('vi'),
-                                    ),
+        const linkedProducts = catalog.items.filter(
+            (product) => product.isShopLinked,
+        );
+        const skuOwners = new Map<string, Set<string>>();
+        for (const product of linkedProducts) {
+            for (const variant of product.variants) {
+                for (const sku of [variant.sku, variant.sellerSku].filter(
+                    (value): value is string => Boolean(value),
+                )) {
+                    if (!messageContainsExactSellerSku(input.message, sku)) {
+                        continue;
+                    }
+                    const normalizedSku = normalizeSearchText(sku);
+                    const variantIds =
+                        skuOwners.get(normalizedSku) ?? new Set<string>();
+                    variantIds.add(variant.variantId);
+                    skuOwners.set(normalizedSku, variantIds);
+                }
+            }
+        }
+        // Một SKU bị gán cho nhiều variant là lỗi catalog; không được biến một định danh mơ hồ thành batch ghi nhiều dòng.
+        if ([...skuOwners.values()].some((variantIds) => variantIds.size > 1)) {
+            return {
+                kind: 'clarification',
+                message:
+                    'SKU này đang trùng trên nhiều biến thể trong catalog nên mình chưa thể đổi giá an toàn. Hãy kiểm tra lại SKU với shop nhé.',
+            };
+        }
+        const mentionedSkus = linkedProducts.flatMap((product) =>
+            product.variants
+                .filter((variant) =>
+                    [variant.sku, variant.sellerSku]
+                        .filter(Boolean)
+                        .some((sku) =>
+                            messageContainsExactSellerSku(
+                                input.message,
+                                sku as string,
                             ),
-                    )
-                    .map((variant) => ({ product, variant })),
-            );
+                        ),
+                )
+                .map((variant) => ({ product, variant })),
+        );
 
         // SKU là định danh rõ ràng; nếu không có SKU thì chỉ nhận đúng một cặp tên sản phẩm/biến thể trong câu.
+        const namedCandidates = findNamedVariants(
+            linkedProducts,
+            input.message,
+        );
+        if (!mentionedSkus.length && namedCandidates.length > 1) {
+            return {
+                kind: 'clarification',
+                message:
+                    'Tên bạn nêu khớp với nhiều biến thể. Bạn gửi SKU hoặc ghi rõ tên sản phẩm kèm tên biến thể cần đổi nhé.',
+            };
+        }
         const candidates = mentionedSkus.length
             ? mentionedSkus
-            : findNamedVariants(
-                  catalog.items.filter((product) => product.isShopLinked),
-                  input.message,
-              );
+            : namedCandidates;
         const uniqueCandidates = [
             ...new Map(
                 candidates.map((candidate) => [
@@ -172,8 +215,7 @@ export class SellerProductAgentService {
         }
 
         const batchId = randomUUID();
-        const proposals: SellerCopilotActionProposalRecord[] = [];
-        for (const { product, variant } of uniqueCandidates) {
+        const payloads = uniqueCandidates.map(({ product, variant }) => {
             const payload: SellerCopilotActionProposalPayload = {
                 kind: 'SET_VARIANT_PRICE',
                 productId: product.productId,
@@ -183,8 +225,13 @@ export class SellerProductAgentService {
                 expectedPrice: variant.price,
                 nextPrice,
             };
-            proposals.push(await this.saveProposal(input, batchId, payload));
-        }
+            return payload;
+        });
+        const proposals = await this.saveProposalBatch(
+            input,
+            batchId,
+            payloads,
+        );
         return { kind: 'proposals', batchId, proposals };
     }
 
@@ -267,7 +314,10 @@ export class SellerProductAgentService {
                         name: `${variant.productName} — ${variant.variantName}`,
                         reason: 'Giá hiện tại không cao hơn giá sàn nên không thể giảm.',
                     });
-                    if (candidates.length + skippedVariants.length > MAX_ACTIONS_PER_BATCH) {
+                    if (
+                        candidates.length + skippedVariants.length >
+                        MAX_ACTIONS_PER_BATCH
+                    ) {
                         return {
                             kind: 'clarification',
                             message: `Có hơn ${MAX_ACTIONS_PER_BATCH} SKU đạt bộ lọc tồn và số bán. Hãy thu hẹp tiêu chí để tạo đề xuất an toàn; chưa có thay đổi nào được tạo.`,
@@ -275,10 +325,7 @@ export class SellerProductAgentService {
                     }
                     continue;
                 }
-                const nextPrice = Math.max(
-                    criteria.minimumPrice,
-                    reducedPrice,
-                );
+                const nextPrice = Math.max(criteria.minimumPrice, reducedPrice);
                 candidates.push({
                     ...variant,
                     quantitySold,
@@ -287,7 +334,10 @@ export class SellerProductAgentService {
                     effectiveDiscountPercent:
                         ((expectedPrice - nextPrice) / expectedPrice) * 100,
                 });
-                if (candidates.length + skippedVariants.length > MAX_ACTIONS_PER_BATCH) {
+                if (
+                    candidates.length + skippedVariants.length >
+                    MAX_ACTIONS_PER_BATCH
+                ) {
                     return {
                         kind: 'clarification',
                         message: `Có hơn ${MAX_ACTIONS_PER_BATCH} SKU thỏa tiêu chí. Hãy tăng ngưỡng tồn hoặc giảm số bán tối đa để thu hẹp danh sách; chưa có thay đổi nào được tạo.`,
@@ -334,8 +384,7 @@ export class SellerProductAgentService {
         }
 
         const batchId = randomUUID();
-        const proposals: SellerCopilotActionProposalRecord[] = [];
-        for (const candidate of eligible) {
+        const payloads = eligible.map((candidate) => {
             const payload: SellerCopilotActionProposalPayload = {
                 kind: 'SET_VARIANT_PRICE',
                 productId: candidate.productId,
@@ -355,8 +404,13 @@ export class SellerProductAgentService {
                         candidate.effectiveDiscountPercent,
                 },
             };
-            proposals.push(await this.saveProposal(input, batchId, payload));
-        }
+            return payload;
+        });
+        const proposals = await this.saveProposalBatch(
+            input,
+            batchId,
+            payloads,
+        );
         return { kind: 'proposals', batchId, proposals, skippedVariants };
     }
 
@@ -433,49 +487,88 @@ export class SellerProductAgentService {
             expiresAt: new Date(Date.now() + ACTION_PROPOSAL_TTL_MS),
         });
     }
+
+    // Tạo batch tuần tự để biết chính xác những proposal cần dọn nếu một lần lưu giữa chừng thất bại.
+    private async saveProposalBatch(
+        input: { ownerUserId: string; shopId: string; conversationId: string },
+        batchId: string,
+        payloads: SellerCopilotActionProposalPayload[],
+    ): Promise<SellerCopilotActionProposalRecord[]> {
+        const proposals: SellerCopilotActionProposalRecord[] = [];
+        try {
+            for (const payload of payloads) {
+                proposals.push(
+                    await this.saveProposal(input, batchId, payload),
+                );
+            }
+            return proposals;
+        } catch (error) {
+            // Chỉ proposal pending trong đúng owner/shop bị xóa; lỗi dọn không được che lỗi lưu ban đầu.
+            if (proposals.length) {
+                try {
+                    await this.repository.discardPendingActionProposals(
+                        {
+                            ownerUserId: input.ownerUserId,
+                            shopId: input.shopId,
+                        },
+                        proposals.map((proposal) => proposal.id),
+                    );
+                } catch {
+                    // Proposal còn lại tự hết hạn theo TTL nếu storage không thể dọn ngay.
+                }
+            }
+            throw error;
+        }
+    }
 }
 
-// Đọc đủ năm tham số trước khi truy vấn; kỳ mặc định 30 ngày nhưng các ngưỡng nghiệp vụ luôn do seller chỉ định.
+// Gộp tiêu chí trong các tin nhắn theo thứ tự thời gian để câu trả lời sau có thể sửa đúng trường seller vừa được hỏi.
+// Kiểm tra đủ ngưỡng tồn, doanh số, kỳ, mức giảm và giá sàn trước mọi truy vấn để không biến dữ liệu thiếu thành 0.
+// Dấu phẩy giữa hai mệnh đề là ranh giới hợp lệ; dấu phẩy theo sau bởi chữ số vẫn bị chặn để không cắt nhầm số thập phân.
 function parseSlowMovingPriceCriteria(messages: string[]): {
     criteria: SellerSlowMovingPriceCriteria | null;
     message: string;
 } {
-    const normalizedMessages = messages.map((message) =>
-        message.normalize('NFC'),
-    );
+    const normalizedMessages = messages.map(normalizeSellerCommandText);
     const minimumAvailable = findLastCapturedValue(
         normalizedMessages,
-        /(?:tồn(?:\s+kho)?|còn)\s*(?:ít nhất|tối thiểu|từ)?\s*(\d+)\s*(?:sản phẩm|sp)?/giu,
+        /(?:ton(?:\s+kho)?|con)\s*(?:it nhat|toi thieu|tu)?\s*(\d+)(?![\d.]|,\d)\s*(?:san pham|sp)?/giu,
     )?.[1];
     const maximumQuantitySold = findLastCapturedValue(
         normalizedMessages,
-        /bán\s*(?:tối đa|không quá|nhiều nhất|<=|≤)\s*(\d+)/giu,
+        /ban\s*(?:toi da|khong qua|nhieu nhat|<=|≤)\s*(\d+)(?![\d.]|,\d)/giu,
     )?.[1];
     // Chấp nhận cả “giảm 10%” và “giảm giá 10%”; nếu không nhận đúng cụm này, câu hỏi hợp lệ sẽ bị hỏi thiếu mức giảm.
     const discountToken = findLastCapturedValue(
         normalizedMessages,
-        /giảm\s*(?:giá\s*)?(\d+(?:[.,]\d+)?)\s*%/giu,
+        /giam\s*(?:gia\s*)?(\d+(?:[.,]\d+)?)\s*%/giu,
     )?.[1];
     // “Giá sau giảm không được thấp hơn” biểu đạt cùng một floor với “giá sàn”, nên phải trích đúng số tiền tiếp theo.
-    const floorToken = findLastCapturedValue(
+    const floorMatch = findLastCapturedValue(
         normalizedMessages,
-        /(?:giá\s*sàn|không\s*(?:được\s*)?(?:thấp\s*hơn|dưới))\s*(\d[\d.,]*)\s*(?:đ|vnd)?/giu,
-    )?.[1];
+        /(?:gia\s*san|khong\s*(?:duoc\s*)?(?:thap\s*hon|duoi))\s*(\d[\d.,]*)\s*(dong|d|vnd|nghin|ngan|trieu|tr|k)?(?:\s*(?:dong|d))?(?=$|[\s.!?;,:])/giu,
+    );
     const requestedDays = findLastCapturedValue(
         normalizedMessages,
-        /(?:trong\s*)?(\d+)\s*ngày/giu,
+        /(?:trong\s*)?(\d+)\s*ngay/giu,
     )?.[1];
     const periodDays = requestedDays ? Number(requestedDays) : 30;
-    const discountPercent = discountToken ? Number(discountToken.replace(',', '.')) : NaN;
-    const minimumPrice = floorToken
-        ? parseVietnameseMoney(floorToken)
+    const discountPercent = discountToken
+        ? Number(discountToken.replace(',', '.'))
+        : NaN;
+    const minimumPrice = floorMatch?.[1]
+        ? parseVietnameseMoney(floorMatch[1], floorMatch[2])
         : null;
     const missing: string[] = [];
 
     if (minimumAvailable === undefined) missing.push('tồn tối thiểu');
     if (maximumQuantitySold === undefined) missing.push('số bán tối đa');
-    if (!Number.isFinite(discountPercent) || discountPercent <= 0) {
-        missing.push('mức giảm lớn hơn 0%');
+    if (
+        !Number.isFinite(discountPercent) ||
+        discountPercent <= 0 ||
+        discountPercent >= 100
+    ) {
+        missing.push('mức giảm lớn hơn 0% và nhỏ hơn 100%');
     }
     if (
         minimumPrice === null ||
@@ -516,7 +609,8 @@ function parseSlowMovingPriceCriteria(messages: string[]): {
         criteria: {
             minimumAvailable: Number(minimumAvailable),
             maximumQuantitySold: Number(maximumQuantitySold),
-            periodDays: periodDays as SellerSlowMovingPriceCriteria['periodDays'],
+            periodDays:
+                periodDays as SellerSlowMovingPriceCriteria['periodDays'],
             discountPercent,
             minimumPrice: minimumPrice as number,
         },
@@ -539,23 +633,70 @@ function findLastCapturedValue(
     return lastMatch;
 }
 
-// Chuẩn hóa giá VND có dấu chấm/phẩy phân tách hàng nghìn; mức floor chỉ nhận số nguyên để tránh làm tròn xuống ngoài ý muốn.
-function parseVietnameseMoney(value: string): number | null {
-    const normalized = value.replace(/[.,]/gu, '');
-    const amount = Number(normalized);
-    return Number.isSafeInteger(amount) ? amount : null;
+// Đổi tiền VND có dấu phân cách và hậu tố k/nghìn/tr/triệu sang số đồng trước khi áp giá sàn.
+function parseVietnameseMoney(value: string, rawSuffix = ''): number | null {
+    const token = value.trim();
+    const suffix = normalizeSellerCommandText(rawSuffix).replace(/\s+/gu, '');
+    const decimalMatch = token.match(/[.,](\d{1,2})$/u);
+    const amount = decimalMatch
+        ? Number(
+              `${token.slice(0, -decimalMatch[0].length).replace(/[.,]/gu, '') || '0'}.${decimalMatch[1]}`,
+          )
+        : Number(token.replace(/[.,]/gu, ''));
+    const multiplier =
+        suffix.startsWith('tr') || suffix.startsWith('trieu')
+            ? 1_000_000
+            : suffix.startsWith('k') ||
+                suffix.startsWith('nghin') ||
+                suffix.startsWith('ngan')
+              ? 1_000
+              : 1;
+    const price = amount * multiplier;
+    return Number.isSafeInteger(price) ? price : null;
 }
 
-// Đọc giá VND kiểu 199.000đ như 199000, đồng thời giữ được phần thập phân nếu người bán nhập rõ.
+// Đọc giá VND có phân tách hàng nghìn và cách viết 199k/1,5 triệu; không được hiểu 199k thành 199đ.
 function parseRequestedPrice(message: string): number | null {
-    const match = message.match(/(?:thành|là|về|=)\s*([\d.,]+)\s*(?:đ|vnd)?/iu);
-    if (!match?.[1]) return null;
-    const token = match[1];
-    const normalized = /[.,]\d{1,2}$/u.test(token)
-        ? token.replace(',', '.')
-        : token.replace(/[.,]/gu, '');
-    const price = Number(normalized);
-    return Number.isFinite(price) && price >= 100 ? price : null;
+    const normalizedMessage = normalizeSellerCommandText(message);
+    const matches = [
+        ...normalizedMessage.matchAll(
+            /(?:gia\s+moi|thanh|la|ve|con|len|xuong|sang|=)\s*([\d.,]+)\s*((?:dong|d|vnd|nghin|ngan|trieu|tr|k)(?:\s*(?:dong|d))?)?(?=$|[\s.!?;,:])/giu,
+        ),
+    ];
+    if (!matches.length) return null;
+
+    const prices = matches.map((match) =>
+        parsePriceAmount(match[1] ?? '', match[2] ?? ''),
+    );
+    // Một lần xác nhận chỉ có một giá đích; nhiều giá khác nhau phải được làm rõ trước khi tạo batch proposal.
+    if (prices.some((price) => price === null) || new Set(prices).size !== 1) {
+        return null;
+    }
+    return prices[0] ?? null;
+}
+
+// Chuyển chuỗi giá cùng đơn vị viết tắt thành đồng; dấu chấm/phẩy cuối 1–2 chữ số là phần thập phân.
+function parsePriceAmount(value: string, rawSuffix: string): number | null {
+    if (!value) return null;
+    const suffix = rawSuffix.replace(/\s+/gu, '');
+    const decimalMatch = value.match(/[.,](\d{1,2})$/u);
+    const amount = decimalMatch
+        ? Number(
+              `${value.slice(0, -decimalMatch[0].length).replace(/[.,]/gu, '') || '0'}.${decimalMatch[1]}`,
+          )
+        : Number(value.replace(/[.,]/gu, ''));
+    const multiplier =
+        suffix.startsWith('tr') || suffix.startsWith('trieu')
+            ? 1_000_000
+            : suffix.startsWith('k') ||
+                suffix.startsWith('nghin') ||
+                suffix.startsWith('ngan')
+              ? 1_000
+              : 1;
+    const price = Math.round(amount * multiplier * 100) / 100;
+    return Number.isSafeInteger(Math.round(price * 100)) && price >= 100
+        ? price
+        : null;
 }
 
 // Tên biến thể chỉ hợp lệ khi câu có cả tên product và variant; SKU vẫn là cách chọn ưu tiên cho thao tác ghi.
@@ -563,18 +704,19 @@ function findNamedVariants(
     products: SellerCopilotProductCatalogItemInsight[],
     message: string,
 ) {
-    const normalized = normalizeSearchText(message);
-    return products.flatMap((product) =>
-        product.variants
-            .filter(
-                (variant) =>
-                    normalizeSearchText(product.name).length > 0 &&
-                    normalizeSearchText(variant.name).length > 0 &&
-                    normalized.includes(normalizeSearchText(product.name)) &&
-                    normalized.includes(normalizeSearchText(variant.name)),
-            )
-            .map((variant) => ({ product, variant })),
+    const exactProducts = products.filter((product) =>
+        messageContainsExactSellerVariant(message, product.name),
     );
+    return exactProducts.flatMap((product) => {
+        // Tên sản phẩm đủ để chọn khi catalog chỉ có một biến thể; nhiều biến thể vẫn phải có tên variant rõ ràng.
+        const variants =
+            product.variants.length === 1
+                ? product.variants
+                : product.variants.filter((variant) =>
+                      messageContainsExactSellerVariant(message, variant.name),
+                  );
+        return variants.map((variant) => ({ product, variant }));
+    });
 }
 
 // Chỉ match một product theo UUID, SKU, seller SKU hoặc tên đầy đủ; match nhiều dòng phải hỏi seller chọn.
@@ -596,31 +738,32 @@ function findUniqueProduct(
     return matches.length === 1 ? (matches[0] ?? null) : null;
 }
 
-// Tách câu sửa nội dung theo mẫu tường minh; nếu thiếu dấu phân cách thì không đoán phần nào là văn bản mới.
+// Tách câu sửa nội dung theo mẫu có dấu/không dấu; nếu thiếu câu trích dẫn thì không đoán phần nào là văn bản mới.
 function parseContentChange(message: string): {
     productQuery: string;
     field: 'name' | 'description';
     value: string;
 } | null {
     const match = message.match(
-        /(?:tên|mô tả)\s+(?:của\s+)?(.+?)\s+(?:thành|là)\s+["“](.+?)["”]\s*$/iu,
+        /(tên|ten|mô tả|mo ta)\s+(?:(?:của|cua)\s+)?(.+?)\s+(?:thành|thanh|là|la)\s+["“](.+?)["”]\s*$/iu,
     );
-    if (!match?.[1] || !match[2]) return null;
-    const field = /mô tả/iu.test(message.slice(0, message.indexOf(match[1])))
-        ? 'description'
-        : 'name';
+    if (!match?.[2] || !match[3]) return null;
+    const field =
+        normalizeSellerCommandText(match[1] ?? '') === 'mo ta'
+            ? 'description'
+            : 'name';
     return {
-        productQuery: match[1].replace(/^sản phẩm\s+/iu, '').trim(),
+        productQuery: (match[2] ?? '')
+            .replace(/^(?:sản phẩm|san pham)\s+/iu, '')
+            .trim(),
         field,
-        value: match[2].trim(),
+        value: match[3].trim(),
     };
 }
 
-// So khớp tên không phân biệt hoa thường/dấu câu nhưng không xóa chữ số để tránh nhầm SKU và mã sản phẩm.
+// So khớp tên không phân biệt dấu tiếng Việt/hoa thường nhưng giữ chữ số để không nhầm mã sản phẩm.
 function normalizeSearchText(value: string): string {
-    return value
-        .normalize('NFC')
-        .toLocaleLowerCase('vi')
+    return normalizeSellerCommandText(value)
         .replace(/["“”'`]/gu, '')
         .replace(/\s+/gu, ' ')
         .trim();

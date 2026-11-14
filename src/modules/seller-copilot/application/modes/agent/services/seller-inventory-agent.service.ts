@@ -6,6 +6,10 @@ import type { SellerCopilotRepositoryPort } from '@/modules/seller-copilot/appli
 import type { SellerCopilotInventoryProposalPayload } from '@/modules/seller-copilot/application/modes/agent/types/seller-copilot-action.types';
 import type { SellerInventoryTargetReference } from '@/modules/seller-copilot/application/modes/agent/types/seller-inventory-command.types';
 import type { SellerCopilotProductCatalogSnapshot } from '@/modules/seller-copilot/application/answer/shared/types/seller-copilot-insight.types';
+import {
+    messageContainsExactSellerSku,
+    messageContainsExactSellerVariant,
+} from '@/modules/seller-copilot/application/modes/agent/utils/match-seller-reference.util';
 import { parseSellerInventoryCommand } from '@/modules/seller-copilot/application/modes/agent/utils/parse-seller-inventory-command.util';
 
 const PROPOSAL_TTL_MS = 10 * 60 * 1000;
@@ -178,18 +182,17 @@ function selectCandidate<
 >(matches: T[], message: string): T | null {
     // Một kết quả duy nhất không mơ hồ; nhiều kết quả thì yêu cầu phải chứa SKU chính xác hoặc tên biến thể duy nhất.
     if (matches.length === 1) return matches[0] ?? null;
-    const normalized = message.toLocaleLowerCase('vi');
-    // Chỉ nhận SKU duy nhất; nhiều SKU cùng xuất hiện hoặc SKU không khớp nguyên văn sẽ đi tiếp để thử variant.
+    // Chỉ nhận SKU duy nhất theo token đầy đủ; ABC-1 không được khớp nhầm ABC-10.
     const exactSkuMatches = matches.filter((item) =>
         [item.sku, item.sellerSku]
             .filter((sku): sku is string => Boolean(sku))
-            .some((sku) => normalized.includes(sku.toLocaleLowerCase('vi'))),
+            .some((sku) => messageContainsExactSellerSku(message, sku)),
     );
     // Chỉ trả SKU khi có một candidate; nếu SKU xuất hiện trong nhiều kết quả thì chưa đủ để xác định variant.
     if (exactSkuMatches.length === 1) return exactSkuMatches[0] ?? null;
     // Tên variant có thể trùng giữa sản phẩm; chỉ một match mới đủ an toàn để tạo proposal.
     const exactVariantMatches = matches.filter((item) =>
-        normalized.includes(item.variantName.toLocaleLowerCase('vi')),
+        messageContainsExactSellerVariant(message, item.variantName),
     );
     // Tên variant trùng hoặc không khớp đều yêu cầu làm rõ để không tạo proposal trên sản phẩm sai.
     return exactVariantMatches.length === 1

@@ -59,19 +59,48 @@ export class SellerOrderSalesClient {
                 'Order Service chưa thể thống kê lượt bán theo biến thể.',
             );
         }
-        const rows = (await response.json()) as SellerVariantSalesRow[];
-        if (
-            !Array.isArray(rows) ||
-            rows.some(
-                (row) =>
-                    !input.variantIds.includes(row.variantId) ||
-                    !Number.isSafeInteger(row.quantitySold) ||
-                    row.quantitySold < 0,
-            )
-        ) {
+        let responseRows: unknown;
+        try {
+            responseRows = await response.json();
+        } catch {
+            throw new BadGatewayException(
+                'Order Service trả dữ liệu số bán không đọc được.',
+            );
+        }
+        if (!Array.isArray(responseRows)) {
             throw new BadGatewayException(
                 'Order Service trả dữ liệu số bán không hợp lệ.',
             );
+        }
+        const rows: SellerVariantSalesRow[] = [];
+        const seenVariantIds = new Set<string>();
+        for (const row of responseRows) {
+            // Không đọc thuộc tính trên null/object lạ; dữ liệu aggregate lỗi phải dừng thay vì bị coi là số bán bằng 0.
+            if (
+                !row ||
+                typeof row !== 'object' ||
+                !('variantId' in row) ||
+                !('quantitySold' in row)
+            ) {
+                throw new BadGatewayException(
+                    'Order Service trả dữ liệu số bán không hợp lệ.',
+                );
+            }
+            const candidate = row as SellerVariantSalesRow;
+            // Mỗi variant chỉ được có một dòng aggregate thuộc request; duplicate có thể làm map chọn sai số bán.
+            if (
+                typeof candidate.variantId !== 'string' ||
+                !input.variantIds.includes(candidate.variantId) ||
+                seenVariantIds.has(candidate.variantId) ||
+                !Number.isSafeInteger(candidate.quantitySold) ||
+                candidate.quantitySold < 0
+            ) {
+                throw new BadGatewayException(
+                    'Order Service trả dữ liệu số bán không hợp lệ.',
+                );
+            }
+            seenVariantIds.add(candidate.variantId);
+            rows.push(candidate);
         }
         return new Map(rows.map((row) => [row.variantId, row.quantitySold]));
     }

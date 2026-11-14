@@ -7,6 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import type { SellerInventorySearchResult } from '@/modules/seller-copilot/application/modes/agent/types/seller-copilot-action.types';
 import type {
+    SellerCopilotActionCurrentState,
     SellerCopilotProductContentProposalPayload,
     SellerCopilotVariantPriceProposalPayload,
 } from '@/modules/seller-copilot/application/modes/agent/types/seller-copilot-action.types';
@@ -116,6 +117,62 @@ export class SellerInventoryAgentClient {
         }
 
         return { items, totalCount, hasMore: false };
+    }
+
+    // Đọc đúng đối tượng của proposal để khôi phục kết quả sau timeout mà không tải toàn bộ catalog cho thao tác giá/tồn.
+    // Variant được tìm theo trang active; nội dung sản phẩm dùng catalog đã scope theo owner/shop.
+    async getCurrentActionState(input: {
+        shopId: string;
+        ownerUserId: string;
+        productId: string;
+        variantId?: string;
+    }): Promise<SellerCopilotActionCurrentState | null> {
+        if (input.variantId) {
+            let offset = 0;
+            while (true) {
+                const page = await this.getActiveVariantPage({
+                    shopId: input.shopId,
+                    ownerUserId: input.ownerUserId,
+                    offset,
+                    limit: 100,
+                });
+                // Dừng nếu downstream báo còn trang nhưng không trả dòng, tránh vòng lặp vô hạn khi response sai hợp đồng.
+                if (page.items.length === 0 && page.hasMore) {
+                    throw new BadGatewayException(
+                        'Product Service trả trang biến thể không hợp lệ.',
+                    );
+                }
+                const variant = page.items.find(
+                    (item) => item.variantId === input.variantId,
+                );
+                if (variant) {
+                    return {
+                        productId: variant.productId,
+                        variant: {
+                            variantId: variant.variantId,
+                            price: variant.price,
+                            available: variant.available,
+                        },
+                    };
+                }
+                if (!page.hasMore) return null;
+                offset += page.items.length;
+            }
+        }
+
+        const catalog = await this.getProductCatalog(
+            input.shopId,
+            input.ownerUserId,
+        );
+        const product = catalog.items.find(
+            (item) => item.productId === input.productId,
+        );
+        if (!product) return null;
+        return {
+            productId: product.productId,
+            name: product.name,
+            description: product.fullDescription ?? null,
+        };
     }
 
     // Đọc đúng một trang variant đang bán; caller quản lý offset để đối chiếu sales mà không tải cả catalog vào một response.
